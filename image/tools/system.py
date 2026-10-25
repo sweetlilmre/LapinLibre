@@ -55,6 +55,25 @@ def is_elf(data):
     return data[:4] == b"\x7fELF"
 
 
+def stripped(data):
+    """An ELF file's data without its debug information and unneeded symbols (the host's ARM strip,
+    --strip-unneeded, as Buildroot strips its packages); any other file's data unchanged."""
+    if not is_elf(data):
+        return data
+    with tempfile.NamedTemporaryFile(delete=False) as f:
+        f.write(data)
+        path = f.name
+    try:
+        subprocess.run(["arm-linux-gnueabi-strip", "--strip-unneeded", "--remove-section=.comment", path],
+                       check=True, capture_output=True)
+        with open(path, "rb") as f:
+            return f.read()
+    except subprocess.CalledProcessError as e:
+        raise SystemBuildError(f"arm-linux-gnueabi-strip failed: {e.stderr.decode(errors='replace').strip()}")
+    finally:
+        os.unlink(path)
+
+
 def is_arm_elf(data):
     return is_elf(data) and data[5] == 1 and int.from_bytes(data[18:20], "little") == 40
 
@@ -437,7 +456,8 @@ def check_core(img, tree, own, accepted, changes):
 
 
 def own_builds(userland: Path, v8: Path):
-    """{(label, path): data}: system/userland.sh's tree at its paths on the rabbit, and the system build's V8."""
+    """{(label, path): data}: system/userland.sh's tree at its paths on the rabbit, and the system build's V8,
+    the ELF files stripped."""
     own = {}
     for p in sorted((userland / "rootfs").glob("*")):
         if p.is_file():
@@ -462,4 +482,5 @@ def own_builds(userland: Path, v8: Path):
     shell = v8.parent / "v8-shell"  # V8's sample shell, built with libv8.so
     if shell.is_file():
         own[("usr", "bin/v8-shell")] = shell.read_bytes()
-    return own
+    # The image gets them stripped; the build trees keep their debug information for debugging.
+    return {key: stripped(data) for key, data in own.items()}

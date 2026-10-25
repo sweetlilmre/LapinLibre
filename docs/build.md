@@ -428,7 +428,7 @@ This stage builds V8 2.5.9.23 as `libv8.so` for the rabbit, with the system tool
 
 1. It unpacks the source into `work/v8/src` and applies `system/v8/patches/` (`js2c` on Python 3; `platform-linux.cc` on uClibc).
 2. `tools/js2c.py` makes `libraries.cc` from the JavaScript library files of `SConscript`.
-3. It compiles the `all` and `arch:arm` sources of `SConscript`, `platform-linux.cc`, `platform-posix.cc`, `snapshot-empty.cc` and `libraries.cc`, with `LAPIN_JOBS` jobs.
+3. It compiles the `all` and `arch:arm` sources of `SConscript`, `platform-linux.cc`, `platform-posix.cc`, `snapshot-empty.cc` and `libraries.cc`, with `LAPIN_JOBS` jobs. `-ffile-prefix-map` makes the source paths in V8's assertion texts relative (`./src/...`).
 4. It links `work/v8/libv8.so` (no soname) and the sample shell `work/v8/v8-shell`, which becomes `/usr/bin/v8-shell`.
 
 The flags are V8's, for `-march=armv4t -marm -msoft-float`, plus these:
@@ -478,7 +478,7 @@ The stamp `system-kernel` includes `system/kernel`, `kernel/src`, `kernel/yaffs.
 
 This stage builds LapinLibre's programs and the install tools of the key.
 
-`system/userland.sh` runs `make -C userland all player` with the system toolchain, the system build's `pkg-config` and `protoc-2.3.0`, the host's `dbus-binding-tool` and `glib-genmarshal`, and the V8 headers and library. It removes the old output first. The output is in `work/userland/system`, and the log is `work/userland/system.log`. The build is not in a fixed root, so its debug information contains the work location.
+`system/userland.sh` runs `make -C userland all player` with the system toolchain, the system build's `pkg-config` and `protoc-2.3.0`, the host's `dbus-binding-tool` and `glib-genmarshal`, and the V8 headers and library. It removes the old output first. The output is in `work/userland/system`, and the log is `work/userland/system.log`. The programs are built with debug information, which stays in `work/userland/system` for debugging; `-ffile-prefix-map` turns the repository's and the work location's paths into relative ones (`./`), in the debug information and in `__FILE__`, so the code doesn't depend on where the build ran.
 
 | Output folder | Contents | Place in the core |
 |---|---|---|
@@ -518,7 +518,7 @@ The core is the root filesystem and `/usr` that the key installs. `make_core` ma
 |---|---|
 | `target` | The system build's target at the same path (`usr:P` is `usr/P` in the target). |
 | `target:PATH` | The target's file at `PATH`. |
-| `own` | LapinLibre's build: the userland output, `libv8.so` and `v8-shell`. Each such file must be in the list. |
+| `own` | LapinLibre's build: the userland output, `libv8.so` and `v8-shell`, stripped as they go into the image (the host's `arm-linux-gnueabi-strip --strip-unneeded`, as Buildroot strips its packages). Each such file must be in the list. |
 | `core` | `image/core/<part>/<path>` in the repository. A script with CRLF stops the build. |
 | `generated` | Made by `image.py`. Each generated file must be in the list. |
 

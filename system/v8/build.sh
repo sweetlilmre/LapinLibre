@@ -64,7 +64,7 @@ DEFS="-DV8_TARGET_ARCH_ARM -DCAN_USE_UNALIGNED_ACCESSES=0 -DENABLE_VMSTATE_TRACK
       -DENABLE_DEBUGGER_SUPPORT -DV8_SHARED -DBUILDING_V8_SHARED"
 FLAGS="-O3 -fomit-frame-pointer -fdata-sections -ffunction-sections -ansi -fno-rtti -fno-exceptions -fPIC
        -fvisibility=hidden -march=armv4t -marm -mno-thumb-interwork -msoft-float
-       -fno-delete-null-pointer-checks -fno-strict-aliasing"
+       -fno-delete-null-pointer-checks -fno-strict-aliasing -ffile-prefix-map=$W/=./"
 WARN="-Wall -Werror -W -Wno-unused-parameter -Wnon-virtual-dtor
       -Wno-unused-local-typedefs -Wno-narrowing -Wno-unused-but-set-variable -Wno-misleading-indentation
       -Wno-implicit-fallthrough -Wno-nonnull-compare -Wno-class-memaccess -Wno-dangling-pointer

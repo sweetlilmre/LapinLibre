@@ -497,6 +497,11 @@ class UsbKeyTest(unittest.TestCase):
                or (".so" not in path and not files[label][path].mode & 0o111)]
         self.assertIn(("usr", "bin/karotz-player"), own)
         self.assertEqual(bad, [])
+        # They are stripped: no debug information, and no build folder in them.
+        unstripped = [f"{label}:{path}" for label, path in sorted(own)
+                      if path in files[label] and (b".debug_info" in files[label][path].data
+                                                   or b"/home/" in files[label][path].data)]
+        self.assertEqual(unstripped, [])
 
     def test_installed_files_match_the_record(self):
         # The key's layout (every entry's path, kind, mode, owner and link target, not
