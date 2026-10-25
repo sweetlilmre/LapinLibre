@@ -1,0 +1,11 @@
+#!/bin/sh
+# SPDX-License-Identifier: MIT
+# snapshot_list (read-only): the stored snapshots, oldest first. A thumbnail's name is the
+# picture's with .thumb.gif for .jpg.
+. /usr/share/lapinlibre/web.sh
+web_begin read
+items=""
+for name in $(snapshot_names); do
+    items="$items${items:+,}{\"id\":\"$name\"}"
+done
+reply_json "{\"snapshots\":[$items],\"return\":\"0\"}"

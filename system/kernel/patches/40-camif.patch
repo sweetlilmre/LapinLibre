@@ -1,0 +1,28 @@
+# Kconfig and Makefile entries for the RABBITV3 camera driver (S3C2440 camif, OV7675 sensor, soft SCCB bus), which registers the misc device "camera".
+--- a/drivers/media/video/Kconfig
++++ b/drivers/media/video/Kconfig
+@@ -811,6 +811,14 @@ config VIDEO_CAFE_CCIC
+ 	  CMOS camera controller.  This is the controller found on first-
+ 	  generation OLPC systems.
+ 
++config VIDEO_S3C2440_CAMIF
++	bool "S3C2440 camera interface with the OV7675 sensor (RABBITV3)"
++	depends on ARCH_S3C2410
++	help
++	  The S3C2440 camera interface and the OmniVision OV7675 sensor on
++	  its soft SCCB bus, as a misc device "camera" (read a frame, ioctl
++	  for VGA or QVGA).
++
+ config SOC_CAMERA
+ 	tristate "SoC camera support"
+ 	depends on VIDEO_V4L2 && HAS_DMA && I2C
+--- a/drivers/media/video/Makefile
++++ b/drivers/media/video/Makefile
+@@ -154,6 +154,7 @@ obj-$(CONFIG_VIDEO_MX1)			+= mx1_camera.o
+ obj-$(CONFIG_VIDEO_MX3)			+= mx3_camera.o
+ obj-$(CONFIG_VIDEO_PXA27x)		+= pxa_camera.o
+ obj-$(CONFIG_VIDEO_SH_MOBILE_CEU)	+= sh_mobile_ceu_camera.o
++obj-$(CONFIG_VIDEO_S3C2440_CAMIF)	+= s3c2440camif.o
+ 
+ obj-$(CONFIG_ARCH_DAVINCI)		+= davinci/
+ 

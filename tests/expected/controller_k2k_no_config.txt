@@ -1,0 +1,9 @@
+== registered: True
+== platform connection: 1
+== an incoming k2k call
+== signals
+com.mindscape.karotz.KarotzInterface.registered()
+com.mindscape.karotz.KarotzInterface.karotz_status_changed(int32 15)
+com.mindscape.karotz.KarotzInterface.incoming_call(string "sip:bob@example")
+== device I/O
+== daemon still running: True

@@ -1,0 +1,301 @@
+== registered: True
+== introspection
+method com.mindscape.karotz.KarotzInterface.get_artist(out:s,out:b)
+method com.mindscape.karotz.KarotzInterface.get_folder(out:s,out:b)
+method com.mindscape.karotz.KarotzInterface.get_genre(out:s,out:b)
+method com.mindscape.karotz.KarotzInterface.get_playlist(out:s,out:b)
+method com.mindscape.karotz.KarotzInterface.get_song(out:s,out:b)
+method com.mindscape.karotz.KarotzInterface.next(in:s,in:i,out:b)
+method com.mindscape.karotz.KarotzInterface.pause(in:s,in:i,out:b)
+method com.mindscape.karotz.KarotzInterface.play(in:s,in:s,in:i,out:b)
+method com.mindscape.karotz.KarotzInterface.previous(in:s,in:i,out:b)
+method com.mindscape.karotz.KarotzInterface.record(in:s,in:s,in:i,out:b)
+method com.mindscape.karotz.KarotzInterface.resume(in:s,in:i,out:b)
+method com.mindscape.karotz.KarotzInterface.stop(in:s,in:i,out:b)
+signal com.mindscape.karotz.KarotzInterface.multi_callback(out:i)
+signal com.mindscape.karotz.KarotzInterface.multi_playfinished(out:s,out:i)
+signal com.mindscape.karotz.KarotzInterface.multi_recordfinished(out:s,out:i)
+signal com.mindscape.karotz.KarotzInterface.registered()
+== phase 1: no MPD
+get_artist() -> string "" | boolean true
+get_genre() -> string "" | boolean true
+get_song() -> string "" | boolean true
+get_playlist() -> string "" | boolean true
+get_folder() -> string "" | boolean true
+play(string:p1, string:playlist::favourites, int32:0) -> boolean false
+play(string:p2, string:mode::random, int32:0) -> boolean true
+play(string:p3, string:lock::yes, int32:0) -> boolean false
+next(string:id, int32:0) -> boolean true
+previous(string:id, int32:0) -> boolean true
+pause(string:id, int32:0) -> boolean true
+resume(string:id, int32:0) -> boolean true
+stop(string:id, int32:0) -> boolean true
+== phase 2: fake MPD
+fake MPD ready: True
+daemon connected to the fake MPD: True
+  mpd: commands
+  mpd: notcommands
+  mpd: password "karotz_admin"
+  mpd: commands
+  mpd: notcommands
+-- lists
+get_artist() -> string "Alice:Bob:Carol:" | boolean true
+  mpd: list artist
+get_genre() -> string "Jazz:Rock:" | boolean true
+  mpd: list genre
+get_song() -> string "Song A:Song B:Song C:" | boolean true
+  mpd: listallinfo "/"
+get_playlist() -> string "favourites:party:" | boolean true
+  mpd: listplaylists
+get_folder() -> string "Music:Music/Rock:Music/Jazz:" | boolean true
+  mpd: lsinfo ""
+  mpd: listallinfo "Music"
+  mpd: lsinfo "Music"
+  mpd: listallinfo "Music/Rock"
+  mpd: lsinfo "Music/Rock"
+  mpd: listallinfo "Music/Jazz"
+  mpd: lsinfo "Music/Jazz"
+  mpd: listallinfo "Empty"
+-- MPD playback
+play(string:m1, string:playlist::favourites, int32:0) -> boolean true
+  mpd: listplaylists
+  mpd: clear
+  mpd: command_list_begin
+  mpd: load "favourites"
+  mpd: command_list_end
+  mpd: setvol "100"
+  mpd: playid "-1"
+  mpd: playlistid "1"
+pause(string:m1, int32:0) -> boolean true
+  mpd: pause "1"
+resume(string:m1, int32:0) -> boolean true
+  mpd: setvol "100"
+  mpd: pause "0"
+next(string:m1, int32:0) -> boolean true
+  mpd: setvol "100"
+  mpd: playid "-1"
+  mpd: next
+  mpd: playlistid "2"
+previous(string:m1, int32:0) -> boolean true
+  mpd: setvol "100"
+  mpd: playid "-1"
+  mpd: previous
+  mpd: playlistid "1"
+play(string:m2, string:/usr/karotz/sounds/notify.mp3, int32:0) -> boolean false
+stop(string:m1, int32:0) -> boolean true
+  mpd: stop
+stop(string:m1, int32:0) -> boolean true
+play(string:m3, string:playlist::nope, int32:0) -> boolean false
+  mpd: listplaylists
+play(string:m4, string:p::party, int32:0) -> boolean false
+stop(string:id, int32:0) -> boolean true
+play(string:m5, string:dir::Music, int32:0) -> boolean true
+  mpd: listallinfo "Music"
+  mpd: clear
+  mpd: command_list_begin
+  mpd: add "Music/Rock/a.mp3"
+  mpd: add "Music/Rock/b.mp3"
+  mpd: add "Music/Jazz/c.mp3"
+  mpd: command_list_end
+  mpd: setvol "100"
+  mpd: playid "-1"
+  mpd: playlistid "1"
+play(string:m6, string:dir::Nope, int32:0) -> boolean false
+  mpd: listallinfo "Nope"
+play(string:m7, string:artist::Alice, int32:0) -> boolean true
+  mpd: find artist "Alice"
+  mpd: clear
+  mpd: command_list_begin
+  mpd: add "Music/Rock/a.mp3"
+  mpd: add "Music/Jazz/c.mp3"
+  mpd: command_list_end
+  mpd: setvol "100"
+  mpd: playid "-1"
+  mpd: playlistid "1"
+play(string:m8, string:artist::Nobody, int32:0) -> boolean false
+  mpd: find artist "Nobody"
+play(string:m9, string:genre::Rock, int32:0) -> boolean true
+  mpd: find genre "Rock"
+  mpd: clear
+  mpd: command_list_begin
+  mpd: add "Music/Rock/a.mp3"
+  mpd: add "Music/Rock/b.mp3"
+  mpd: command_list_end
+  mpd: setvol "100"
+  mpd: playid "-1"
+  mpd: playlistid "1"
+play(string:m10, string:title::Song B, int32:0) -> boolean true
+  mpd: find title "Song B"
+  mpd: clear
+  mpd: command_list_begin
+  mpd: add "Music/Rock/b.mp3"
+  mpd: command_list_end
+  mpd: setvol "100"
+  mpd: playid "-1"
+  mpd: playlistid "1"
+play(string:m11, string:allsong::, int32:0) -> boolean true
+  mpd: listallinfo "/"
+  mpd: clear
+  mpd: command_list_begin
+  mpd: add "Music/Rock/a.mp3"
+  mpd: add "Music/Rock/b.mp3"
+  mpd: add "Music/Jazz/c.mp3"
+  mpd: add "top.mp3"
+  mpd: command_list_end
+  mpd: setvol "100"
+  mpd: playid "-1"
+  mpd: playlistid "1"
+play(string:m12, string:allsong::x, int32:0) -> boolean true
+  mpd: listallinfo "/"
+  mpd: clear
+  mpd: command_list_begin
+  mpd: add "Music/Rock/a.mp3"
+  mpd: add "Music/Rock/b.mp3"
+  mpd: add "Music/Jazz/c.mp3"
+  mpd: add "top.mp3"
+  mpd: command_list_end
+  mpd: setvol "100"
+  mpd: playid "-1"
+  mpd: playlistid "1"
+play(string:m13, string:bogus::x, int32:0) -> boolean false
+stop(string:id, int32:0) -> boolean true
+  mpd: stop
+play(string:mode-random, string:mode::random, int32:0) -> boolean true
+  mpd: random "1"
+play(string:mode-repeat, string:mode::repeat, int32:0) -> boolean true
+  mpd: repeat "1"
+play(string:mode-normal, string:mode::normal, int32:0) -> boolean true
+  mpd: random "0"
+play(string:mode-norepeat, string:mode::norepeat, int32:0) -> boolean true
+  mpd: repeat "0"
+play(string:mode-shuffle, string:mode::shuffle, int32:0) -> boolean false
+play(string:lock1, string:lock::no, int32:0) -> boolean true
+  mpd: enableoutput "0"
+  mpd: setvol "100"
+play(string:lock2, string:lock::yes, int32:0) -> boolean true
+  mpd: setvol "100"
+  mpd: disableoutput "0"
+play(string:lock3, string:lock::maybe, int32:0) -> boolean false
+-- MPD reports
+-- record
+record(string:rec1, string:/tmp/rec1.flac, int32:0) -> boolean true
+record(string:rec2, string:/tmp/rec2.flac, int32:0) -> boolean true
+stop(string:rec2, int32:0) -> boolean true
+record(string:, string:/tmp/rec3.flac, int32:0) -> boolean true
+stop(string:id, int32:0) -> boolean true
+record(string:rec4, string:/tmp/rec4.flac, int32:0) -> boolean true
+stop(string:rec4, int32:0) -> boolean true
+-- karotz-player
+play(string:quick, string:/tmp/quick.mp3, int32:0) -> boolean true
+play(string:q2, string:/tmp/quick.mp3, int32:0) -> boolean true
+play(string:q2-mode, string:mode::random, int32:0) -> boolean true
+  mpd: random "1"
+play(string:mp1, string:file:///usr/karotz/sounds/notify.mp3, int32:0) -> boolean true
+play(string:mp2, string:  /tmp/radio.m3u 
+, int32:0) -> boolean true
+  player_ctrl: "loadlist '/tmp/radio.m3u' 0\n"
+play(string:mp3, string:http://127.0.0.1:9/stream.mp3, int32:0) -> boolean true
+  player_ctrl: "loadfile 'http://127.0.0.1:9/stream.mp3' 0\n"
+play(string:mp4, string:playlist::favourites, int32:0) -> boolean false
+play(string:mp5, string:lock::no, int32:0) -> boolean true
+  mpd: enableoutput "0"
+  mpd: setvol "100"
+pause(string:mp1, int32:0) -> boolean true
+  player_ctrl: 'pause\n'
+pause(string:mp1, int32:0) -> boolean true
+next(string:mp1, int32:0) -> boolean true
+resume(string:mp1, int32:0) -> boolean true
+  player_ctrl: 'pause\n'
+previous(string:mp1, int32:0) -> boolean true
+stop(string:mp1, int32:0) -> boolean true
+stop(string:mp1, int32:0) -> boolean true
+play(string:mp6, string:::x.pls, int32:0) -> boolean true
+resume(string:mp6, int32:0) -> boolean true
+stop(string:mp6, int32:0) -> boolean true
+play(string:mp7, string:playlist::party, int32:0) -> boolean true
+  mpd: listplaylists
+  mpd: clear
+  mpd: command_list_begin
+  mpd: load "party"
+  mpd: command_list_end
+  mpd: setvol "100"
+  mpd: playid "-1"
+  mpd: playlistid "1"
+-- empty argument
+play(string:e1, string:mode::, int32:0) -> boolean false
+play(string:e2, string:lock::, int32:0) -> boolean false
+play(string:e3, string:playlist::, int32:0) -> boolean false
+next(string:e4, int32:0) -> boolean true
+  mpd: setvol "100"
+  mpd: playid "-1"
+  mpd: next
+== signals
+com.mindscape.karotz.KarotzInterface.registered()
+com.mindscape.karotz.KarotzInterface.multi_playfinished(string "", int32 4)
+com.mindscape.karotz.KarotzInterface.multi_callback(int32 2)
+com.mindscape.karotz.KarotzInterface.multi_callback(int32 1)
+com.mindscape.karotz.KarotzInterface.multi_playfinished(string "m1", int32 4)
+com.mindscape.karotz.KarotzInterface.multi_callback(int32 3)
+com.mindscape.karotz.KarotzInterface.multi_playfinished(string "m1", int32 4)
+com.mindscape.karotz.KarotzInterface.multi_callback(int32 3)
+com.mindscape.karotz.KarotzInterface.multi_callback(int32 1)
+com.mindscape.karotz.KarotzInterface.multi_callback(int32 1)
+com.mindscape.karotz.KarotzInterface.multi_playfinished(string "m1", int32 4)
+com.mindscape.karotz.KarotzInterface.multi_callback(int32 2)
+com.mindscape.karotz.KarotzInterface.multi_playfinished(string "m1", int32 4)
+com.mindscape.karotz.KarotzInterface.multi_callback(int32 2)
+com.mindscape.karotz.KarotzInterface.multi_callback(int32 1)
+com.mindscape.karotz.KarotzInterface.multi_playfinished(string "m5", int32 4)
+com.mindscape.karotz.KarotzInterface.multi_callback(int32 2)
+com.mindscape.karotz.KarotzInterface.multi_callback(int32 1)
+com.mindscape.karotz.KarotzInterface.multi_playfinished(string "m7", int32 4)
+com.mindscape.karotz.KarotzInterface.multi_callback(int32 2)
+com.mindscape.karotz.KarotzInterface.multi_callback(int32 1)
+com.mindscape.karotz.KarotzInterface.multi_playfinished(string "m9", int32 4)
+com.mindscape.karotz.KarotzInterface.multi_callback(int32 2)
+com.mindscape.karotz.KarotzInterface.multi_callback(int32 1)
+com.mindscape.karotz.KarotzInterface.multi_playfinished(string "m10", int32 4)
+com.mindscape.karotz.KarotzInterface.multi_callback(int32 2)
+com.mindscape.karotz.KarotzInterface.multi_callback(int32 1)
+com.mindscape.karotz.KarotzInterface.multi_playfinished(string "m11", int32 4)
+com.mindscape.karotz.KarotzInterface.multi_callback(int32 2)
+com.mindscape.karotz.KarotzInterface.multi_callback(int32 1)
+com.mindscape.karotz.KarotzInterface.multi_playfinished(string "m12", int32 4)
+com.mindscape.karotz.KarotzInterface.multi_callback(int32 2)
+com.mindscape.karotz.KarotzInterface.multi_playfinished(string "m12", int32 4)
+com.mindscape.karotz.KarotzInterface.multi_callback(int32 2)
+com.mindscape.karotz.KarotzInterface.multi_callback(int32 6)
+com.mindscape.karotz.KarotzInterface.multi_recordfinished(string "rec1", int32 2)
+com.mindscape.karotz.KarotzInterface.multi_recordfinished(string "rec2", int32 2)
+com.mindscape.karotz.KarotzInterface.multi_recordfinished(string "", int32 2)
+com.mindscape.karotz.KarotzInterface.multi_recordfinished(string "rec4", int32 2)
+com.mindscape.karotz.KarotzInterface.multi_callback(int32 1)
+com.mindscape.karotz.KarotzInterface.multi_playfinished(string "quick", int32 4)
+com.mindscape.karotz.KarotzInterface.multi_callback(int32 2)
+com.mindscape.karotz.KarotzInterface.multi_callback(int32 1)
+com.mindscape.karotz.KarotzInterface.multi_playfinished(string "q2", int32 4)
+com.mindscape.karotz.KarotzInterface.multi_callback(int32 2)
+com.mindscape.karotz.KarotzInterface.multi_callback(int32 1)
+com.mindscape.karotz.KarotzInterface.multi_callback(int32 1)
+com.mindscape.karotz.KarotzInterface.multi_callback(int32 1)
+com.mindscape.karotz.KarotzInterface.multi_playfinished(string "mp3", int32 4)
+com.mindscape.karotz.KarotzInterface.multi_callback(int32 3)
+com.mindscape.karotz.KarotzInterface.multi_callback(int32 1)
+com.mindscape.karotz.KarotzInterface.multi_playfinished(string "mp3", int32 4)
+com.mindscape.karotz.KarotzInterface.multi_callback(int32 2)
+com.mindscape.karotz.KarotzInterface.multi_callback(int32 1)
+com.mindscape.karotz.KarotzInterface.multi_playfinished(string "mp6", int32 4)
+com.mindscape.karotz.KarotzInterface.multi_callback(int32 2)
+com.mindscape.karotz.KarotzInterface.multi_callback(int32 1)
+== device I/O
+system killall karotz-player
+system killall mpd
+open /dev/audio
+ioctl /dev/audio 0x5000
+ioctl /dev/audio 0xc0045005
+ioctl /dev/audio 0xc0045003
+ioctl /dev/audio 0xc0045002
+read /dev/audio 1024
+== flac started as
+system flac - --endian=little --channels=1 --bps=16 --sample-rate=16000 --sign=unsigned   -o /tmp/record.flac -f
+== daemon still running: True

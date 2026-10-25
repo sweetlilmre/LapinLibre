@@ -1,0 +1,19 @@
+pubkeys: add the key that signs wireless-regdb's regulatory.bin
+
+crda 4.15 knows the linville and sforshee keys; wireless-regdb's current
+releases are signed with wens.key.pub.pem, so crda rejected the database
+("Database signature verification failed"). The key is wireless-regdb's own
+wens.key.pub.pem; crda compiles every pubkeys/*.pem in.
+
+--- /dev/null
++++ b/pubkeys/wens.key.pub.pem
+@@ -0,0 +1,9 @@
++-----BEGIN PUBLIC KEY-----
++MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAqXoseE2nGS0yUqAubO+I
++fxXFtmlUFkMUeVO3roj+wLddR44a4e+zkIba02SBH85dnktuWAI+sm9eQkdB9Cy4
++qNSqwA7mSPCozssIrjev9kA5y1VvW0+FNOZpEFByXk6dTLo4Ng3OczjXJwIqeQPh
++rM+wJ4WGkxer7EJ3N2WKRMvWQpOSE+M5RcVuAEp/y0IXKyWMuBc7FTZZ3kLOIea2
++x25eJh/3ileepZZytwIy6wcrc+JPZlia6w8HtqtQi8OPF/oKmcIWJb8taxqq5j5f
++622bXU1Cgy05uMms2zqRUN+7sXZtFXP9xuZrcZ5nNiKDebHWuIRSr5Zbw2MCTnhw
++VwIDAQAB
++-----END PUBLIC KEY-----

@@ -1,0 +1,8 @@
+#!/bin/sh
+# SPDX-License-Identifier: MIT
+# rfid_list_ext (read-only): the learned tags with the codes' names: id, name, type, type_name,
+# color, color_name, then a second "type" key holding the action's name (the key clients read
+# last, so they see the action under it), then cmd and cmd_name.
+. /usr/share/lapinlibre/web.sh
+web_begin read
+reply_json "{\"tags\":[$(tags_json ext)],\"return\":\"0\"}"

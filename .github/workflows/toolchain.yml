@@ -1,0 +1,76 @@
+# SPDX-License-Identifier: MIT
+# Build the cross toolchain from source (system/toolchain/build.sh) and publish it as the release
+# named by config.toml's toolchain.name, with the file <name>.tar.gz and its SHA-256. Run it by hand
+# when the toolchain changes, after raising toolchain.name; then pin the published file in
+# config.toml as [download.toolchain] (docs/build.md, "Publish a new toolchain").
+name: toolchain
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: toolchain
+
+jobs:
+  toolchain:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+
+      - name: Name
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          name=$(python3 -I -B scripts/config.py toolchain.name)
+          if gh release view "$name" > /dev/null 2>&1; then
+              echo "the release $name exists: raise toolchain.name in config.toml" >&2
+              exit 1
+          fi
+          echo "NAME=$name" >> "$GITHUB_ENV"
+          echo "LAPINLIBRE_WORK=$RUNNER_TEMP/lapinlibre" >> "$GITHUB_ENV"
+          echo "toolchain $name"
+
+      - name: Host prerequisites
+        run: |
+          sudo sysctl kernel.apparmor_restrict_unprivileged_userns=0
+          bash scripts/host-prereqs.sh --install
+
+      - name: Download cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
+        with:
+          path: ${{ env.LAPINLIBRE_WORK }}/dl
+          key: dl-${{ hashFiles('config.toml') }}
+          restore-keys: dl-
+
+      - name: Build
+        env:
+          LAPIN_TOOLCHAIN: build
+        run: ./build.sh check fetch toolchain
+
+      - name: Keep the build log (failed run)
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
+        with:
+          name: toolchain-log-${{ github.run_id }}
+          path: ${{ env.LAPINLIBRE_WORK }}/work/toolchain/out/build.log
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p dist
+          cp "$LAPINLIBRE_WORK/out/toolchain/$NAME.tar.gz" dist/
+          (cd dist && sha256sum "$NAME.tar.gz" > "$NAME.tar.gz.sha256" && cat "$NAME.tar.gz.sha256")
+          {
+              echo "The cross toolchain LapinLibre's system build uses: GCC 14.3.0, binutils 2.44 and uClibc-ng 1.0.57 with Linux 2.6.32.71 headers, for the ARM920T (EABI, soft float). It is not a LapinLibre release: the USB key is."
+              echo
+              echo "Built by system/toolchain/build.sh from commit $GITHUB_SHA. Its sources are the downloads pinned in [config.toml](https://github.com/$GITHUB_REPOSITORY/blob/$GITHUB_SHA/config.toml) and the patches in [system/patches](https://github.com/$GITHUB_REPOSITORY/tree/$GITHUB_SHA/system/patches)."
+          } > dist/notes.md
+          gh release create "$NAME" "dist/$NAME.tar.gz" "dist/$NAME.tar.gz.sha256" \
+              --target "$GITHUB_SHA" --title "Toolchain $NAME" --notes-file dist/notes.md --latest=false

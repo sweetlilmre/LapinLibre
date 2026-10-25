@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<!-- SPDX-License-Identifier: MIT -->
+<!-- LapinLibre's web page: the rabbit's status; sleep, LED, ears, sound, speech and camera; RFID
+     tags and their actions; radio, moods and stories from the USB key; its logs, SSH help and a
+     restart button, all through the rabbit's own API (app.js). No external
+     files: it works on a network without Internet. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LapinLibre</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <h1>LapinLibre</h1>
+  <p id="subtitle" class="subtitle">Connecting to the rabbit&hellip;</p>
+</header>
+<main>
+  <p id="problem" class="card problem" role="alert" hidden></p>
+
+  <div id="sections" hidden>
+    <section id="status" class="card">
+      <div class="title-row">
+        <h2>Status</h2>
+        <button type="button" id="status-refresh">Refresh</button>
+      </div>
+      <p id="telnet-warning" class="warning" hidden>Telnet is on: anyone on your network can get a root shell on this rabbit without a password. Set <code>TELNET=no</code> in <code>lapinlibre.txt</code> and run the install to turn it off.</p>
+      <div id="status-groups" class="groups"></div>
+      <p id="status-updated" class="note"></p>
+    </section>
+
+    <section id="sleep" class="card action-card">
+      <div class="title-row">
+        <h2>Sleep</h2>
+      </div>
+      <p id="sleep-state" class="state"></p>
+      <div class="controls">
+        <button type="button" id="sleep-go">Go to sleep</button>
+        <button type="button" id="wake-go">Wake up</button>
+        <button type="button" id="wake-silent">Wake up silently</button>
+      </div>
+      <p class="note">Asleep, the rabbit takes no LED, ear, sound or speech requests; the camera still works.</p>
+      <p class="result" aria-live="polite"></p>
+    </section>
+
+    <section id="led" class="card action-card">
+      <div class="title-row">
+        <h2>LED</h2>
+      </div>
+      <p id="led-state" class="state"></p>
+      <div class="swatches" id="led-swatches"></div>
+      <div class="controls">
+        <label>Colour
+          <input id="led-color" type="color" value="#00ff00">
+        </label>
+        <label class="check"><input id="led-pulse" type="checkbox"> Pulse</label>
+        <label>Second colour
+          <input id="led-color2" type="color" value="#000000">
+        </label>
+        <label>Period (ms)
+          <input id="led-speed" type="number" min="25" max="10000" value="700" inputmode="numeric">
+        </label>
+      </div>
+      <div class="controls">
+        <button type="button" id="led-set">Set the LED</button>
+        <button type="button" id="led-off">Turn it off</button>
+      </div>
+      <p class="note">The rabbit's own software also sets the LED when its state changes (an application starting or ending, the app server coming or going), so the colour shown here is the last one set from this page or the API, which may no longer be what the nose shows.</p>
+      <p class="result" aria-live="polite"></p>
+    </section>
+
+    <section id="ears" class="card action-card">
+      <div class="title-row">
+        <h2>Ears</h2>
+      </div>
+      <p id="ears-state" class="state"></p>
+      <div class="controls">
+        <label>Left (0&ndash;16)
+          <input id="ears-left" type="number" min="0" max="16" value="0" inputmode="numeric">
+        </label>
+        <label>Right (0&ndash;16)
+          <input id="ears-right" type="number" min="0" max="16" value="0" inputmode="numeric">
+        </label>
+        <label class="check"><input id="ears-recalibrate" type="checkbox" checked> Recalibrate first</label>
+      </div>
+      <div class="controls">
+        <button type="button" id="ears-move">Move</button>
+        <button type="button" id="ears-reset">Recalibrate</button>
+        <button type="button" id="ears-random">Random</button>
+        <button type="button" id="ears-toggle">Turn the API's ear moves off</button>
+      </div>
+      <p class="note">One turn of an ear is 17 steps, counted from where recalibrating leaves it.</p>
+      <p class="result" aria-live="polite"></p>
+    </section>
+
+    <section id="sound" class="card action-card">
+      <div class="title-row">
+        <h2>Sound</h2>
+      </div>
+      <ul id="sound-list" class="sound-list"></ul>
+      <div class="controls">
+        <label class="grow">Play a URL (MP3, stream or playlist)
+          <input id="sound-url" type="url" placeholder="http://radio.example/stream.mp3" autocomplete="off">
+        </label>
+        <button type="button" id="sound-url-play">Play</button>
+      </div>
+      <div class="controls">
+        <button type="button" data-cmd="pause">Pause / resume</button>
+        <button type="button" data-cmd="stop">Stop</button>
+        <button type="button" data-cmd="previous">Previous</button>
+        <button type="button" data-cmd="next">Next</button>
+      </div>
+      <p class="note">Sounds come from the <code>sounds</code> folder of the USB key, then from the rabbit's own.</p>
+      <p class="result" aria-live="polite"></p>
+    </section>
+
+    <section id="speech" class="card action-card">
+      <div class="title-row">
+        <h2>Speech</h2>
+      </div>
+      <label class="block">Text
+        <textarea id="speech-text" rows="3" maxlength="1000"></textarea>
+      </label>
+      <div class="controls">
+        <label>Voice
+          <select id="speech-voice">
+            <option value="">The rabbit's language</option>
+          </select>
+        </label>
+        <button type="button" id="speech-go">Speak</button>
+        <button type="button" id="speech-clock">Say the time</button>
+      </div>
+      <p class="note">The rabbit speaks through the speech server of its app server (<code>SERVER=</code> in <code>lapinlibre.txt</code>, or <code>TTS_SERVER=</code> for a speech server of its own).</p>
+      <p class="result" aria-live="polite"></p>
+    </section>
+
+    <section id="camera" class="card action-card">
+      <div class="title-row">
+        <h2>Camera</h2>
+      </div>
+      <p class="note">Every picture makes the rabbit's nose flash and plays the shutter sound, so it always shows the camera is in use. Pictures are kept in the rabbit's memory, the newest 10, until it restarts.</p>
+      <div class="controls">
+        <button type="button" id="camera-shot">Take a picture</button>
+        <button type="button" id="camera-view">View a live picture</button>
+        <button type="button" id="camera-clear">Delete all pictures&hellip;</button>
+      </div>
+      <div id="camera-clear-confirm" class="confirm" hidden>
+        <p>Delete every stored picture?</p>
+        <button type="button" id="camera-clear-yes" class="danger">Yes, delete them</button>
+        <button type="button" id="camera-clear-no">Cancel</button>
+      </div>
+      <figure id="camera-live" class="live" hidden>
+        <img id="camera-live-img" alt="A live picture from the rabbit's camera">
+        <figcaption class="note">Not stored.</figcaption>
+      </figure>
+      <ul id="camera-gallery" class="gallery"></ul>
+      <p class="result" aria-live="polite"></p>
+    </section>
+
+    <section id="tags" class="card action-card">
+      <div class="title-row">
+        <h2>RFID tags</h2>
+      </div>
+      <p id="tags-learning" class="state">Learning is off.</p>
+      <div class="controls">
+        <button type="button" id="tags-learn">Learn new tags</button>
+        <button type="button" id="tags-learn-stop" hidden>Stop learning</button>
+        <button type="button" id="tags-refresh">Refresh the list</button>
+      </div>
+      <p class="note">While learning (2 minutes at most), lay each new tag on the rabbit's nose: it flashes green for a new tag and yellow for one it knows already. While learning is on, no tag runs its action, not even one that has an action. Outside learning, a tag with an action makes the nose flash and runs its action; the rabbit's own software may also say it doesn't recognise the tag.</p>
+      <ul id="tags-list" class="tag-list"></ul>
+      <div id="tags-editor" class="editor" hidden>
+        <h3 id="tags-editor-title">Tag</h3>
+        <p id="tags-editor-learning" class="warning" hidden></p>
+        <div class="controls">
+          <label class="grow">Name
+            <input id="tags-name" type="text" maxlength="64" autocomplete="off">
+          </label>
+          <label>Colour
+            <select id="tags-color"></select>
+          </label>
+          <button type="button" id="tags-rename">Save the name and colour</button>
+        </div>
+        <div class="controls">
+          <label class="grow">Action
+            <select id="tags-kind">
+              <option value="">Choose an action</option>
+              <option value="tts">Say a text</option>
+              <option value="sound">Play a sound</option>
+              <option value="sound_control">Stop the sound</option>
+              <option value="leds">Set the LED</option>
+              <option value="ears">Move the ears</option>
+              <option value="ears_reset">Recalibrate the ears</option>
+              <option value="ears_random">Move the ears at random</option>
+              <option value="sleep">Go to sleep</option>
+              <option value="wakeup">Wake up</option>
+              <option value="snapshot">Take a picture</option>
+              <option value="apps/clock">Say the time</option>
+              <option value="apps/moods">Play a mood</option>
+              <option value="stories">Play a story</option>
+              <option value="url">Send a request to a URL</option>
+            </select>
+          </label>
+        </div>
+        <div class="controls kind" data-kind="tts" hidden>
+          <label class="grow">Text
+            <input id="tags-tts-text" type="text" maxlength="1000" autocomplete="off">
+          </label>
+        </div>
+        <div class="controls kind" data-kind="sound" hidden>
+          <label class="grow">Sound
+            <select id="tags-sound-id"></select>
+          </label>
+        </div>
+        <div class="controls kind" data-kind="leds" hidden>
+          <label>Colour
+            <input id="tags-led-color" type="color" value="#ff0000">
+          </label>
+          <label class="check"><input id="tags-led-pulse" type="checkbox"> Pulse</label>
+        </div>
+        <div class="controls kind" data-kind="ears" hidden>
+          <label>Left (0&ndash;16)
+            <input id="tags-ears-left" type="number" min="0" max="16" value="0" inputmode="numeric">
+          </label>
+          <label>Right (0&ndash;16)
+            <input id="tags-ears-right" type="number" min="0" max="16" value="0" inputmode="numeric">
+          </label>
+        </div>
+        <div class="controls kind" data-kind="apps/moods" hidden>
+          <label class="grow">Mood
+            <select id="tags-mood-id"><option value="">A random mood</option></select>
+          </label>
+        </div>
+        <div class="controls kind" data-kind="stories" hidden>
+          <label class="grow">Story
+            <select id="tags-story-id"></select>
+          </label>
+        </div>
+        <div class="kind" data-kind="url" hidden>
+          <div class="controls">
+            <label class="grow">URL
+              <input id="tags-url" type="url" placeholder="http://192.168.1.10/scene?id=3" autocomplete="off">
+            </label>
+          </div>
+          <div class="controls">
+            <label>User (optional)
+              <input id="tags-url-user" type="text" autocomplete="off">
+            </label>
+            <label>Password (optional)
+              <input id="tags-url-password" type="password" autocomplete="new-password" aria-describedby="tags-url-password-note">
+            </label>
+            <button type="button" id="tags-url-test">Test the request</button>
+          </div>
+          <p class="note">The rabbit sends an HTTP GET to the URL, at most 15 s, and throws the answer away. A password is kept on the rabbit and never shown again. For https, the rabbit checks the server's certificate.</p>
+          <p id="tags-url-password-note" class="note" hidden>This action has a password stored. Leave the password empty to keep it, or type a new one.</p>
+          <pre id="tags-url-answer" class="log" hidden></pre>
+        </div>
+        <div class="controls">
+          <button type="button" id="tags-assign">Give the tag this action</button>
+          <button type="button" id="tags-unassign">Remove its action and name</button>
+          <button type="button" id="tags-delete" class="danger">Forget the tag</button>
+          <button type="button" id="tags-close">Close</button>
+        </div>
+      </div>
+      <div class="controls">
+        <button type="button" id="tags-clear">Forget all tags&hellip;</button>
+      </div>
+      <div id="tags-clear-confirm" class="confirm" hidden>
+        <p>Forget every learned tag and its action?</p>
+        <button type="button" id="tags-clear-yes" class="danger">Yes, forget them</button>
+        <button type="button" id="tags-clear-no">Cancel</button>
+      </div>
+      <p class="result" aria-live="polite"></p>
+    </section>
+
+    <section id="stick" class="card action-card">
+      <div class="title-row">
+        <h2>Radio, moods and stories</h2>
+        <button type="button" id="stick-refresh">Refresh</button>
+      </div>
+      <h3>Radio</h3>
+      <ul id="radio-list" class="sound-list"></ul>
+      <h3>Moods</h3>
+      <div class="controls">
+        <button type="button" id="mood-random">Play a random mood</button>
+      </div>
+      <ul id="mood-list" class="sound-list"></ul>
+      <h3>Stories</h3>
+      <ul id="story-list" class="sound-list"></ul>
+      <div id="stick-help" class="note" hidden>
+        <p>These lists come from your own files on the LapinLibre USB key, at its top level:</p>
+        <ul>
+          <li><code>radios.txt</code>: one station per line, as <code>name|http://the.stream/url</code>; lines starting with <code>#</code> are skipped.</li>
+          <li><code>moods/</code>: MP3 files, each named like <code>1.mp3</code> or <code>happy.mp3</code> (letters, digits, <code>_</code> and <code>-</code>); an optional <code>moods/moods.txt</code> gives them labels, one <code>name:label</code> per line.</li>
+          <li><code>stories/</code>: MP3 files named the same way, with an optional <code>stories/stories.txt</code> of <code>name:label</code> lines.</li>
+        </ul>
+        <p>Stop playback with the Sound section's Stop button.</p>
+      </div>
+      <p class="result" aria-live="polite"></p>
+    </section>
+
+    <template id="get-url-template">
+      <details class="get-url">
+        <summary>The URL of this action</summary>
+        <code class="url"></code>
+        <p class="note">For home automation and scripts: they must send the web user and password, for example <code>http://admin:&lt;password&gt;@&lt;name&gt;.local/cgi-bin/&hellip;</code>.</p>
+      </details>
+    </template>
+
+    <section id="logs" class="card">
+      <div class="title-row">
+        <h2>Logs</h2>
+      </div>
+      <div class="controls">
+        <label>Log
+          <select id="logs-source">
+            <option value="system">System log</option>
+            <option value="kernel">Kernel log</option>
+            <option value="mpd">Music player (mpd)</option>
+          </select>
+        </label>
+        <label>Lines
+          <input id="logs-lines" type="number" min="1" max="1000" value="200" inputmode="numeric">
+        </label>
+        <button type="button" id="logs-refresh">Show</button>
+        <button type="button" id="logs-save">Save as a file</button>
+      </div>
+      <pre id="logs-text" class="log" tabindex="0"></pre>
+    </section>
+
+    <section id="ssh" class="card">
+      <div class="title-row">
+        <h2>SSH</h2>
+      </div>
+      <div id="ssh-body"></div>
+    </section>
+
+    <section id="restart" class="card">
+      <div class="title-row">
+        <h2>Restart</h2>
+      </div>
+      <p>Restarting takes about a minute; the page waits for the rabbit to answer again.</p>
+      <button type="button" id="reboot">Restart the rabbit&hellip;</button>
+      <div id="reboot-confirm" class="confirm" hidden>
+        <p>Restart the rabbit now?</p>
+        <button type="button" id="reboot-yes" class="danger">Yes, restart</button>
+        <button type="button" id="reboot-no">Cancel</button>
+      </div>
+      <p id="reboot-state" class="note" aria-live="polite"></p>
+    </section>
+  </div>
+</main>
+<script src="app.js"></script>
+</body>
+</html>

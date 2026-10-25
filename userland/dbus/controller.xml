@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SPDX-License-Identifier: MIT -->
+<!-- Signal arguments are not listed: the generated server glue records only each signal's name, and the arguments are those the daemon's g_signal_new() declares. -->
+<node>
+  <interface name="com.mindscape.karotz.KarotzInterface">
+    <method name="get_status">
+      <arg name="karotz" type="i" direction="out"/>
+      <arg name="network" type="i" direction="out"/>
+      <arg name="platform" type="i" direction="out"/>
+    </method>
+    <method name="take_control">
+      <arg name="success" type="b" direction="out"/>
+      <arg name="interactive_id" type="s" direction="out"/>
+    </method>
+    <method name="release_control">
+      <arg name="interactive_id" type="s" direction="in"/>
+    </method>
+    <signal name="registered"/>
+    <signal name="karotz_status_changed"/>
+  </interface>
+</node>

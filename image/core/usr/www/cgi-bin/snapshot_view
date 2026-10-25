@@ -1,0 +1,15 @@
+#!/bin/sh
+# SPDX-License-Identifier: MIT
+# snapshot_view: takes a picture as snapshot does, and answers with the JPEG itself instead of
+# keeping it. A failure answers with the error shape, as text.
+#   silent  accepted; it can't silence the camera, and the API adds no sound of its own
+. /usr/share/lapinlibre/web.sh
+web_begin change
+web_hardware asleep
+take_picture
+mkdir -p "$WEB_RUN" || web_fail "the picture couldn't be kept for the answer"
+WEB_TEMP=$WEB_RUN/view.$$.jpg
+mv -f "$WEB_PICTURE" "$WEB_TEMP" || web_fail "the picture couldn't be kept for the answer"
+web_unlock
+web_ok
+reply_file "$WEB_TEMP" image/jpeg

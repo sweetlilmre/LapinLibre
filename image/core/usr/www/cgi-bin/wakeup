@@ -1,0 +1,28 @@
+#!/bin/sh
+# SPDX-License-Identifier: MIT
+# wakeup: clears the API's sleep flag (also when the rabbit is awake already); the LED pulses green
+# as the API's LED state, the ears are recalibrated (unless the API's ear moves are off), and the
+# wake-up sound plays unless silent=1. A controller that sleeps on its own stays asleep.
+#   silent  1: no sound (0)
+. /usr/share/lapinlibre/web.sh
+web_begin change
+param_flag silent 0
+silent=$PV
+read_controller
+read_api_state
+
+web_lock
+new_id
+rm -f "$WEB_RUN/sleep" || web_fail "the sleep state couldn't be cleared"
+state_write led "00FF00 1 000000 700"
+led_set 00FF00 1 000000 700 || web_log "the LED couldn't be set"
+if [ "$EARS_DISABLED" = 0 ]; then
+    dbus_call Ears reset "string:$WEB_ID" string:B || web_log "the ears couldn't be recalibrated"
+fi
+if [ "$silent" = 0 ]; then
+    dbus_call Multimedia play "string:$WEB_ID" string:/usr/karotz/sounds/wakeup.mp3 int32:1 ||
+        web_log "the wake-up sound couldn't be played"
+fi
+web_unlock
+web_ok
+reply_json "{\"return\":\"0\",\"silent\":\"$silent\"}"

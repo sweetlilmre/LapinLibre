@@ -1,0 +1,8 @@
+#!/bin/sh
+# SPDX-License-Identifier: MIT
+# tools_ps (read-only): the process list, as plain text.
+. /usr/share/lapinlibre/web.sh
+web_begin read
+reply_text_begin
+[ "$WEB_HEAD" = 1 ] || ps 2> /dev/null
+exit 0

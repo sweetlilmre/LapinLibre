@@ -1,0 +1,62 @@
+#!/bin/sh
+# SPDX-License-Identifier: MIT
+# apps/clock: says the time through voice-daemon and the speech server, in the rabbit's language
+# (English, French, German and Spanish have their own sentence; other languages get the English
+# one, spoken by an English speech server when there is one): the hour given, on the hour, or
+# else the current hour and minute. The answer comes once voice-daemon has taken the text.
+#   hour  0 to 23 (absent: now)
+. /usr/share/lapinlibre/web.sh
+web_begin change
+param_int hour 0 23 ""
+hour=$PV
+if [ -n "$hour" ]; then
+    minute=""
+else
+    now=$(date +%H:%M)
+    hour=$(strip_zeros "${now%:*}")
+    minute=$(strip_zeros "${now#*:}")
+    [ -n "$hour" ] || hour=0
+    [ -n "$minute" ] || minute=0
+    mm=${now#*:}
+fi
+rabbit_lang
+read_tts_servers
+lang=$RL
+lower "${RL%"${RL#??}"}"
+case $LO in
+fr)
+    unit=heures
+    [ "$hour" -le 1 ] && unit=heure
+    text="Il est $hour $unit"
+    [ -z "$minute" ] || [ "$minute" = 0 ] || text="$text $minute"
+    ;;
+de)
+    text="Es ist $hour Uhr"
+    [ -z "$minute" ] || [ "$minute" = 0 ] || text="$text $minute"
+    ;;
+es)
+    if [ "$hour" = 1 ]; then text="Es la una"; else text="Son las $hour"; fi
+    [ -z "$minute" ] || [ "$minute" = 0 ] || text="$text y $minute"
+    ;;
+*)
+    if [ -z "$minute" ]; then text="It is $hour o'clock"; else text="It is $hour:$mm"; fi
+    case $LO in
+    en) ;;
+    *) has_tts_server en && lang=en-US ;;
+    esac
+    ;;
+esac
+
+web_hardware
+dbus_call Voice tts_speak "string:$WEB_ID" "string:$text." "string:$lang" int32:1
+r=$?
+if [ $r = 1 ]; then
+    if has_tts_server "$lang"; then
+        web_fail "voice-daemon is already speaking: try again when it has finished"
+    fi
+    web_fail "no speech server is set for $lang: set SERVER= (or TTS_SERVER=) in lapinlibre.txt"
+fi
+[ $r = 0 ] || dbus_failed Voice $r ""
+web_unlock
+web_ok
+reply_json "{\"return\":\"0\",\"hour\":\"$hour\"}"

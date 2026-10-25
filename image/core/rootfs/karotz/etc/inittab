@@ -1,0 +1,12 @@
+# SPDX-License-Identifier: MIT
+# BusyBox init's table. linuxrc copies it to /usr/etc/inittab when that is missing.
+# The start: Wi-Fi, the daemons, the clock and the ready signal.
+::once:/karotz/scripts/startup.sh
+::respawn:/karotz/bin/power
+::respawn:/karotz/scripts/sshd.sh
+::respawn:/karotz/scripts/inetd.sh
+::restart:/sbin/init
+# The shutdown: the nose solid red (led returns at once), the Wi-Fi down, the file systems read-only.
+::shutdown:/karotz/bin/led -l FF0000
+::shutdown:/sbin/ifconfig wlan0 down
+::shutdown:/bin/umount -a -r

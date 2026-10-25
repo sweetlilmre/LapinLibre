@@ -1,0 +1,35 @@
+#!/bin/sh
+# SPDX-License-Identifier: MIT
+# sound_control: controls multimedia-daemon's playback. pause pauses, or resumes what the API
+# last paused (a toggle); quit is stop. The pause state is kept in RAM.
+#   cmd  pause, resume, stop, quit, next or previous (required)
+. /usr/share/lapinlibre/web.sh
+web_begin change
+param_choice cmd "" pause resume stop quit next previous
+cmd=$PV
+[ -n "$cmd" ] || web_fail "parameter cmd is required: one of pause resume stop quit next previous"
+
+web_hardware
+first_line "$WEB_RUN/playback"
+state=$FL
+case $cmd in
+pause)
+    if [ "$state" = paused ]; then
+        method=resume after=playing
+    else
+        method=pause after=paused
+    fi
+    ;;
+resume) method=resume after=playing ;;
+stop | quit) method=stop after="" ;;
+*) method=$cmd after=$state ;;
+esac
+dbus_do Multimedia "multimedia-daemon couldn't $method the playback" "$method" "string:$WEB_ID" int32:1
+if [ -n "$after" ]; then
+    state_write playback "$after"
+else
+    rm -f "$WEB_RUN/playback"
+fi
+web_unlock
+web_ok
+reply_json "{\"return\":\"0\",\"cmd\":\"$cmd\"}"

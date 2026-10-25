@@ -1,0 +1,27 @@
+#!/bin/sh
+# SPDX-License-Identifier: MIT
+# ears: both ears to the positions given, after recalibrating them unless noreset=1. One turn is
+# 17 steps, so each position is taken modulo 17. The answer comes once ears-daemon has taken the
+# move, before the ears get there.
+#   left, right  0 to 255 (required); left is the ear ears-daemon calls left
+#   noreset      1: move without recalibrating first (0)
+. /usr/share/lapinlibre/web.sh
+web_begin change
+param_int left 0 255 ""
+left=$PV
+[ -n "$left" ] || web_fail "parameter left is required: a position from 0 to 255"
+param_int right 0 255 ""
+right=$PV
+[ -n "$right" ] || web_fail "parameter right is required: a position from 0 to 255"
+param_flag noreset 0
+noreset=$PV
+ears_disabled && web_fail "the API's ear moves are disabled (ears_mode)"
+
+web_hardware
+if [ "$noreset" = 0 ]; then
+    ears_reset_wait || dbus_failed Ears $? "ears-daemon refused to reset the ears"
+fi
+ears_move $((left % 17)) $((right % 17)) || dbus_failed Ears $? "ears-daemon refused to move the ears"
+web_unlock
+web_ok
+reply_json "{\"left\":\"$left\",\"right\":\"$right\",\"return\":\"0\"}"

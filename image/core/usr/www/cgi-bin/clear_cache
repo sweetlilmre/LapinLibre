@@ -1,0 +1,9 @@
+#!/bin/sh
+# SPDX-License-Identifier: MIT
+# clear_cache: there is no speech cache, so there is nothing to clear; it answers that it is
+# clear.
+#   id  accepted and ignored
+. /usr/share/lapinlibre/web.sh
+web_begin change
+web_ok
+reply_json '{"return":"0","msg":"the speech cache is empty: there is no cache to clear"}'

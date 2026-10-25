@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SPDX-License-Identifier: MIT -->
+<!-- Signal arguments are not listed: the generated server glue records only each signal's name, and the arguments are those the daemon's g_signal_new() declares. -->
+<node>
+  <interface name="com.mindscape.karotz.KarotzInterface">
+    <method name="reset">
+      <arg name="id" type="s" direction="in"/>
+      <arg name="ears" type="s" direction="in"/>
+      <arg name="result" type="b" direction="out"/>
+    </method>
+    <method name="move">
+      <arg name="id" type="s" direction="in"/>
+      <arg name="l_position" type="i" direction="in"/>
+      <arg name="l_speed" type="i" direction="in"/>
+      <arg name="r_position" type="i" direction="in"/>
+      <arg name="r_speed" type="i" direction="in"/>
+      <arg name="result" type="b" direction="out"/>
+    </method>
+    <method name="move_left">
+      <arg name="id" type="s" direction="in"/>
+      <arg name="l_position" type="i" direction="in"/>
+      <arg name="l_speed" type="i" direction="in"/>
+      <arg name="result" type="b" direction="out"/>
+    </method>
+    <method name="move_right">
+      <arg name="id" type="s" direction="in"/>
+      <arg name="r_position" type="i" direction="in"/>
+      <arg name="r_speed" type="i" direction="in"/>
+      <arg name="result" type="b" direction="out"/>
+    </method>
+    <method name="move_step">
+      <arg name="id" type="s" direction="in"/>
+      <arg name="l_position" type="i" direction="in"/>
+      <arg name="l_speed" type="i" direction="in"/>
+      <arg name="r_position" type="i" direction="in"/>
+      <arg name="r_speed" type="i" direction="in"/>
+      <arg name="result" type="b" direction="out"/>
+    </method>
+    <method name="move_left_step">
+      <arg name="id" type="s" direction="in"/>
+      <arg name="l_position" type="i" direction="in"/>
+      <arg name="l_speed" type="i" direction="in"/>
+      <arg name="result" type="b" direction="out"/>
+    </method>
+    <method name="move_right_step">
+      <arg name="id" type="s" direction="in"/>
+      <arg name="r_position" type="i" direction="in"/>
+      <arg name="r_speed" type="i" direction="in"/>
+      <arg name="result" type="b" direction="out"/>
+    </method>
+    <signal name="event"/>
+    <signal name="reset_finished"/>
+    <signal name="move_left_start"/>
+    <signal name="move_right_start"/>
+    <signal name="move_left_blocked"/>
+    <signal name="move_right_blocked"/>
+    <signal name="move_left_stop"/>
+    <signal name="move_right_stop"/>
+    <signal name="registered"/>
+  </interface>
+</node>

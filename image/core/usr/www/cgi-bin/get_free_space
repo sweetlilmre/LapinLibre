@@ -1,0 +1,17 @@
+#!/bin/sh
+# SPDX-License-Identifier: MIT
+# get_free_space (read-only): the used percentage of the /usr flash partition and of the USB
+# stick (-1 when no stick is mounted).
+. /usr/share/lapinlibre/web.sh
+web_begin read
+disk_usage /usr
+usr=$DU_USED_PERCENT
+usb=-1
+if usb_mounted && disk_usage /mnt/usbkey; then
+    usb=$DU_USED_PERCENT
+fi
+jo_begin
+jo_str karotz_percent_used_space "$usr"
+jo_str usb_percent_used_space "$usb"
+jo_str return 0
+reply_json "{$JO}"

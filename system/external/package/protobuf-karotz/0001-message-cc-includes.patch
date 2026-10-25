@@ -1,0 +1,13 @@
+message.cc: include <istream> and <ostream>, which it uses
+
+--- a/src/google/protobuf/message.cc
++++ b/src/google/protobuf/message.cc
+@@ -33,6 +33,8 @@
+ //  Sanjay Ghemawat, Jeff Dean, and others.
+ 
+ #include <stack>
++#include <istream>
++#include <ostream>
+ #include <google/protobuf/stubs/hash.h>
+ 
+ #include <google/protobuf/message.h>

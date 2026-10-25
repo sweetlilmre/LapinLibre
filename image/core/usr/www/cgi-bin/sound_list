@@ -1,0 +1,14 @@
+#!/bin/sh
+# SPDX-License-Identifier: MIT
+# sound_list (read-only): the sounds sound?id= plays, by name, sorted, each once: the stick's
+# sounds folder and the core's own.
+. /usr/share/lapinlibre/web.sh
+web_begin read
+sound_dirs
+items=""
+# shellcheck disable=SC2086
+for name in $(media_ids $SOUND_DIRS); do
+    json_str "$name"
+    items="$items${items:+,}{\"id\":$J}"
+done
+reply_json "{\"sounds\":[$items],\"return\":\"0\"}"

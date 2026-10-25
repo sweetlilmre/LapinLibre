@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SPDX-License-Identifier: MIT -->
+<descriptor>
+  <version>1</version>
+  <name>Hello</name>
+  <accesses>
+    <access>tts</access>
+    <access>ears</access>
+    <access>led</access>
+  </accesses>
+</descriptor>

@@ -1,0 +1,11 @@
+# SPDX-License-Identifier: GPL-2.0-or-later
+config BR2_PACKAGE_LINPHONE_KAROTZ
+	bool "linphone-karotz"
+	depends on BR2_TOOLCHAIN_HAS_THREADS
+	select BR2_PACKAGE_LIBEXOSIP2_KAROTZ
+	select BR2_PACKAGE_SPEEX
+	help
+	  linphone 3.4.1's libraries (with oRTP and mediastreamer2),
+	  for k2k-daemon.
+
+	  https://www.linphone.org/

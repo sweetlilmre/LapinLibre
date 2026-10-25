@@ -1,0 +1,40 @@
+#!/bin/sh
+# SPDX-License-Identifier: MIT
+# apps/moods: plays a mood, one of the MP3 files of the stick's moods folder (moods_list lists
+# them), or a random one; the ears are recalibrated first (unless the API's ear moves are off).
+# The answer comes once the playback has started.
+#   id    the mood's name (absent: a random one)
+#   lang  accepted and ignored
+. /usr/share/lapinlibre/web.sh
+web_begin change
+param id
+[ $? = 2 ] && web_fail "parameter id must be a mood's name"
+id=$PV
+[ -z "$id" ] || valid_id "$id" || web_fail "parameter id must be a mood's name (letters, digits, _ and -)"
+
+web_hardware
+usb_mounted || web_fail "no moods: no USB stick is in the rabbit"
+if [ -n "$id" ]; then
+    [ -f "$WEB_MOODS/$id.mp3" ] || web_fail "no mood is called $id"
+else
+    ids=$(mp3_ids "$WEB_MOODS")
+    count_lines "$ids"
+    [ "$N" -gt 0 ] || web_fail "no moods: put MP3 files in the moods folder of the USB stick"
+    random_byte
+    r=$RB
+    random_byte
+    n=$(((r * 256 + RB) % N + 1))
+    id=$(printf '%s\n' "$ids" | sed -n "${n}p")
+fi
+if [ "$EARS_DISABLED" = 0 ]; then
+    dbus_call Ears reset "string:$WEB_ID" string:B || web_log "the ears couldn't be recalibrated"
+fi
+dbus_call Multimedia stop "string:$WEB_ID" int32:1
+r=$?
+[ $r -ge 2 ] && dbus_failed Multimedia $r ""
+dbus_do Multimedia "multimedia-daemon couldn't play it (it may be busy with music)" \
+    play "string:$WEB_ID" "string:$WEB_MOODS/$id.mp3" int32:1
+state_write playback playing
+web_unlock
+web_ok
+reply_json "{\"moods\":\"$id\",\"return\":\"0\"}"

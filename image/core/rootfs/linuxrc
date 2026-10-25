@@ -1,0 +1,90 @@
+#!/bin/sh
+# SPDX-License-Identifier: MIT
+# The first process (the bootloader starts it with init=/linuxrc): the kernel's file systems, /dev,
+# the device manager (mdev), /usr from the flash and /etc's links into the read-only root; then the
+# USB key's install when a key with one is in, and init.
+PATH=/bin:/sbin:/usr/bin:/usr/sbin
+export PATH
+
+log() {
+    echo "$*"
+    logger -t lapinlibre "$*" 2> /dev/null
+}
+
+# --- the kernel's file systems and /var (a RAM file system: the root is read-only) ---
+mount -t proc proc /proc
+mount -t sysfs sysfs /sys
+mount -t ramfs ramfs /var
+# /var/lib/dbus holds D-Bus's machine id (S30dbus-daemon makes it).
+mkdir -p /var/tmp /var/run/karotz /var/log /var/lock /var/empty /var/lib/dbus
+
+# --- /dev ---
+mount -t tmpfs -o mode=0755 tmpfs /dev
+mknod -m 0600 /dev/console c 5 1
+# Quirk: ttySAC0 has the console's numbers, not the serial driver's; kept as it was, reason unknown.
+mknod -m 0660 /dev/ttySAC0 c 5 1
+mknod -m 0666 /dev/null c 1 3
+mknod -m 0666 /dev/zero c 1 5
+mknod -m 0666 /dev/ptmx c 5 2
+# The USB stick (ub disks) and its first partition, for the first two sticks.
+mknod -m 0660 /dev/uba b 180 0
+mknod -m 0660 /dev/uba1 b 180 1
+mknod -m 0660 /dev/ubb b 180 16
+mknod -m 0660 /dev/ubb1 b 180 17
+mknod -m 0660 /dev/rtc0 c 254 0
+# The rabbit's own drivers: the ears, the button and the power switch.
+mknod -m 0660 /dev/rabbit_ears c 60 0
+mknod -m 0660 /dev/rabbit_button c 52 0
+# The power switch: the rabbit_poweron driver (major 53), under the name the power program opens.
+mknod -m 0660 /dev/rabbit_power c 53 0
+mknod -m 0660 /dev/s3c2410_serial0 c 204 64
+mknod -m 0660 /dev/s3c2410_serial1 c 204 65
+mknod -m 0660 /dev/s3c2410_serial2 c 204 66
+mkdir -p /dev/pts /dev/shm
+# Quirk: no program of ours opens the ttyS links; kept, reason unknown.
+ln -s s3c2410_serial0 /dev/ttyS0
+ln -s s3c2410_serial1 /dev/ttyS1
+ln -s s3c2410_serial2 /dev/ttyS2
+ln -s rtc0 /dev/rtc
+
+# --- mdev: the kernel's hotplug helper first, then a scan for the devices already there (the
+# flash partitions among them, as character devices, which the key's flashing needs) ---
+echo /sbin/mdev > /proc/sys/kernel/hotplug
+mdev -s
+# Quirk: no consumer of /dev/kernel is known; kept.
+ln -s mtdblock1 /dev/kernel
+
+# --- /usr, from the flash ---
+mount -t yaffs /dev/mtdblock6 /usr
+mkdir -p /usr/etc/conf
+
+# --- /etc (= /usr/etc): the root's own files, so a new install's are always the ones used ---
+for name in fstab group hosts ld.so.conf profile motd shells mdev.conf; do
+    rm -f "/etc/$name"
+    ln -s "/karotz/etc/$name" "/etc/$name"
+done
+# These may be changed on the rabbit: copied only when missing.
+for name in passwd inittab inetd.conf; do
+    [ -e "/usr/etc/$name" ] || cp "/karotz/etc/$name" "/usr/etc/$name"
+done
+# mdev's rules are in place only now (/etc is on /usr): scan again so that they handle the devices
+# already there, a USB stick in at power-on among them (the stick script never mounts twice).
+mdev -s
+
+# --- the system ---
+name=$(cat /usr/etc/conf/hostname 2> /dev/null)
+hostname "${name:-lapinlibre}"
+[ -e /etc/ld.so.cache ] || ldconfig
+mount -a
+. /etc/profile
+syslogd
+log "[START] LapinLibre $(cat /karotz/etc/lapinlibre-build 2> /dev/null)"
+
+# --- the USB key's install, when the key has one (it may flash and reboot) ---
+if [ -e /mnt/usbkey/autorun ]; then
+    log "[START] running /mnt/usbkey/autorun"
+    (cd / && /bin/bash /mnt/usbkey/autorun)
+fi
+
+log "[START] starting init"
+exec /sbin/init

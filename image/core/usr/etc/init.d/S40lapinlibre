@@ -1,0 +1,79 @@
+#!/bin/sh
+# SPDX-License-Identifier: MIT
+# LapinLibre's core daemons, for startup.sh (start) and by hand (stop, restart): first the rabbit's
+# UUID (/usr/karotz/uuid.conf, made once and kept by the install) and the button sounds' switch
+# (/usr/etc/conf/playsounds, turned on once, the first time; the platform's settings may remove it
+# later, and that stays); then the hardware and service daemons, each kept running by immortaldog
+# (it restarts a daemon that dies and writes its own pid file), and the head button's watcher
+# (/usr/scripts/dbus_watcher: tones and /etc/button.d hooks) and the web API's tag listener
+# (/usr/scripts/tag_listener: tag learning and the tags' actions), each also under immortaldog and
+# never twice; then, once the daemons it talks to are on the bus (at most 15 s), the controller,
+# which connects to the app server karotz.conf names and starts karotzVM for the applications; then
+# mDNS: mdnsd answers to the host name (<name>.local) on wlan0 and advertises the services in
+# /etc/mdns.d (SSH), started as Buildroot's own mdnsd script starts it.
+DAEMONS="led rfid webcam button ears multimedia voice scheduler serial k2k"
+# The bus names the controller needs before it starts.
+NEEDS="Led Ears Multimedia Voice Scheduler Rfid Button"
+BIN=/usr/karotz/bin
+RUN=/var/run/karotz
+MDNSD=/usr/sbin/mdnsd
+MDNSD_PID=/var/run/mdnsd.pid
+MDNSD_ARGS="-i wlan0"
+WATCHER=/usr/scripts/dbus_watcher
+LISTENER=/usr/scripts/tag_listener
+PLAYSOUNDS=/usr/etc/conf/playsounds
+
+# once NAME PROGRAM: PROGRAM under immortaldog with the pid file NAME.pid, unless a live process
+# holds that file already.
+once() {
+    pid=$(cat "$RUN/$1.pid" 2> /dev/null)
+    if [ -z "$pid" ] || ! kill -0 "$pid" 2> /dev/null; then
+        rm -f "$RUN/$1.pid"
+        [ -x "$2" ] && $BIN/immortaldog "$RUN/$1.pid" "$2"
+    fi
+    return 0
+}
+
+start() {
+    [ -s /usr/karotz/uuid.conf ] || uuidgen > /usr/karotz/uuid.conf
+    if [ ! -e $PLAYSOUNDS.default ]; then
+        [ -e $PLAYSOUNDS ] || echo 1 > $PLAYSOUNDS
+        [ -e $PLAYSOUNDS ] && touch $PLAYSOUNDS.default
+    fi
+    mkdir -p $RUN
+    for name in $DAEMONS; do
+        $BIN/immortaldog "$RUN/$name.pid" "$BIN/$name-daemon"
+    done
+    # The watcher and the listener, each only when no live process holds its pid file.
+    once dbus_watcher $WATCHER
+    once tag_listener $LISTENER
+    for i in $(seq 1 15); do
+        missing=""
+        for n in $NEEDS; do
+            dbus-send --system --print-reply --dest=org.freedesktop.DBus /org/freedesktop/DBus org.freedesktop.DBus.NameHasOwner string:com.mindscape.karotz.$n 2> /dev/null | grep -q "boolean true" ||
+                missing="$missing $n"
+        done
+        [ -z "$missing" ] && break
+        sleep 1
+    done
+    [ -n "$missing" ] && logger -t S40lapinlibre "starting the controller without:$missing"
+    $BIN/immortaldog "$RUN/controller.pid" "$BIN/controller"
+    # shellcheck disable=SC2086
+    start-stop-daemon -S -q -p $MDNSD_PID -x $MDNSD -- $MDNSD_ARGS
+}
+
+stop() {
+    start-stop-daemon -K -q -p $MDNSD_PID -x $MDNSD
+    # immortaldog stops its daemon on SIGTERM and removes its pid file.
+    for name in controller tag_listener dbus_watcher $DAEMONS; do
+        [ -f "$RUN/$name.pid" ] && kill "$(cat "$RUN/$name.pid")" 2> /dev/null
+    done
+    return 0
+}
+
+case "$1" in
+start) start ;;
+stop) stop ;;
+restart) stop; sleep 1; start ;;
+*) echo "Usage: $0 {start|stop|restart}"; exit 1 ;;
+esac

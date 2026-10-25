@@ -1,0 +1,32 @@
+js2c, jsmin: run on Python 3 (map() is an iterator, / is true division)
+
+--- a/tools/js2c.py
++++ b/tools/js2c.py
+@@ -187,14 +187,14 @@
+       macro_match = MACRO_PATTERN.match(line)
+       if macro_match:
+         name = macro_match.group(1)
+-        args = map(string.strip, macro_match.group(2).split(','))
++        args = [a.strip() for a in macro_match.group(2).split(",")]
+         body = macro_match.group(3).strip()
+         macros.append((re.compile("\\b%s\\(" % name), TextMacro(args, body)))
+       else:
+         python_match = PYTHON_MACRO_PATTERN.match(line)
+         if python_match:
+           name = python_match.group(1)
+-          args = map(string.strip, python_match.group(2).split(','))
++          args = [a.strip() for a in python_match.group(2).split(",")]
+           body = python_match.group(3).strip()
+           fun = eval("lambda " + ",".join(args) + ': ' + body)
+           macros.append((re.compile("\\b%s\\(" % name), PythonMacro(args, fun)))
+--- a/tools/jsmin.py
++++ b/tools/jsmin.py
+@@ -154,7 +154,7 @@
+       return var_name
+     while True:
+       identifier_first_char = self.identifier_counter % 52
+-      identifier_second_char = self.identifier_counter / 52
++      identifier_second_char = self.identifier_counter // 52
+       new_identifier = self.CharFromNumber(identifier_first_char)
+       if identifier_second_char != 0:
+         new_identifier = (

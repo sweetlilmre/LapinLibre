@@ -1,0 +1,27 @@
+#!/bin/sh
+# SPDX-License-Identifier: MIT
+# rfid_assign_url: gives a learned tag a URL request as its action (replacing any other): the tag
+# listener then sends an HTTP GET to the URL each time the tag is laid on the nose. The URL and
+# credentials are kept as data in the tag store (mode 0600) and never shown again.
+#   tag       the tag's id: 16 hexadecimal digits (required)
+#   url       an http:// or https:// URL (required)
+#   param     base64 of a query string added to the URL (after ? or &)
+#   user      basic authentication's user, with password (both or neither)
+#   password  (empty with the user the tag's URL action already has: that action's password)
+#   name      the tag's name (absent: unchanged)
+. /usr/share/lapinlibre/web.sh
+web_begin change
+param_tag
+ACT_KEEP_TAG=$TG
+url_action_params
+TAG_SETNAME=0
+TAG_NAME=""
+if param_tag_name; then
+    TAG_NAME=$PV
+    TAG_SETNAME=1
+fi
+TAG_ID=$TG TAG_CMD=3 TAG_A1=$ACT_URL TAG_A2=$ACT_USER TAG_A3=$ACT_PASSWORD
+tags_change assign || tag_change_failed $?
+url_host "$ACT_URL"
+web_log "ok, a request to $UH"
+reply_json '{"return":"0"}'

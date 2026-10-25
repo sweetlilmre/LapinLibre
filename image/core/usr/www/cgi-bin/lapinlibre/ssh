@@ -1,0 +1,156 @@
+#!/bin/sh
+# SPDX-License-Identifier: MIT
+# lapinlibre/ssh (read-only): what the web page's SSH help shows: whether SSH logins are possible,
+# each authorised key's type, comment and fingerprint (never the key itself), the rabbit's own
+# host key fingerprints, and the name and address to connect to. The fingerprints are kept in RAM
+# (the API's state) until a key file changes.
+. /usr/share/lapinlibre/web.sh
+web_begin read
+
+AUTHORIZED=/usr/karotz/.ssh/authorized_keys
+HOST_KEYS=/usr/etc/conf/dropbear
+
+# Base64 of a SHA-256 digest given in hex, without padding, as OpenSSH shows fingerprints.
+HEX_B64_AWK='{
+    h = toupper($1); x = "0123456789ABCDEF"
+    a = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+    n = length(h) / 2; o = ""
+    for (i = 0; i < n; i += 3) {
+        v = 0; k = 0
+        for (j = 0; j < 3; j++) {
+            v = v * 256
+            if (i + j < n) {
+                v += (index(x, substr(h, 2 * (i + j) + 1, 1)) - 1) * 16 + index(x, substr(h, 2 * (i + j) + 2, 1)) - 1
+                k++
+            }
+        }
+        o = o substr(a, int(v / 262144) % 64 + 1, 1) substr(a, int(v / 4096) % 64 + 1, 1)
+        if (k > 1) o = o substr(a, int(v / 64) % 64 + 1, 1)
+        if (k > 2) o = o substr(a, v % 64 + 1, 1)
+    }
+    print "SHA256:" o
+}'
+
+# fingerprint BLOB: the SHA-256 fingerprint of a key's base64 blob, in FP (empty when the blob
+# isn't well-formed base64).
+fingerprint() {
+    FP=""
+    case $1 in '' | *[!A-Za-z0-9+/=]*) return 1 ;; esac
+    [ $((${#1} % 4)) -eq 0 ] || return 1
+    _s=${1%=}
+    _s=${_s%=}
+    case $_s in *=*) return 1 ;; esac
+    _h=$(printf '%s' "$1" | busybox base64 -d 2> /dev/null | sha256sum 2> /dev/null)
+    _h=${_h%% *}
+    case $_h in '' | *[!0-9a-f]*) return 1 ;; esac
+    [ ${#_h} -eq 64 ] || return 1
+    FP=$(printf '%s\n' "$_h" | awk "$HEX_B64_AWK")
+}
+
+# key_member LINE: the key in an authorized_keys or public-key line (any options before its type
+# skipped) as a JSON object, in KM; empty when the line holds no key.
+key_member() {
+    KM=""
+    set -f
+    # shellcheck disable=SC2086
+    set -- $1
+    set +f
+    while [ $# -gt 0 ]; do
+        case $1 in ssh-* | ecdsa-* | sk-*) break ;; esac
+        shift
+    done
+    [ $# -ge 2 ] || return 1
+    _type=$1
+    fingerprint "$2"
+    shift 2
+    jo_begin
+    jo_str type "$_type"
+    jo_str comment "$*"
+    jo_str fingerprint "$FP"
+    KM="{$JO}"
+}
+
+# read_keys: the authorised keys and the host keys as JSON list items, in keys and host_keys.
+read_keys() {
+    keys=""
+    if [ -f "$AUTHORIZED" ]; then
+        while IFS= read -r line || [ -n "$line" ]; do
+            line=${line%"$CR"}
+            case $line in '' | '#'* | *[!\ -~]*) continue ;; esac
+            key_member "$line" && keys="$keys${keys:+,}$KM"
+        done < "$AUTHORIZED"
+    fi
+
+    host_keys=""
+    for f in "$HOST_KEYS/"dropbear_*_host_key; do
+        [ -f "$f" ] || continue
+        out=$(timeout 10 dropbearkey -y -f "$f" 2> /dev/null) || continue
+        # dropbearkey prints the public key line, then its own fingerprint line.
+        type="" fp="" own_fp=""
+        _ifs=$IFS
+        IFS=$NL
+        set -f
+        # shellcheck disable=SC2086
+        set -- $out
+        set +f
+        IFS=$_ifs
+        for l; do
+            l=${l%"$CR"}
+            case $l in
+            ssh-* | ecdsa-*)
+                if [ -z "$type" ]; then
+                    type=${l%% *}
+                    blob=${l#* }
+                    fingerprint "${blob%% *}"
+                    fp=$FP
+                fi
+                ;;
+            "Fingerprint: "*) own_fp=${l#Fingerprint: } ;;
+            esac
+        done
+        [ -n "$type" ] || continue
+        [ -n "$fp" ] || fp=$own_fp
+        jo_begin
+        jo_str type "$type"
+        jo_str fingerprint "$fp"
+        host_keys="$host_keys${host_keys:+,}{$JO}"
+    done
+}
+
+# The keys' JSON is kept in RAM with the list of key files it was made from, and made again when
+# a key file comes, goes or is newer than it.
+CACHE=$WEB_RUN/ssh_keys
+sources=""
+[ -e "$AUTHORIZED" ] && sources=$AUTHORIZED
+for f in "$HOST_KEYS/"dropbear_*_host_key; do
+    [ -f "$f" ] && sources="$sources${sources:+ }$f"
+done
+fresh=""
+if [ -f "$CACHE" ]; then
+    { IFS= read -r c_sources && IFS= read -r keys && IFS= read -r host_keys; } < "$CACHE" && [ "$c_sources" = "$sources" ] &&
+        fresh=1
+    set -f
+    for f in $sources; do
+        [ "$CACHE" -nt "$f" ] || fresh=""
+    done
+    set +f
+fi
+if [ -z "$fresh" ]; then
+    read_keys
+    if [ -d "$WEB_RUN" ] || mkdir -p "$WEB_RUN"; then
+        printf '%s\n%s\n%s\n' "$sources" "$keys" "$host_keys" > "$CACHE.$$" && mv -f "$CACHE.$$" "$CACHE" ||
+            rm -f "$CACHE.$$"
+    fi
+fi
+
+read_address
+jo_begin
+jo_str return 0
+ssh_enabled && jo_str enabled 1 || jo_str enabled 0
+jo_raw keys "[$keys]"
+jo_raw host_keys "[$host_keys]"
+jo_str hostname "$HOSTNAME_"
+jo_str ip "$IP"
+jo_raw users '["root","karotz"]'
+telnet_on && jo_str telnet 1 || jo_str telnet 0
+reply_json "{$JO}"

@@ -1,0 +1,19 @@
+libmpdclient: keep select()'s result, so EINTR is retried
+
+In mpd_getNextReturnElement() the comparison was inside the assignment: err got
+"select(...) == 1" (0 or 1), never select's -1, so "else if(err<0 && SELECT_ERRNO_IGNORE)
+continue;" could not fire. A signal while waiting for MPD's reply (multimedia-daemon's
+SIGCHLD when mplayer ends) was taken for a timeout, and the connection was dropped and made
+again. The function's first select() already has the brackets right.
+
+--- a/src/libmpdclient.c
++++ b/src/libmpdclient.c
+@@ -596,7 +596,7 @@
+ 		tv.tv_usec = connection->timeout.tv_usec;
+ 		FD_ZERO(&fds);
+ 		FD_SET(connection->sock,&fds);
+-		if((err = select(connection->sock+1,&fds,NULL,NULL,&tv) == 1)) {
++		if((err = select(connection->sock+1,&fds,NULL,NULL,&tv)) == 1) {
+ 			readed = recv(connection->sock,
+ 					connection->buffer+connection->buflen,
+ 					MPD_BUFFER_MAX_LENGTH-connection->buflen,

@@ -1,0 +1,11 @@
+# SPDX-License-Identifier: GPL-2.0-or-later
+source "$BR2_EXTERNAL_LAPINLIBRE_PATH/package/protobuf-karotz/Config.in"
+source "$BR2_EXTERNAL_LAPINLIBRE_PATH/package/libmpd-karotz/Config.in"
+source "$BR2_EXTERNAL_LAPINLIBRE_PATH/package/libosip2-karotz/Config.in"
+source "$BR2_EXTERNAL_LAPINLIBRE_PATH/package/libexosip2-karotz/Config.in"
+source "$BR2_EXTERNAL_LAPINLIBRE_PATH/package/linphone-karotz/Config.in"
+source "$BR2_EXTERNAL_LAPINLIBRE_PATH/package/python24-karotz/Config.in"
+source "$BR2_EXTERNAL_LAPINLIBRE_PATH/package/dbus-python-karotz/Config.in"
+source "$BR2_EXTERNAL_LAPINLIBRE_PATH/package/simplejson-karotz/Config.in"
+source "$BR2_EXTERNAL_LAPINLIBRE_PATH/package/mpd-karotz/Config.in"
+source "$BR2_EXTERNAL_LAPINLIBRE_PATH/package/glib-compile-schemas-karotz/Config.in"

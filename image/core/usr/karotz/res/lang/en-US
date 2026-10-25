@@ -1,0 +1,9 @@
+# SPDX-License-Identifier: MIT
+# The controller's sounds and sentences in American English. This is also the default language:
+# the controller takes any key another language's file lacks from here.
+[lang]
+# Played when a tag is shown that no application is set up for.
+tag_unknown=/usr/karotz/sounds/en_tag_unknown.mp3
+# Played when speech recognition understood nothing, or named no application.
+speech_no_match=/usr/karotz/sounds/en_speech_not_understood.mp3
+speech_not_understood=/usr/karotz/sounds/en_speech_not_understood.mp3

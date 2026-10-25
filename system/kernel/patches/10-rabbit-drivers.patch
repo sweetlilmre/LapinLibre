@@ -1,0 +1,42 @@
+# Kconfig and Makefile entries for the Rabbit character drivers: the ear motors (rabbit_ears), the head button (rabbit_button) and the power-on state (rabbit_poweron).
+--- a/drivers/char/Kconfig
++++ b/drivers/char/Kconfig
+@@ -729,6 +729,26 @@
+ 
+ 	  If you're not sure, say N.
+ 
++config RABBIT_EARS
++	tristate "Karotz ear motors (/dev/rabbit_ears)"
++	depends on MACH_RABBITV3 && S3C24XX_PWM
++	help
++	  The ear motors and encoders of the Karotz (RABBITV3): PWM0/PWM1,
++	  direction lines GPF4/GPF5, encoders on EINT1/EINT2. Major 60.
++
++config RABBIT_BUTTON
++	tristate "Karotz head button (/dev/rabbit_button)"
++	depends on MACH_RABBITV3
++	help
++	  The head button on GPF0, read as a stream of '1' (pressed) and
++	  '0' (released). Major 52.
++
++config RABBIT_POWERON
++	tristate "Karotz power-on state (/dev/rabbit_poweron)"
++	depends on MACH_RABBITV3
++	help
++	  The power-on line GPC2, read as '1' or '0'. Major 53.
++
+ source "drivers/char/hw_random/Kconfig"
+ 
+ config NVRAM
+--- a/drivers/char/Makefile
++++ b/drivers/char/Makefile
+@@ -17,6 +17,9 @@
+ obj-$(CONFIG_HW_CONSOLE)	+= vt.o defkeymap.o
+ obj-$(CONFIG_AUDIT)		+= tty_audit.o
+ obj-$(CONFIG_MAGIC_SYSRQ)	+= sysrq.o
++obj-$(CONFIG_RABBIT_EARS)	+= rabbit_ears.o
++obj-$(CONFIG_RABBIT_BUTTON)	+= rabbit_button.o
++obj-$(CONFIG_RABBIT_POWERON)	+= rabbit_poweron.o
+ obj-$(CONFIG_ESPSERIAL)		+= esp.o
+ obj-$(CONFIG_MVME147_SCC)	+= generic_serial.o vme_scc.o
+ obj-$(CONFIG_MVME162_SCC)	+= generic_serial.o vme_scc.o

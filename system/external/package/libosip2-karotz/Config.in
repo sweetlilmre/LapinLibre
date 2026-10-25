@@ -1,0 +1,8 @@
+# SPDX-License-Identifier: GPL-2.0-or-later
+config BR2_PACKAGE_LIBOSIP2_KAROTZ
+	bool "libosip2-karotz"
+	depends on BR2_TOOLCHAIN_HAS_THREADS
+	help
+	  libosip2 3.5.0 (libosip2.so.6), for linphone 3.4.1.
+
+	  https://www.gnu.org/software/osip/

@@ -1,0 +1,14 @@
+# A slower mac80211 scan, as on 2.6.28: the probe delay after a channel change and the active-scan dwell time per channel are both HZ/5 rather than HZ/33. (On 2.6.28 HZ/5 was also the passive dwell time; 2.6.32 made that HZ/8, which is left as it is.)
+--- a/net/mac80211/scan.c
++++ b/net/mac80211/scan.c
+@@ -23,8 +23,8 @@
+ #include "driver-ops.h"
+ #include "mesh.h"
+ 
+-#define IEEE80211_PROBE_DELAY (HZ / 33)
+-#define IEEE80211_CHANNEL_TIME (HZ / 33)
++#define IEEE80211_PROBE_DELAY (HZ / 5)	/* RABBITV3: was HZ / 33 */
++#define IEEE80211_CHANNEL_TIME (HZ / 5)	/* RABBITV3: was HZ / 33 */
+ #define IEEE80211_PASSIVE_CHANNEL_TIME (HZ / 8)
+ 
+ struct ieee80211_bss *

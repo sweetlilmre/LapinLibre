@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SPDX-License-Identifier: MIT -->
+<!-- Signal arguments are not listed: the generated server glue records only each signal's name, and the arguments are those the daemon's g_signal_new() declares. -->
+<node>
+  <interface name="com.mindscape.karotz.KarotzInterface">
+    <method name="add_date_entry">
+      <arg name="idScheduler" type="s" direction="in"/>
+      <arg name="year" type="i" direction="in"/>
+      <arg name="month" type="i" direction="in"/>
+      <arg name="day" type="i" direction="in"/>
+      <arg name="hour" type="i" direction="in"/>
+      <arg name="minute" type="i" direction="in"/>
+      <arg name="second" type="i" direction="in"/>
+      <arg name="result" type="b" direction="out"/>
+    </method>
+    <method name="add_weekly_entry">
+      <arg name="idScheduler" type="s" direction="in"/>
+      <arg name="week" type="i" direction="in"/>
+      <arg name="hour" type="i" direction="in"/>
+      <arg name="minute" type="i" direction="in"/>
+      <arg name="second" type="i" direction="in"/>
+      <arg name="result" type="b" direction="out"/>
+    </method>
+    <method name="add_periodic_entry">
+      <arg name="idScheduler" type="s" direction="in"/>
+      <arg name="period" type="i" direction="in"/>
+      <arg name="delta" type="i" direction="in"/>
+      <arg name="result" type="b" direction="out"/>
+    </method>
+    <method name="delete_entry">
+      <arg name="idScheduler" type="s" direction="in"/>
+      <arg name="result" type="b" direction="out"/>
+    </method>
+    <method name="delete_all_entry">
+      <arg name="result" type="b" direction="out"/>
+    </method>
+    <method name="print_task">
+    </method>
+    <signal name="schedule_event"/>
+    <signal name="registered"/>
+  </interface>
+</node>

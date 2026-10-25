@@ -1,0 +1,312 @@
+== registered: True
+== platform connection: 1
+== authentication
+conn 1: id: "<u1>" | correlationId: "p-auth" | authenticationResponse { |   login: "rabbit-id" |   authentication: "e427b20810b376f0505139bf360771ff" | }
+== information query (answered twice)
+conn 1: id: "<u2>" | correlationId: "p-info" | karotzinfo_response { |   infos { |     key: "mac_address" |     value: "00:0f:3d:12:34:56" |   } |   infos { |     key: "set_hard_drive_size" |     value: "<n>" |   } |   infos { |     key: "set_hard_drive_used" |     value: "<n>" |   } |   infos { |     key: "ip_address" |     value: "10.9.0.2" |   } |   infos { |     key: "lang" |     value: "fr-FR" |   } | }
+conn 1: id: "<u>" | karotzinfo_response { |   infos { |     key: "mac_address" |     value: "00:0f:3d:12:34:56" |   } |   infos { |     key: "set_hard_drive_size" |     value: "<n>" |   } |   infos { |     key: "set_hard_drive_used" |     value: "<n>" |   } |   infos { |     key: "ip_address" |     value: "10.9.0.2" |   } |   infos { |     key: "lang" |     value: "fr-FR" |   } | }
+== configuration (download, install, available)
+conn 1: id: "<u>" | karotzinfo_response { |   infos { |     key: "mac_address" |     value: "00:0f:3d:12:34:56" |   } |   infos { |     key: "set_hard_drive_size" |     value: "<n>" |   } |   infos { |     key: "set_hard_drive_used" |     value: "<n>" |   } |   infos { |     key: "ip_address" |     value: "10.9.0.2" |   } |   infos { |     key: "lang" |     value: "fr-FR" |   } | }
+call Multimedia play("", "/usr/karotz/sounds/acknowledge.mp3", 1)
+call Led pulse("", "FFA500", "000000", 1600, -1)
+call Ears reset("", "B")
+call Multimedia stop("", 0)
+call Voice tts_stop("", 0)
+call Voice asr_stop("", 0)
+call Multimedia play("", "lock::yes", 0)
+call K2k k2k_hangup()
+call Led pulse("", "00FF00", "000000", 1600, -1)
+call Ears move("", 14, 30, 14, 30)
+http GET /file/app-new/1/get (libcurl-agent/1.0 karotz)
+vm killall
+vm start --app_folder=/usr/karotz/apps
+== schedules
+conn 1: id: "<u3>" | correlationId: "p-schedule" | response { |   code: OK | }
+call Scheduler delete_all_entry()
+call Scheduler add_weekly_entry("<uuid>", <day>, 7, 30, 0)
+call Scheduler add_weekly_entry("E_STATUS_KAROTZ_WAKEUP", <day>, 7, 0, 0)
+call Scheduler add_weekly_entry("E_STATUS_KAROTZ_SLEEP", <day>, 22, 0, 0)
+== contacts and social
+conn 1: id: "<u4>" | correlationId: "p-getcontacts" | response { |   code: OK | } | contactList { |   contacts { |     firstname: "Ann" |     uuid: "u-ann" |   } | }
+conn 1: id: "<u5>" | correlationId: "p-social" | response { |   code: OK | } | social { |   twitterConsumerKey: "ck" |   facebookToken: "fb" | }
+== pending messages
+call Led pulse("", "00FF00", "0000FF", 1600, -1)
+call Led pulse("", "00FF00", "000000", 1600, -1)
+== interactive start with an unknown configId
+conn 1: id: "<u6>" | correlationId: "p-start-bad" | response { |   code: ERROR | }
+== interactive start
+conn 1: id: "<u7>" | correlationId: "p-start" | interactiveId: "ia-1" | response { |   code: OK | }
+call Multimedia stop("", 0)
+call Voice tts_stop("", 0)
+call Voice asr_stop("", 0)
+call Led pulse("", "4FFF68", "000000", 1600, -1)
+== request: ping { }
+conn 1: id: "<u8>" | correlationId: "p-req0" | interactiveId: "ia-1" | response { |   code: OK | }
+== request: ears { left: 5 right: 7 }
+conn 1: id: "<u9>" | correlationId: "p-req1" | interactiveId: "ia-1" | response { |   code: OK | }
+call Ears move("p-req1", 5, 30, 7, 30)
+== request: ears { left: 2 right: -3 relative: true }
+conn 1: id: "<u10>" | correlationId: "p-req2" | interactiveId: "ia-1" | response { |   code: OK | }
+call Ears move_step("p-req2", 2, 30, -3, 30)
+== request: ears { left: 4 }
+conn 1: id: "<u11>" | correlationId: "p-req3" | interactiveId: "ia-1" | response { |   code: OK | }
+call Ears move_left("p-req3", 4, 30)
+== request: ears { right: 3 relative: true }
+conn 1: id: "<u12>" | correlationId: "p-req4" | interactiveId: "ia-1" | response { |   code: OK | }
+call Ears move_right_step("p-req4", 3, 30)
+== request: ears { reset: true }
+conn 1: id: "<u13>" | correlationId: "p-req5" | interactiveId: "ia-1" | response { |   code: OK | }
+call Ears reset("p-req5", "B")
+== request: ears { reset: true left: 1 }
+conn 1: id: "<u14>" | correlationId: "p-req6" | interactiveId: "ia-1" | response { |   code: OK | }
+call Ears reset("p-req6", "L")
+== request: led { light { color: "FF0000" } }
+conn 1: id: "<u15>" | correlationId: "p-req7" | interactiveId: "ia-1" | response { |   code: OK | }
+call Led light("p-req7", "FF0000")
+== request: led { fade { color: "00FF00" period: 300 } }
+conn 1: id: "<u16>" | correlationId: "p-req8" | interactiveId: "ia-1" | response { |   code: OK | }
+call Led fade("p-req8", "00FF00", 300)
+== request: led { pulse { color: "0000FF" period: 700 pulse: 5000 } }
+conn 1: id: "<u17>" | correlationId: "p-req9" | interactiveId: "ia-1" | response { |   code: OK | }
+call Led pulse("p-req9", "n", "0000FF", 700, 5000)
+== request: tts { action: START text: "bonjour" }
+conn 1: id: "<u18>" | correlationId: "p-req10" | interactiveId: "ia-1" | response { |   code: OK | }
+call Voice tts_speak("p-req10", "bonjour", "fr-FR", 1)
+== request: tts { action: START text: "hello" lang: "en-US" }
+conn 1: id: "<u19>" | correlationId: "p-req11" | interactiveId: "ia-1" | response { |   code: OK | }
+call Voice tts_speak("p-req11", "hello", "en-US", 1)
+== request: tts { action: STOP }
+conn 1: id: "<u20>" | correlationId: "p-req12" | interactiveId: "ia-1" | response { |   code: OK | }
+call Voice tts_stop("p-req12", 1)
+== request: asr { dictionary: "oui" dictionary: "non" lang: "fr-FR" }
+conn 1: id: "<u21>" | correlationId: "p-req13" | interactiveId: "ia-1" | response { |   code: OK | }
+call Voice asr_start_string("p-req13", "oui | non", "fr-FR", 1)
+call Led fade("", "FFA500", 100)
+== request: asr { file: "/tmp/g.abnf" }
+conn 1: id: "<u22>" | correlationId: "p-req14" | interactiveId: "ia-1" | response { |   code: OK | }
+call Voice asr_start_file("p-req14", "/tmp/g.abnf", 1)
+call Led fade("", "FFA500", 100)
+== request: multimedia { play { url: "http://x/a.mp3" } }
+conn 1: id: "<u23>" | correlationId: "p-req15" | interactiveId: "ia-1" | response { |   code: OK | }
+call Multimedia play("p-req15", "http://x/a.mp3", 1)
+== request: multimedia { pause { } }
+conn 1: id: "<u24>" | correlationId: "p-req16" | interactiveId: "ia-1" | response { |   code: OK | }
+call Multimedia pause("p-req16", 1)
+== request: multimedia { resume { } }
+conn 1: id: "<u25>" | correlationId: "p-req17" | interactiveId: "ia-1" | response { |   code: OK | }
+call Multimedia resume("p-req17", 1)
+== request: multimedia { stop { } }
+conn 1: id: "<u26>" | correlationId: "p-req18" | interactiveId: "ia-1" | response { |   code: OK | }
+call Multimedia stop("p-req18", 1)
+== request: multimedia { record { url: "x" } }
+conn 1: id: "<u27>" | correlationId: "p-req19" | interactiveId: "ia-1" | response { |   code: OK | }
+call Multimedia record("p-req19", "/tmp/record.wav", 1)
+call Led fade("", "FFA500", 100)
+== request: multimedia { next { } }
+conn 1: id: "<u28>" | correlationId: "p-req20" | interactiveId: "ia-1" | response { |   code: OK | }
+call Multimedia next("", 1)
+== request: multimedia { previous { } }
+conn 1: id: "<u29>" | correlationId: "p-req21" | interactiveId: "ia-1" | response { |   code: OK | }
+call Multimedia previous("", 1)
+== request: multimedia { getartist { } getsong { } }
+conn 1: id: "<u30>" | correlationId: "p-req22" | interactiveId: "ia-1" | multimedia { |   artistlist: "" | } | response { |   code: OK | }
+conn 1: id: "<u31>" | correlationId: "p-req22" | interactiveId: "ia-1" | multimedia { |   songlist: "" | } | response { |   code: OK | }
+call Multimedia get_artist()
+call Multimedia get_song()
+== request: k2k { call { address: "sip:bob" } }
+conn 1: id: "<u32>" | correlationId: "p-req23" | interactiveId: "ia-1" | response { |   code: OK | }
+call K2k k2k_call("sip:bob")
+== request: k2k { answer { accept: true } }
+conn 1: id: "<u33>" | correlationId: "p-req24" | interactiveId: "ia-1" | response { |   code: OK | }
+call K2k k2k_answer(true)
+== request: k2k { hangup { } }
+conn 1: id: "<u34>" | correlationId: "p-req25" | interactiveId: "ia-1" | response { |   code: OK | }
+call K2k k2k_hangup()
+== request: k2k { account { sipId: "me" sipDomain: "d" sipPassword: "p" stunServer: "s" } }
+conn 1: id: "<u35>" | correlationId: "p-req26" | interactiveId: "ia-1" | response { |   code: OK | }
+call K2k k2k_use_account("me", "d", "p", "s")
+== request: webcam { photo: "http://10.9.0.1:8080/upload" }
+conn 1: id: "<u36>" | correlationId: "p-req27" | interactiveId: "ia-1" | response { |   code: OK | }
+call Webcam takeSnapshot("ia-1:p-req27", "http://10.9.0.1:8080/upload", 1)
+== request: choreography { start_file: "/tmp/dance.chor" }
+conn 1: id: "<u37>" | correlationId: "p-req28" | interactiveId: "ia-1" | response { |   code: ERROR | }
+call Choreography_manager launchScript("/tmp/dance.chor", 1)
+== request: serial { open { port: "/dev/ttyUSB0" baud: 9600 } }
+conn 1: id: "<u38>" | correlationId: "p-req29" | interactiveId: "ia-1" | response { |   code: OK | }
+call Serial open("/dev/ttyUSB0", 9600)
+== request: serial { write { port: "/dev/ttyUSB0" data: "hi" base: "a" } }
+conn 1: id: "<u39>" | correlationId: "p-req30" | interactiveId: "ia-1" | response { |   code: OK | }
+call Serial write("/dev/ttyUSB0", "hi", "a")
+== request: serial { close { port: "/dev/ttyUSB0" } }
+conn 1: id: "<u40>" | correlationId: "p-req31" | interactiveId: "ia-1" | response { |   code: OK | }
+call Serial close("/dev/ttyUSB0")
+== request: dock { led { light { color: "FFFFFF" } } }
+conn 1: id: "<u41>" | correlationId: "p-req32" | interactiveId: "ia-1" | response { |   code: OK | }
+call Dock light("p-req32", "FFFFFF")
+== request: dock { led { pulse { color: "FF0000" period: 1 pulse: 2 } } }
+conn 1: id: "<u42>" | correlationId: "p-req33" | interactiveId: "ia-1" | response { |   code: OK | }
+call Dock pulse("p-req33", "n", "FF0000", 1, 2)
+== request: dock { move { cmd: LEFT time: 3 } }
+conn 1: id: "<u43>" | correlationId: "p-req34" | interactiveId: "ia-1" | response { |   code: OK | }
+call Dock move("p-req34", 1, 3)
+== serial read-line mode (no answer)
+call Serial readlinemode("/dev/ttyUSB0", "a")
+== a request with another interactive id
+conn 1: id: "<u44>" | correlationId: "p-wrong" | interactiveId: "ia-x" | response { |   code: ERROR | }
+== signals while interactive
+conn 1: id: "<u>" | interactiveId: "ia-1" | buttonCallback { |   type: SIMPLE | }
+conn 1: id: "<u>" | interactiveId: "ia-1" | buttonCallback { |   type: DOUBLE | }
+conn 1: id: "<u>" | interactiveId: "ia-1" | buttonCallback { |   type: LONG_START | }
+conn 1: id: "<u>" | interactiveId: "ia-1" | buttonCallback { |   type: LONG_STOP | }
+conn 1: id: "<u>" | interactiveId: "ia-1" | earsCallback { |   type: START_LEFT | }
+conn 1: id: "<u>" | interactiveId: "ia-1" | earsCallback { |   type: STOP_LEFT |   step: 3 |   length: 5 | }
+conn 1: id: "<u>" | interactiveId: "ia-1" | earsCallback { |   type: BLOCKED_RIGHT | }
+conn 1: id: "<u>" | interactiveId: "ia-1" | rfidCallback { |   id: "e0040100c0ffee42" |   content: "content" |   direction: IN |   app: 3 |   type: FLAT |   pict: 4 |   color: BLUE | }
+conn 1: id: "<u>" | interactiveId: "ia-1" | multimediaCallback { |   action: PLAY | }
+conn 1: id: "<u45>" | correlationId: "asr-uuid" | interactiveId: "ia-1" | asrCallback { |   recognition { |     text: "oui" |     confident: 50 |     semantic: "<semantic><app>x</app></semantic>" |   } | }
+conn 1: id: "<u46>" | correlationId: "tts-uuid" | interactiveId: "ia-1" | event { |   code: TERMINATED | }
+conn 1: id: "<u>" | interactiveId: "ia-1" | k2kCallback { |   type: BEGINNING |   correspondant: "sip:friend" | }
+conn 1: id: "<u>" | interactiveId: "ia-1" | serialCallback { |   readline { |     port: "/dev/ttyUSB0" |     data: "hello" |   } | }
+conn 1: id: "<u>" | interactiveId: "ia-1" | dock { |   status: 1 |   change: 2 | }
+call Led fade("", "000000", 100)
+== application connection: 2
+== an application's ping on its own connection
+conn 2: id: "<u47>" | correlationId: "a-ping" | interactiveId: "ia-1" | response { |   code: OK | }
+== the application stops interactive mode (available, reset)
+conn 2: id: "<u48>" | correlationId: "a-stop" | interactiveId: "ia-1" | response { |   code: OK | }
+call Ears reset("", "B")
+call Multimedia stop("", 0)
+call Voice tts_stop("", 0)
+call Voice asr_stop("", 0)
+call Multimedia play("", "lock::yes", 0)
+call K2k k2k_hangup()
+call Led pulse("", "00FF00", "000000", 1600, -1)
+call Ears move("", 14, 30, 14, 30)
+vm killall
+vm start --app_folder=/usr/karotz/apps
+== a ping once stopped
+conn 2: id: "<u49>" | correlationId: "a-ping2" | interactiveId: "ia-1" | response { |   code: ERROR | }
+== the configured RFID tag while available
+call Led pulse("", "FFA500", "000000", 500, 500)
+call Multimedia play("", "/usr/karotz/sounds/notify.mp3", 1)
+call Ears move_step("", 17, 30, 17, 30)
+call Led pulse("", "00FF00", "000000", 1600, -1)
+vm command app-new RFID;e0040100c0ffee42;3;FLAT;4;BLUE;content inst1
+== an unknown RFID tag while available
+conn 1: id: "<u>" | rfidCallback { |   id: "d002ffffffffffff" |   content: "content" |   direction: IN |   app: 3 |   type: FLAT |   pict: 4 |   color: BLUE | }
+call Led pulse("", "FFA500", "000000", 500, 500)
+call Multimedia play("", "/usr/karotz/sounds/fr_tag_unknown.mp3", 1)
+call Ears move_step("", 17, 30, 17, 30)
+call Led pulse("", "00FF00", "000000", 1600, -1)
+== button while available
+conn 1: id: "<u>" | buttonCallback { |   type: SIMPLE | }
+conn 1: id: "<u>" | buttonCallback { |   type: DOUBLE | }
+== interactive start with a 1 s ttl
+conn 1: id: "<u50>" | correlationId: "p-start2" | interactiveId: "ia-2" | response { |   code: OK | }
+call Multimedia stop("", 0)
+call Voice tts_stop("", 0)
+call Voice asr_stop("", 0)
+call Led pulse("", "4FFF68", "000000", 1600, -1)
+== the ttl runs out (checked every 10 s)
+conn 1: id: "<u>" | interactiveId: "ia-2" | interactiveMode { |   action: STOP | }
+call Ears reset("", "B")
+call Multimedia stop("", 0)
+call Voice tts_stop("", 0)
+call Voice asr_stop("", 0)
+call Multimedia play("", "lock::yes", 0)
+call K2k k2k_hangup()
+call Led pulse("", "00FF00", "000000", 1600, -1)
+call Ears move("", 14, 30, 14, 30)
+vm killall
+vm start --app_folder=/usr/karotz/apps
+== system commands (no answers)
+conn 1: id: "<u51>" | correlationId: "p-after-system" | karotzinfo_response { |   infos { |     key: "mac_address" |     value: "00:0f:3d:12:34:56" |   } |   infos { |     key: "set_hard_drive_size" |     value: "<n>" |   } |   infos { |     key: "set_hard_drive_used" |     value: "<n>" |   } |   infos { |     key: "ip_address" |     value: "10.9.0.2" |   } |   infos { |     key: "lang" |     value: "fr-FR" |   } | }
+conn 1: id: "<u>" | karotzinfo_response { |   infos { |     key: "mac_address" |     value: "00:0f:3d:12:34:56" |   } |   infos { |     key: "set_hard_drive_size" |     value: "<n>" |   } |   infos { |     key: "set_hard_drive_used" |     value: "<n>" |   } |   infos { |     key: "ip_address" |     value: "10.9.0.2" |   } |   infos { |     key: "lang" |     value: "fr-FR" |   } | }
+== the platform drops the connection
+conn 1: <closed>
+call Multimedia play("", "file:///usr/karotz/sounds/notify.mp3", 1)
+call Ears reset("", "B")
+call Multimedia stop("", 0)
+call Voice tts_stop("", 0)
+call Voice asr_stop("", 0)
+call Multimedia play("", "lock::yes", 0)
+call K2k k2k_hangup()
+call Led pulse("", "FF0000", "000000", 1600, -1)
+call Ears move("", 4, 30, 4, 30)
+vm killall
+vm start --app_folder=/usr/karotz/apps
+== reconnected: True
+== authentication again
+conn 3: id: "<u52>" | correlationId: "p-auth2" | authenticationResponse { |   login: "rabbit-id" |   authentication: "11892f112c0dccfc21c7e9751d802398" | }
+== time zone Europe/Kiev
+conn 3: id: "<u53>" | correlationId: "p-zone0" | response { |   code: ERROR | }
+call Scheduler delete_all_entry()
+/etc/TZ: b'EET-2EEST,M3.5.0/3,M10.5.0/4\n'
+== time zone Europe/Kyiv
+conn 3: id: "<u54>" | correlationId: "p-zone1" | response { |   code: ERROR | }
+call Scheduler delete_all_entry()
+/etc/TZ: b'EET-2EEST,M3.5.0/3,M10.5.0/4\n'
+== time zone America/Sao_Paulo
+conn 3: id: "<u55>" | correlationId: "p-zone2" | response { |   code: ERROR | }
+call Scheduler delete_all_entry()
+/etc/TZ: b'<-03>3\n'
+== time zone Europe/Paris
+conn 3: id: "<u56>" | correlationId: "p-zone3" | response { |   code: ERROR | }
+call Scheduler delete_all_entry()
+/etc/TZ: b'CET-1CEST,M3.5.0,M10.5.0/3\n'
+== files
+apps: app-new app-same
+app-new/config.bin: 0a076170702d6e65771201311a034e65772206686f73746564a206206210653030343031303063306666656534326a05696e73743172056366672d31
+app-same/config.bin: 0a086170702d73616d651201321a0453616d652206686f73746564a2060e6a05696e73743272056366672d32
+apps.abnf: http://10.9.0.1/asr/grammar/rabbit-id.abnf
+== the VM ends by itself: 1 ended
+== signals
+com.mindscape.karotz.KarotzInterface.registered()
+com.mindscape.karotz.KarotzInterface.karotz_status_changed(int32 15)
+com.mindscape.karotz.KarotzInterface.karotz_status_changed(int32 14)
+com.mindscape.karotz.KarotzInterface.karotz_status_changed(int32 20)
+com.mindscape.karotz.KarotzInterface.karotz_status_changed(int32 16)
+com.mindscape.karotz.KarotzInterface.karotz_status_changed(int32 21)
+com.mindscape.karotz.KarotzInterface.click()
+com.mindscape.karotz.KarotzInterface.dclick()
+com.mindscape.karotz.KarotzInterface.lclick_start()
+com.mindscape.karotz.KarotzInterface.lclick_stop()
+com.mindscape.karotz.KarotzInterface.move_left_start()
+com.mindscape.karotz.KarotzInterface.move_left_stop(int32 3, int32 5)
+com.mindscape.karotz.KarotzInterface.move_right_blocked()
+com.mindscape.karotz.KarotzInterface.tag_in(string "e0040100c0ffee42", string "content", int32 3, int32 1, int32 4, int32 2)
+com.mindscape.karotz.KarotzInterface.tag_out(string "e0040100c0ffee42")
+com.mindscape.karotz.KarotzInterface.multi_callback(int32 1)
+com.mindscape.karotz.KarotzInterface.asr_event(string "asr-uuid", string "oui", string "<app>x</app>", int32 50)
+com.mindscape.karotz.KarotzInterface.tts_event(string "tts-uuid", int32 4)
+com.mindscape.karotz.KarotzInterface.beginning_call(string "sip:friend")
+com.mindscape.karotz.KarotzInterface.readline(string "/dev/ttyUSB0", string "hello")
+com.mindscape.karotz.KarotzInterface.status(int32 1, int32 2)
+com.mindscape.karotz.KarotzInterface.karotz_status_changed(int32 22)
+com.mindscape.karotz.KarotzInterface.karotz_status_changed(int32 16)
+com.mindscape.karotz.KarotzInterface.tag_in(string "e0040100c0ffee42", string "content", int32 3, int32 1, int32 4, int32 2)
+com.mindscape.karotz.KarotzInterface.tag_in(string "d002ffffffffffff", string "content", int32 3, int32 1, int32 4, int32 2)
+com.mindscape.karotz.KarotzInterface.click()
+com.mindscape.karotz.KarotzInterface.dclick()
+com.mindscape.karotz.KarotzInterface.karotz_status_changed(int32 21)
+com.mindscape.karotz.KarotzInterface.karotz_status_changed(int32 22)
+com.mindscape.karotz.KarotzInterface.karotz_status_changed(int32 16)
+com.mindscape.karotz.KarotzInterface.karotz_status_changed(int32 23)
+com.mindscape.karotz.KarotzInterface.karotz_status_changed(int32 15)
+com.mindscape.karotz.KarotzInterface.karotz_status_changed(int32 14)
+== device I/O
+system cp -f /usr/etc/conf/account.conf /tmp/account.conf
+system /sbin/ifconfig wlan0 | head -n1 | awk -F' ' '{ print $5 }' > /tmp/mac_addr
+system /sbin/ifconfig `/sbin/route | head -n3 | tail -n1 | awk -F' ' '{ print $8 }'` | grep inet | awk -F: '{ print $2 }' | awk '{ print $1 }' > /tmp/ip_addr
+system echo 1 > /etc/conf/playsounds
+system /bin/unzip -o /tmp/file<random> -d /usr/karotz/apps/app-new
+system killall karotzVM
+system /sbin/ifconfig wlan0 | head -n1 | awk -F' ' '{ print $5 }' > /tmp/mac_addr
+system /sbin/ifconfig `/sbin/route | head -n3 | tail -n1 | awk -F' ' '{ print $8 }'` | grep inet | awk -F: '{ print $2 }' | awk '{ print $1 }' > /tmp/ip_addr
+system killall karotzVM
+system /sbin/reboot
+system /sbin/ifconfig wlan0 | head -n1 | awk -F' ' '{ print $5 }' > /tmp/mac_addr
+system /sbin/ifconfig `/sbin/route | head -n3 | tail -n1 | awk -F' ' '{ print $8 }'` | grep inet | awk -F: '{ print $2 }' | awk '{ print $1 }' > /tmp/ip_addr
+system killall karotzVM
+system cp -f /usr/etc/conf/account.conf /tmp/account.conf
+== daemon still running: True

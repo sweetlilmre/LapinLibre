@@ -1,0 +1,106 @@
+# SPDX-License-Identifier: MIT
+# Build the USB key and publish it. A pushed v* tag builds the key from the tagged commit and makes
+# a release named after the tag, with the key as LapinLibre-<version>.zip and its SHA-256. Running
+# the workflow by hand builds the same zip from the chosen branch and keeps it as a workflow
+# artifact for 7 days; it publishes nothing. The tests are not run here: they run on the build host
+# before the tag is pushed (docs/build.md, "Make a release").
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+
+jobs:
+  key:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 350
+    steps:
+      # The whole history and the tags, for the version (git describe).
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Version
+        run: |
+          version=$(git describe --tags --match 'v[0-9]*' --dirty --always --abbrev=12)
+          case $version in *-dirty) echo "the checkout has changes: $version" >&2; exit 1 ;; esac
+          if [ "$GITHUB_REF_TYPE" = tag ] && [ "$version" != "$GITHUB_REF_NAME" ]; then
+              echo "the version is $version, not the tag $GITHUB_REF_NAME" >&2
+              exit 1
+          fi
+          echo "VERSION=$version" >> "$GITHUB_ENV"
+          echo "LAPINLIBRE_WORK=$RUNNER_TEMP/lapinlibre" >> "$GITHUB_ENV"
+          echo "version $version"
+
+      # Room for the work location (about 13 GB with the downloads): the runner's preinstalled SDKs
+      # aren't used. The free space is printed before and after, with /mnt's.
+      - name: Free disk space
+        run: |
+          df -h / /mnt || true
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+          df -h /
+
+      - name: Host prerequisites
+        run: |
+          sudo sysctl kernel.apparmor_restrict_unprivileged_userns=0
+          bash scripts/host-prereqs.sh --install
+
+      - name: Download cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
+        with:
+          path: ${{ env.LAPINLIBRE_WORK }}/dl
+          key: dl-${{ hashFiles('config.toml') }}
+          restore-keys: dl-
+
+      - name: Build
+        run: ./build.sh check fetch toolchain system v8 kernel userland image
+
+      - name: Keep the build logs (failed run)
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
+        with:
+          name: build-logs-${{ github.run_id }}
+          path: ${{ env.LAPINLIBRE_WORK }}/work/**/*.log
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Zip the key
+        run: |
+          key=$LAPINLIBRE_WORK/out/usbkey
+          built=$(sed -n 's/^BUILD_VERSION=//p' "$key/install.conf")
+          [ "$built" = "$VERSION" ] || { echo "the key is $built, not $VERSION" >&2; exit 1; }
+          echo "BUILD_ID=$(cat "$key/build_id")" >> "$GITHUB_ENV"
+          mkdir -p dist
+          zip="LapinLibre-$VERSION.zip"
+          (cd "$key" && zip -q -r -X -9 "$GITHUB_WORKSPACE/dist/$zip" .)
+          (cd dist && sha256sum "$zip" > "$zip.sha256" && cat "$zip.sha256")
+          ls -l dist
+
+      - name: Keep the zip (run by hand)
+        if: github.ref_type != 'tag'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
+        with:
+          name: LapinLibre-${{ env.VERSION }}
+          path: dist/
+          retention-days: 7
+
+      - name: Release (tag)
+        if: github.ref_type == 'tag'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          {
+              echo "LapinLibre $VERSION, build $BUILD_ID."
+              echo
+              echo "Unzip LapinLibre-$VERSION.zip onto the root of an empty FAT32 USB key, then follow [the install](https://github.com/$GITHUB_REPOSITORY/blob/$VERSION/docs/install.md)."
+          } > dist/notes.md
+          gh release create "$VERSION" "dist/LapinLibre-$VERSION.zip" "dist/LapinLibre-$VERSION.zip.sha256" \
+              --verify-tag --title "LapinLibre $VERSION" --notes-file dist/notes.md

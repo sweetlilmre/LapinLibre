@@ -1,0 +1,20 @@
+#!/bin/sh
+# SPDX-License-Identifier: MIT
+# voice_list (read-only): the voice numbers tts takes whose language has a speech server in
+# voice.conf, in order, each with its language and gender. The speech server has one voice per
+# language, so both numbers of a language sound the same.
+. /usr/share/lapinlibre/web.sh
+web_begin read
+read_tts_servers
+items=""
+n=1
+while [ $n -le 88 ]; do
+    voice_of $n
+    if has_tts_server "$VL"; then
+        lang_name "$VL"
+        json_str "$LN, $VG"
+        items="$items${items:+,}{\"id\":\"$n\",\"lang\":$J}"
+    fi
+    n=$((n + 1))
+done
+reply_json "{\"voices\":[$items],\"return\":\"0\"}"

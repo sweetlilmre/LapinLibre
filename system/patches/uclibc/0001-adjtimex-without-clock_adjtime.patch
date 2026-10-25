@@ -1,0 +1,26 @@
+adjtimex: use the adjtimex system call when clock_adjtime is missing
+
+clock_adjtime came in Linux 2.6.39; with older kernel headers there is
+no __NR_clock_adjtime, and libc.so fails to link.
+
+--- a/libc/sysdeps/linux/common/adjtimex.c
++++ b/libc/sysdeps/linux/common/adjtimex.c
+@@ -8,11 +8,18 @@
+
+ #include <sys/timex.h>
+ #include <time.h>
++#include <sys/syscall.h>
+
++#if (defined(__UCLIBC_USE_TIME64__) && defined(__NR_clock_adjtime64)) || defined(__NR_clock_adjtime)
+ int adjtimex(struct timex *buf)
+ {
+     return clock_adjtime(CLOCK_REALTIME, buf);
+ }
++#else
++#define __NR___adjtimex_syscall __NR_adjtimex
++static __inline__ _syscall1(int, __adjtimex_syscall, struct timex *, buf)
++int adjtimex(struct timex *buf) { return __adjtimex_syscall(buf); }
++#endif
+
+ libc_hidden_def(adjtimex)
+ weak_alias(adjtimex,__adjtimex)

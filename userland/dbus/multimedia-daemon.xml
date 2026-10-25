@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SPDX-License-Identifier: MIT -->
+<!-- Signal arguments are not listed: the generated server glue records only each signal's name, and the arguments are those the daemon's g_signal_new() declares. -->
+<node>
+  <interface name="com.mindscape.karotz.KarotzInterface">
+    <method name="play">
+      <arg name="id" type="s" direction="in"/>
+      <arg name="url" type="s" direction="in"/>
+      <arg name="behaviour" type="i" direction="in"/>
+      <arg name="result" type="b" direction="out"/>
+    </method>
+    <method name="pause">
+      <arg name="id" type="s" direction="in"/>
+      <arg name="behaviour" type="i" direction="in"/>
+      <arg name="result" type="b" direction="out"/>
+    </method>
+    <method name="next">
+      <arg name="id" type="s" direction="in"/>
+      <arg name="behaviour" type="i" direction="in"/>
+      <arg name="result" type="b" direction="out"/>
+    </method>
+    <method name="previous">
+      <arg name="id" type="s" direction="in"/>
+      <arg name="behaviour" type="i" direction="in"/>
+      <arg name="result" type="b" direction="out"/>
+    </method>
+    <method name="resume">
+      <arg name="id" type="s" direction="in"/>
+      <arg name="behaviour" type="i" direction="in"/>
+      <arg name="result" type="b" direction="out"/>
+    </method>
+    <method name="stop">
+      <arg name="id" type="s" direction="in"/>
+      <arg name="behaviour" type="i" direction="in"/>
+      <arg name="result" type="b" direction="out"/>
+    </method>
+    <method name="record">
+      <arg name="id" type="s" direction="in"/>
+      <arg name="url" type="s" direction="in"/>
+      <arg name="behaviour" type="i" direction="in"/>
+      <arg name="result" type="b" direction="out"/>
+    </method>
+    <method name="get_artist">
+      <arg name="artistList" type="s" direction="out"/>
+      <arg name="result" type="b" direction="out"/>
+    </method>
+    <method name="get_folder">
+      <arg name="folderList" type="s" direction="out"/>
+      <arg name="result" type="b" direction="out"/>
+    </method>
+    <method name="get_playlist">
+      <arg name="playlistList" type="s" direction="out"/>
+      <arg name="result" type="b" direction="out"/>
+    </method>
+    <method name="get_genre">
+      <arg name="genreList" type="s" direction="out"/>
+      <arg name="result" type="b" direction="out"/>
+    </method>
+    <method name="get_song">
+      <arg name="songList" type="s" direction="out"/>
+      <arg name="result" type="b" direction="out"/>
+    </method>
+    <signal name="multi_playfinished"/>
+    <signal name="multi_recordfinished"/>
+    <signal name="multi_callback"/>
+    <signal name="registered"/>
+  </interface>
+</node>

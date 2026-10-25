@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SPDX-License-Identifier: MIT -->
+<!-- Signal arguments are not listed: the generated server glue records only each signal's name, and the arguments are those the daemon's g_signal_new() declares. -->
+<node>
+  <interface name="com.mindscape.karotz.KarotzInterface">
+    <method name="tts_speak">
+      <arg name="id" type="s" direction="in"/>
+      <arg name="text" type="s" direction="in"/>
+      <arg name="lang" type="s" direction="in"/>
+      <arg name="behaviour" type="i" direction="in"/>
+      <arg name="result" type="b" direction="out"/>
+    </method>
+    <method name="tts_stop">
+      <arg name="id" type="s" direction="in"/>
+      <arg name="behaviour" type="i" direction="in"/>
+      <arg name="result" type="b" direction="out"/>
+    </method>
+    <method name="asr_start_file">
+      <arg name="uid" type="s" direction="in"/>
+      <arg name="filename" type="s" direction="in"/>
+      <arg name="behaviour" type="i" direction="in"/>
+      <arg name="result" type="b" direction="out"/>
+    </method>
+    <method name="asr_start_string">
+      <arg name="uid" type="s" direction="in"/>
+      <arg name="grammar" type="s" direction="in"/>
+      <arg name="lang" type="s" direction="in"/>
+      <arg name="behaviour" type="i" direction="in"/>
+      <arg name="result" type="b" direction="out"/>
+    </method>
+    <method name="asr_stop">
+      <arg name="id" type="s" direction="in"/>
+      <arg name="behaviour" type="i" direction="in"/>
+      <arg name="result" type="b" direction="out"/>
+    </method>
+    <signal name="asr_event"/>
+    <signal name="tts_event"/>
+    <signal name="registered"/>
+  </interface>
+</node>

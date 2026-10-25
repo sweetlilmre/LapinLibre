@@ -1,0 +1,12 @@
+# S3C24XX I2C timing: a 100 us busy-wait after the stop condition instead of msleep(1).
+--- a/drivers/i2c/busses/i2c-s3c2410.c
++++ b/drivers/i2c/busses/i2c-s3c2410.c
+@@ -544,7 +544,7 @@
+ 
+ 	/* ensure the stop has been through the bus */
+ 
+-	msleep(1);
++	udelay(100);	/* RABBITV3: was msleep(1) */
+ 
+  out:
+ 	return ret;

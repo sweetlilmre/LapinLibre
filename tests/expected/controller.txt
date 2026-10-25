@@ -1,0 +1,89 @@
+== registered: True
+== introspection
+method com.mindscape.karotz.KarotzInterface.get_status(out:i,out:i,out:i)
+method com.mindscape.karotz.KarotzInterface.release_control(in:s)
+method com.mindscape.karotz.KarotzInterface.take_control(out:b,out:s)
+signal com.mindscape.karotz.KarotzInterface.karotz_status_changed(out:i)
+signal com.mindscape.karotz.KarotzInterface.registered()
+get_status(): int32 0 | int32 2 | int32 0
+take_control(): boolean false | string ""
+release_control('string:not-the-id',): 
+== methods while not available
+== button
+== ears, LED and dock
+== multimedia, RFID, serial, webcam and k2k
+== voice and an unknown schedule
+call Led fade("", "000000", 100)
+release_control('string:',): 
+== release_control('') -> refused, no reset
+get_status(): int32 0 | int32 2 | int32 0
+take_control(): boolean false | string ""
+== take_control while not available (refused)
+take_control(): boolean false | string ""
+release_control('string:wrong-id',): 
+get_status(): int32 0 | int32 2 | int32 0
+== still not interactive
+== signals while not interactive
+call Led fade("", "000000", 100)
+== sleep schedule
+call Ears move("", 4, 30, 4, 30)
+call Multimedia stop("", 0)
+call Voice tts_stop("", 0)
+call Voice asr_stop("", 0)
+call Led light("", "000000")
+get_status(): int32 24 | int32 2 | int32 0
+release_control('string:',): 
+== release_control (take_control gave no id) while asleep
+== triple click while asleep (reset, wake up)
+call Ears reset("", "B")
+call Multimedia stop("", 0)
+call Voice tts_stop("", 0)
+call Voice asr_stop("", 0)
+call Multimedia play("", "lock::yes", 0)
+call K2k k2k_hangup()
+get_status(): int32 24 | int32 2 | int32 0
+== wake-up schedule (the controller exits)
+== signals
+com.mindscape.karotz.KarotzInterface.registered()
+com.mindscape.karotz.KarotzInterface.click()
+com.mindscape.karotz.KarotzInterface.dclick()
+com.mindscape.karotz.KarotzInterface.lclick_start()
+com.mindscape.karotz.KarotzInterface.lclick_stop()
+com.mindscape.karotz.KarotzInterface.mclick(int32 3)
+com.mindscape.karotz.KarotzInterface.mclick(int32 4)
+com.mindscape.karotz.KarotzInterface.event(string "ears-uuid", int32 1)
+com.mindscape.karotz.KarotzInterface.move_left_start()
+com.mindscape.karotz.KarotzInterface.move_right_start()
+com.mindscape.karotz.KarotzInterface.move_left_stop(int32 3, int32 5)
+com.mindscape.karotz.KarotzInterface.move_right_stop(int32 1, int32 2)
+com.mindscape.karotz.KarotzInterface.move_left_blocked()
+com.mindscape.karotz.KarotzInterface.move_right_blocked()
+com.mindscape.karotz.KarotzInterface.reset_finished(string "reset-uuid", int32 4, int32 6)
+com.mindscape.karotz.KarotzInterface.status(int32 1, int32 2)
+com.mindscape.karotz.KarotzInterface.event(string "led-uuid", int32 1)
+com.mindscape.karotz.KarotzInterface.event(string "dock-uuid", int32 1)
+com.mindscape.karotz.KarotzInterface.status(int32 1, int32 2)
+com.mindscape.karotz.KarotzInterface.multi_playfinished(string "play-uuid", int32 4)
+com.mindscape.karotz.KarotzInterface.multi_recordfinished(string "record-uuid", int32 4)
+com.mindscape.karotz.KarotzInterface.multi_callback(int32 1)
+com.mindscape.karotz.KarotzInterface.multi_callback(int32 6)
+com.mindscape.karotz.KarotzInterface.tag_in(string "e0040100c0ffee42", string "content", int32 3, int32 1, int32 4, int32 2)
+com.mindscape.karotz.KarotzInterface.tag_out(string "e0040100c0ffee42")
+com.mindscape.karotz.KarotzInterface.readline(string "/dev/ttyUSB0", string "hello")
+com.mindscape.karotz.KarotzInterface.event(string "webcam-uuid", int32 1)
+com.mindscape.karotz.KarotzInterface.beginning_call(string "sip:friend")
+com.mindscape.karotz.KarotzInterface.finished_call(string "sip:friend")
+com.mindscape.karotz.KarotzInterface.tts_event(string "tts-uuid", int32 4)
+com.mindscape.karotz.KarotzInterface.asr_event(string "asr-uuid", string "<nomatch>", string "<app>x</app>", int32 50)
+com.mindscape.karotz.KarotzInterface.schedule_event(string "some-schedule", int32 0)
+com.mindscape.karotz.KarotzInterface.asr_event(string "asr-uuid", string "hello", string "<app>x</app>", int32 50)
+com.mindscape.karotz.KarotzInterface.lclick_start()
+com.mindscape.karotz.KarotzInterface.schedule_event(string "E_STATUS_KAROTZ_SLEEP", int32 1)
+com.mindscape.karotz.KarotzInterface.karotz_status_changed(int32 24)
+com.mindscape.karotz.KarotzInterface.tclick()
+com.mindscape.karotz.KarotzInterface.schedule_event(string "E_STATUS_KAROTZ_WAKEUP", int32 1)
+== device I/O
+system /sbin/ifconfig `/sbin/route | head -n3 | tail -n1 | awk -F' ' '{ print $8 }'` | grep inet | awk -F: '{ print $2 }' | awk '{ print $1 }' > /tmp/ip_addr
+system /sbin/ifconfig wlan0 | head -n1 | awk -F' ' '{ print $5 }' > /tmp/mac_addr
+system killall karotzVM
+== daemon still running: False

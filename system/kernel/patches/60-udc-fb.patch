@@ -1,0 +1,40 @@
+# Small RABBITV3 changes to the S3C2410 USB gadget and framebuffer drivers. The UDC keeps the D+ pull-up enabled when the controller is disabled (the serial gadget link stays up), and only drains the OUT FIFO for OUT endpoints. Blanking is a no-op (the board has no LCD fitted).
+--- a/drivers/usb/gadget/s3c2410_udc.c
++++ b/drivers/usb/gadget/s3c2410_udc.c
+@@ -1284,7 +1284,8 @@
+ 				&& (!(ep_csr&S3C2410_UDC_OCSR1_PKTRDY))
+ 				&& s3c2410_udc_write_fifo(ep, req)) {
+ 			req = NULL;
+-		} else if ((ep_csr & S3C2410_UDC_OCSR1_PKTRDY)
++		} else if (!(ep->bEndpointAddress & USB_DIR_IN)
++				&& (ep_csr & S3C2410_UDC_OCSR1_PKTRDY)
+ 				&& fifo_count
+ 				&& s3c2410_udc_read_fifo(ep, req)) {
+ 			req = NULL;
+@@ -1567,7 +1568,7 @@
+ 
+ 	/* Good bye, cruel world */
+ 	if (udc_info && udc_info->udc_command)
+-		udc_info->udc_command(S3C2410_UDC_P_DISABLE);
++		udc_info->udc_command(S3C2410_UDC_P_ENABLE);	/* RABBITV3: keep the pull-up */
+ 
+ 	/* Set speed to unknown */
+ 	dev->gadget.speed = USB_SPEED_UNKNOWN;
+--- a/drivers/video/s3c2410fb.c
++++ b/drivers/video/s3c2410fb.c
+@@ -556,6 +556,7 @@
+  */
+ static int s3c2410fb_blank(int blank_mode, struct fb_info *info)
+ {
++#if 0	/* RABBITV3: no blanking */
+ 	struct s3c2410fb_info *fbi = info->par;
+ 	void __iomem *tpal_reg = fbi->io;
+ 
+@@ -575,6 +576,7 @@
+ 		dprintk("setting TPAL to output 0x000000\n");
+ 		writel(S3C2410_TPAL_EN, tpal_reg);
+ 	}
++#endif
+ 
+ 	return 0;
+ }

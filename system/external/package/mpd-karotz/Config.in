@@ -1,0 +1,21 @@
+# SPDX-License-Identifier: GPL-2.0-or-later
+config BR2_PACKAGE_MPD_KAROTZ
+	bool "mpd-karotz"
+	depends on BR2_USE_WCHAR # libglib2
+	depends on BR2_TOOLCHAIN_HAS_THREADS # libglib2
+	depends on BR2_USE_MMU # libglib2
+	depends on BR2_PACKAGE_FFMPEG_ARCH_SUPPORTS
+	select BR2_PACKAGE_LIBGLIB2
+	select BR2_PACKAGE_LIBMAD
+	select BR2_PACKAGE_LIBID3TAG
+	select BR2_PACKAGE_TREMOR
+	select BR2_PACKAGE_FFMPEG
+	select BR2_PACKAGE_LIBCURL
+	select BR2_PACKAGE_LIBMMS
+	select BR2_PACKAGE_ZLIB
+	help
+	  mpd 0.15.12 with the Karotz count_externalClient status field,
+	  and its FFmpeg decoder ported to FFmpeg 6.1.
+	  multimedia-daemon plays the USB key's music through it.
+
+	  https://www.musicpd.org/

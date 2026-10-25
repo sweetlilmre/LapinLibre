@@ -1,0 +1,17 @@
+#!/bin/sh
+# SPDX-License-Identifier: MIT
+# snapshot: takes a picture with the camera and keeps it in RAM with a quarter-size thumbnail (the
+# newest 10 are kept; a reboot loses them). webcam-daemon itself flashes the LED and plays the
+# shutter sound every time; afterwards the API's LED state is restored (off while asleep).
+#   silent  accepted; it can't silence the camera, and the API adds no sound of its own
+. /usr/share/lapinlibre/web.sh
+web_begin change
+web_hardware asleep
+take_picture
+store_picture
+web_unlock
+web_ok
+json_str "$SNAP_NAME"
+name=$J
+json_str "$SNAP_THUMB"
+reply_json "{\"filename\":$name,\"thumb\":$J,\"return\":\"0\"}"

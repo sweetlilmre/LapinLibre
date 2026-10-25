@@ -1,0 +1,11 @@
+#!/bin/sh
+# SPDX-License-Identifier: MIT
+# rfid_unassign: removes a learned tag's action and name; the tag stays known.
+#   tag  the tag's id: 16 hexadecimal digits (required)
+. /usr/share/lapinlibre/web.sh
+web_begin change
+param_tag
+TAG_ID=$TG
+tags_change unassign || tag_change_failed $?
+web_ok
+reply_json "{\"return\":\"0\",\"tag\":\"$TG\"}"

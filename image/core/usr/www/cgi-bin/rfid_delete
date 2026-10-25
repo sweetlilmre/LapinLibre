@@ -1,0 +1,11 @@
+#!/bin/sh
+# SPDX-License-Identifier: MIT
+# rfid_delete: removes a learned tag, with its action, from the tag store.
+#   tag  the tag's id: 16 hexadecimal digits (required)
+. /usr/share/lapinlibre/web.sh
+web_begin change
+param_tag
+TAG_ID=$TG
+tags_change delete || tag_change_failed $?
+web_ok
+reply_json "{\"return\":\"0\",\"tag\":\"$TG\"}"

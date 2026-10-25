@@ -1,0 +1,13 @@
+#!/bin/sh
+# SPDX-License-Identifier: MIT
+# rfid_info (read-only): one learned tag, with the codes' names.
+#   tag  the tag's id: 16 hexadecimal digits (required)
+. /usr/share/lapinlibre/web.sh
+web_begin read
+param_tag
+tag_get "$TG" || web_fail "no tag $TG is known"
+type_name "$T_TYPE"
+color_name "$T_COLOR"
+cmd_name "$T_CMD"
+json_str "$T_NAME"
+reply_json "{\"id\":\"$T_ID\",\"type\":\"$T_TYPE\",\"type_name\":\"$TN\",\"color\":\"$T_COLOR\",\"color_name\":\"$CN\",\"cmd\":\"$T_CMD\",\"cmd_name\":\"$MN\",\"var\":\"$T_VAR\",\"name\":$J,\"return\":\"0\"}"

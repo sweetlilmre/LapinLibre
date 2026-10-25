@@ -1,0 +1,29 @@
+mkswap, hardlink: FIEMAP_EXTENT_SHARED when the kernel headers lack it
+
+The flag came in Linux 2.6.33; the system build compiles against 2.6.32's headers.
+The value is the kernel's.
+
+--- a/disk-utils/mkswap.c
++++ b/disk-utils/mkswap.c
+@@ -38,6 +38,9 @@
+ #endif
+ #ifdef HAVE_LINUX_FIEMAP_H
+ # include <linux/fiemap.h>
++# ifndef FIEMAP_EXTENT_SHARED
++#  define FIEMAP_EXTENT_SHARED 0x00002000 /* Linux 2.6.33; older headers lack it */
++# endif
+ #endif
+ 
+ #include "linux_version.h"
+--- a/misc-utils/hardlink.c
++++ b/misc-utils/hardlink.c
+@@ -41,6 +41,9 @@
+ #if defined(HAVE_LINUX_FIEMAP_H) && defined(HAVE_SYS_VFS_H)
+ # include <linux/fs.h>
+ # include <linux/fiemap.h>
++# ifndef FIEMAP_EXTENT_SHARED
++#  define FIEMAP_EXTENT_SHARED 0x00002000 /* Linux 2.6.33; older headers lack it */
++# endif
+ # ifdef FICLONE
+ #  define USE_REFLINK 1
+ # endif

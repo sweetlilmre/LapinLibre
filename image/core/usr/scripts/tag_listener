@@ -1,0 +1,188 @@
+#!/bin/sh
+# SPDX-License-Identifier: MIT
+# The RFID tag listener of the web API, kept running by immortaldog (/etc/init.d/S40lapinlibre).
+# It follows rfid-daemon's tag_in signals only (a tag laid on the nose) and, for each:
+# - while tag learning is on (rfid_start_record, at most 2 minutes): a tag the tag store doesn't
+#   know is added to it, with the type and colour codes rfid-daemon read, and the LED flashes
+#   green and a tone plays; a known tag gets a yellow flash and another tone. The learning pulse
+#   comes back after each flash. No tone while the rabbit sleeps.
+# - otherwise, for a stored tag with an action: a short green flash (not while the rabbit sleeps or
+#   an application owns it), then the action, then the API's LED state again. A URL request is
+#   sent with curl (url_request: 15 s, 3 redirects, the body thrown away; only the host and the
+#   outcome are logged); one of the API's endpoints is run here with its stored query
+#   (api_run), so it applies all its own checks and its sleeping rule. One action at a time: a tag
+#   laid while one runs is ignored. Unknown tags and tags without an action are left to the
+#   controller.
+# The store's actions are data only: each is checked again when read (tags_read), and none is ever
+# run as a shell command.
+# It stays in the foreground. When its monitor ends (the bus went away) it exits 1, so immortaldog
+# starts it again; SIGTERM ends the monitor and a running action, and it exits 0.
+. /usr/share/lapinlibre/web.sh
+LOG_TAG=tag_listener
+RFID_PATH=/com/mindscape/karotz/Rfid
+RFID_INTERFACE=com.mindscape.karotz.KarotzInterface
+# Only rfid-daemon's tag_in signals: never the whole bus.
+RULE="type='signal',path='$RFID_PATH',interface='$RFID_INTERFACE',member='tag_in'"
+FIFO=$WEB_RUN/tag_listener.fifo.$$
+
+exec < /dev/null > /dev/null 2>&1
+
+log() { # log PRIORITY MESSAGE
+    logger -t $LOG_TAG -p "user.$1" "$2"
+}
+
+# The running action's process, and its mark: the action removes the mark when it ends.
+ACTION=
+ACTION_MARK=$WEB_RUN/tag_action.$$
+
+# action_running: true while the last action's process runs.
+action_running() {
+    jobs > /dev/null 2>&1 # reaps the finished children
+    [ -n "$ACTION" ] && [ -e "$ACTION_MARK" ] && kill -0 "$ACTION" 2> /dev/null
+}
+
+# feedback COLOR AFTER [TONE]: the LED COLOR for a moment (none when COLOR is empty), then AFTER:
+# "learn" (the learning pulse) or "state" (the API's LED state); the TONE meanwhile, unless the
+# rabbit sleeps. Under the API's hardware lock (waited for at most 5 s, else skipped); nothing
+# while an application owns the rabbit, and while it sleeps only the learning pulse.
+feedback() {
+    read_controller
+    case $CONTROLLER_STATE in 21 | 22) return 0 ;; esac
+    read_api_state
+    exec 9>> "$WEB_LOCK" || return 0
+    if ! timeout 5 flock -x 9; then
+        exec 9>&-
+        log warning "the rabbit is busy: no LED feedback"
+        return 0
+    fi
+    new_id
+    if [ -n "$1" ] && { [ "$SLEEP" = 0 ] || [ "$2" = learn ]; }; then
+        led_set "$1" 0 && usleep 400000
+    fi
+    [ -n "${3:-}" ] && tone "$3"
+    if [ "$2" = learn ]; then
+        led_learning
+    else
+        led_restore
+    fi
+    flock -u 9
+    exec 9>&-
+    return 0
+}
+
+# One tag's action, in its own process (the stored tag's fields from tag_get).
+run_action() {
+    exec 3<&-
+    trap - TERM INT HUP
+    feedback 00FF00 state
+    case $T_CMD in
+    3)
+        url_host "$T_A1"
+        if ! valid_url "$T_A1"; then
+            log err "tag $T_ID: its URL isn't valid: not sent"
+        elif url_request "$T_A1" "$T_A2" "$T_A3" /dev/null; then
+            log info "tag $T_ID: request to $UH: HTTP $UR_CODE"
+        else
+            log warning "tag $T_ID: request to $UH failed (curl status $?)"
+        fi
+        ;;
+    5)
+        if api_run "$T_A1" "$T_A2"; then
+            log info "tag $T_ID: $T_A1 done"
+        else
+            log warning "tag $T_ID: $T_A1 failed: $AR_MSG"
+        fi
+        ;;
+    esac
+    feedback "" state
+    rm -f "$ACTION_MARK"
+    exit 0
+}
+
+# on_tag ID TYPE COLOR: a tag laid on the nose, with rfid-daemon's type and colour codes.
+on_tag() {
+    valid_tag "$1" || return 0
+    if learning; then
+        TAG_ID=$TG TAG_TYPE=-1 TAG_COLOR=-1
+        case $2 in [0-9] | [0-9][0-9] | [0-9][0-9][0-9]) TAG_TYPE=$2 ;; esac
+        case $3 in [0-9] | [0-9][0-9] | [0-9][0-9][0-9]) TAG_COLOR=$3 ;; esac
+        tags_change add
+        case $? in
+        0)
+            log info "tag $TG learned"
+            feedback 00FF00 learn "$WEB_TONE_LEARNED"
+            ;;
+        4) feedback FFFF00 learn "$WEB_TONE_KNOWN" ;;
+        *) log err "tag $TG: the tag store couldn't be written" ;;
+        esac
+        return 0
+    fi
+    if action_running; then
+        log info "tag $TG: an action is still running: ignored"
+        return 0
+    fi
+    tag_get "$TG" || return 0
+    case $T_CMD in 3 | 5) ;; *) return 0 ;; esac
+    : > "$ACTION_MARK"
+    run_action &
+    ACTION=$!
+}
+
+MON=
+stop() {
+    trap '' TERM INT HUP
+    [ -n "$MON" ] && kill "$MON" 2> /dev/null
+    action_running && kill "$ACTION" 2> /dev/null
+    rm -f "$FIFO" "$ACTION_MARK"
+    log info "stopped"
+    exit 0
+}
+trap stop TERM INT HUP
+
+mkdir -p "$WEB_RUN"
+rm -f "$FIFO"
+if ! mkfifo -m 600 "$FIFO"; then
+    log err "can't make $FIFO"
+    exit 1
+fi
+dbus-monitor --system "$RULE" > "$FIFO" 2> /dev/null &
+MON=$!
+exec 3< "$FIFO"
+rm -f "$FIFO"
+log info "started: dbus-monitor --system $RULE"
+
+# dbus-monitor prints a header line per message ("signal ... path=P; interface=I; member=M") and
+# one indented line per argument: tag_in's uid, blocks, app, type, picture and colour codes.
+n=0
+uid= type=
+while IFS= read -r line <&3; do
+    case $line in
+    "signal "*" path=$RFID_PATH; interface=$RFID_INTERFACE; member=tag_in")
+        n=1 uid= type=
+        ;;
+    " "*)
+        [ $n -gt 0 ] || continue
+        n=$((n + 1))
+        value=${line#"${line%%[! ]*}"}
+        case $n:$value in
+        2:"string \""*\") value=${value#string \"}; uid=${value%\"} ;;
+        3:"string "*) ;;
+        [456]:"int32 "*) [ $n = 5 ] && type=${value#int32 } ;;
+        7:"int32 "*)
+            n=0
+            on_tag "$uid" "$type" "${value#int32 }"
+            ;;
+        *) n=0 ;;
+        esac
+        ;;
+    *)
+        n=0
+        ;;
+    esac
+done
+exec 3<&-
+action_running && wait "$ACTION"
+rm -f "$ACTION_MARK"
+wait "$MON"
+log err "the monitor ended (status $?): exiting"
+exit 1

@@ -1,0 +1,12 @@
+#!/bin/sh
+# SPDX-License-Identifier: MIT
+# ears_reset: recalibrates both ears; the answer doesn't wait for it to end.
+. /usr/share/lapinlibre/web.sh
+web_begin change
+ears_disabled && web_fail "the API's ear moves are disabled (ears_mode)"
+
+web_hardware
+dbus_do Ears "ears-daemon refused to reset the ears" reset "string:$WEB_ID" string:B
+web_unlock
+web_ok
+reply_json '{"return":"0"}'

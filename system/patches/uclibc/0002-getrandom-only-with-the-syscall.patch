@@ -1,0 +1,35 @@
+sys/random.h: declare getrandom and getentropy only with the system call
+
+libc builds both only when the kernel headers have __NR_getrandom (Linux
+3.17). With older headers the declarations remain, and a program with a
+fallback of its own (bash 5.2's lib/sh/random.c) fails: "static declaration
+of getrandom follows non-static declaration".
+
+--- a/libc/sysdeps/linux/common/sys/random.h
++++ b/libc/sysdeps/linux/common/sys/random.h
+@@ -11,6 +11,7 @@
+ __BEGIN_DECLS
+ 
+ #include <bits/types.h>
++#include <sys/syscall.h>
+ 
+ #ifndef __ssize_t_defined
+ typedef __ssize_t ssize_t;
+@@ -34,6 +35,9 @@
+ #  define GRND_RANDOM	0x0002
+ #  define GRND_INSECURE 0x0004
+ # endif
++/* Only with the system call: libc builds both from it (Linux 3.17), and a
++   declaration without it makes programs with a fallback of their own fail. */
++#ifdef __NR_getrandom
+ extern ssize_t getrandom(void *__buf, size_t count, unsigned int flags)
+ 	   __nonnull ((1)) __wur;
+ 
+@@ -44,6 +48,7 @@
+ #  define __getentropy_defined
+ # endif
+ #endif
++#endif
+ 
+ __END_DECLS
+ 

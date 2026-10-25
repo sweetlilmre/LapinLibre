@@ -1,0 +1,17 @@
+#!/bin/sh
+# SPDX-License-Identifier: MIT
+# snapshot_get (read-only): a stored snapshot or its thumbnail. Anything else is not found (404).
+#   filename  a name snapshot gave (snapshot_<time>.jpg or snapshot_<time>.thumb.gif)
+. /usr/share/lapinlibre/web.sh
+web_begin read
+param filename
+name=$PV
+if ! valid_snapshot_file "$name" || [ ! -f "$WEB_SNAPSHOTS/$name" ]; then
+    web_error_body "no stored snapshot has that name"
+    reply_json "$WEB_BODY" 404
+fi
+case $name in
+*.jpg) type=image/jpeg ;;
+*) type=image/gif ;;
+esac
+reply_file "$WEB_SNAPSHOTS/$name" "$type" "private, no-store"

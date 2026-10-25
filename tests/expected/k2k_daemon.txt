@@ -1,0 +1,60 @@
+== registered: True
+== interface
+method com.mindscape.karotz.KarotzInterface.k2k_answer(in:b,out:b)
+method com.mindscape.karotz.KarotzInterface.k2k_call(in:s,out:b)
+method com.mindscape.karotz.KarotzInterface.k2k_echo_calibration(out:b)
+method com.mindscape.karotz.KarotzInterface.k2k_hangup(out:b)
+method com.mindscape.karotz.KarotzInterface.k2k_set_answering_machine(in:b,out:b)
+method com.mindscape.karotz.KarotzInterface.k2k_set_busy(in:b,out:b)
+method com.mindscape.karotz.KarotzInterface.k2k_use_account(in:s,in:s,in:s,in:s,out:b)
+signal com.mindscape.karotz.KarotzInterface.beginning_call(out:s)
+signal com.mindscape.karotz.KarotzInterface.beginning_outgoing_call(out:s)
+signal com.mindscape.karotz.KarotzInterface.finished_call(out:s)
+signal com.mindscape.karotz.KarotzInterface.incoming_call(out:s)
+signal com.mindscape.karotz.KarotzInterface.registered()
+== calls
+k2k_can_ring('boolean:true',): Error org.freedesktop.DBus.Error.UnknownMethod: Method "k2k_can_ring" with signature "b" on interface "com.mindscape.karotz.KarotzInterface" doesn't exist
+k2k_call('int32:5',): Error org.freedesktop.DBus.Error.UnknownMethod: Method "k2k_call" with signature "i" on interface "com.mindscape.karotz.KarotzInterface" doesn't exist
+k2k_set_busy('string:yes',): Error org.freedesktop.DBus.Error.UnknownMethod: Method "k2k_set_busy" with signature "s" on interface "com.mindscape.karotz.KarotzInterface" doesn't exist
+k2k_use_account('string:alice', 'string:127.0.0.1'): Error org.freedesktop.DBus.Error.UnknownMethod: Method "k2k_use_account" with signature "ss" on interface "com.mindscape.karotz.KarotzInterface" doesn't exist
+k2k_set_answering_machine('boolean:true',): boolean true
+k2k_set_answering_machine('boolean:false',): boolean true
+k2k_set_busy('boolean:true',): boolean true
+k2k_set_busy('boolean:false',): boolean true
+k2k_hangup(): boolean false
+k2k_answer('boolean:true',): boolean false
+k2k_answer('boolean:false',): boolean false
+k2k_use_account('string:alice', 'string:127.0.0.1', 'string:pw', 'string:'): boolean true
+k2k_use_account('string:alice', 'string:127.0.0.1', 'string:pw', 'string:stun.example.com'): boolean true
+k2k_use_account('string:', 'string:127.0.0.1', 'string:pw', 'string:'): boolean true
+k2k_use_account('string:alice', 'string:', 'string:pw', 'string:'): boolean true
+k2k_use_account('string:alice', 'string:127.0.0.1', 'string:', 'string:'): boolean true
+k2k_call('string:',): boolean false
+k2k_call('string:sip:bob@127.0.0.1',): boolean true
+k2k_call('string:sip:carol@127.0.0.1',): boolean true
+k2k_hangup(): boolean false
+k2k_hangup(): boolean false
+k2k_call('string:sip:dave@127.0.0.1',): boolean true
+k2k_answer('boolean:true',): boolean false
+k2k_answer('boolean:false',): boolean false
+k2k_echo_calibration(): boolean true
+== controller ready
+== signals
+com.mindscape.karotz.KarotzInterface.registered()
+com.mindscape.karotz.KarotzInterface.beginning_outgoing_call(string "sip:bob@127.0.0.1")
+com.mindscape.karotz.KarotzInterface.finished_call(string "<sip:bob@127.0.0.1>")
+com.mindscape.karotz.KarotzInterface.beginning_outgoing_call(string "sip:carol@127.0.0.1")
+com.mindscape.karotz.KarotzInterface.finished_call(string "<sip:carol@127.0.0.1>")
+com.mindscape.karotz.KarotzInterface.beginning_outgoing_call(string "sip:dave@127.0.0.1")
+com.mindscape.karotz.KarotzInterface.finished_call(string "<sip:dave@127.0.0.1>")
+com.mindscape.karotz.KarotzInterface.karotz_status_changed(int32 16)
+com.mindscape.karotz.KarotzInterface.karotz_status_changed(int32 17)
+com.mindscape.karotz.KarotzInterface.karotz_status_changed(int32 16)
+== device I/O
+open /dev/dsp
+ioctl /dev/dsp 0xc0045005
+ioctl /dev/dsp 0xc0045002
+ioctl /dev/dsp 0xc0045003
+ioctl /dev/dsp 0xc0045004
+read /dev/dsp 512
+== daemon still running: True

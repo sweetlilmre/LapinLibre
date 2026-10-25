@@ -1,0 +1,163 @@
+#!/bin/bash
+# SPDX-License-Identifier: MIT
+# The key's install. Run as root from the rabbit's boot (LapinLibre, Free Rabbits OS) or, once
+# autorun.sig checks out, by the factory system, which may give it a bare environment.
+#
+# The same build as the rabbit's: apply lapinlibre.txt's settings and carry on booting. Otherwise
+# check everything first (images, sizes, settings), and only then write the kernel (mtd1) and the
+# root filesystem (mtd2), replace /usr (keeping its settings, apps and messages), apply the
+# settings and reboot into the new build.
+
+PATH=/bin:/sbin:/usr/bin:/usr/sbin
+export PATH
+
+KEY=/mnt/usbkey
+CONF=/usr/etc/conf
+
+source /mnt/usbkey/install-lib.sh
+. /mnt/usbkey/install.conf || ERROR "can't read install.conf"
+
+# A file's md5 against install.conf's.
+check_md5() { # file, expected md5, name
+    local sum
+    sum=$(md5sum "$1" 2> /dev/null | cut -d' ' -f1)
+    [ -n "${sum}" ] && [ "${sum}" = "$2" ] || ERROR "MD5 checksum error: $3"
+}
+
+# A flash partition's size in bytes, from /proc/mtd; empty when the system has no such partition.
+mtd_size() { # mtdN
+    local line
+    line=$(grep "^$1:" /proc/mtd 2> /dev/null)
+    set -- ${line}
+    case "$2" in
+    ''|*[!0-9a-fA-F]*) ;;
+    *) echo $((0x$2)) ;;
+    esac
+}
+
+# The image fits its partition.
+check_fits() { # file, name, mtdN
+    local size limit
+    limit=$(mtd_size "$3")
+    [ -n "${limit}" ] || ERROR "no $3 in /proc/mtd: can't check that $2 fits"
+    size=$(($(wc -c < "$1")))
+    [ "${size}" -le "${limit}" ] || ERROR "$2 is ${size} bytes; $3 holds ${limit}"
+}
+
+# 1. The tools and sounds; the nose pulses yellow, the stick sound plays.
+start_tools
+nose_pulse FFFF00 500
+play key-found.mp3
+
+# A stick with no build: nothing to install, and the boot carries on.
+if [ ! -f "${KEY}/build_id" ]; then
+    LOG "The stick carries no build: nothing to install"
+    nose_stop
+    exit 0
+fi
+LOG "LapinLibre install: key build ${BUILD_ID} (${BUILD_VERSION})"
+
+# 2. The same build as the rabbit's: the settings only, and the boot carries on.
+if [ -f "${CONF}/lapinlibre_build_id" ] && cmp -s "${KEY}/build_id" "${CONF}/lapinlibre_build_id"; then
+    LOG "Build ${BUILD_ID} is already installed: applying the settings only"
+    ERROR_SOUND=none bash /mnt/usbkey/applysettings.sh || ERROR "the settings in lapinlibre.txt were not applied"
+    nose_stop
+    LOG "Settings applied; carrying on with the boot"
+    exit 0
+fi
+
+# 3. Preflight: nothing is erased unless every check passes.
+LOG "Checking the key before installing build ${BUILD_ID}"
+play checks-start.mp3
+start_loop
+# A failed check sounds the alarm, then says so in words.
+ERROR_SOUND="install-error.mp3 checks-failed.mp3"
+cp "${KEY}/zImage" /tmp/zImage || ERROR "can't copy zImage to /tmp"
+cp "${KEY}/rootfs.img.gz" /tmp/rootfs.img.gz || ERROR "can't copy rootfs.img.gz to /tmp"
+check_md5 /tmp/zImage "${KERNEL_MD5}" zImage
+check_md5 /tmp/rootfs.img.gz "${ROOTFS_MD5}" rootfs.img.gz
+# usr.tar.gz goes into RAM too when there is room for it and 10 MB more, so the archive checked is
+# the one unpacked whatever the key reads back later; otherwise it is unpacked from the key.
+USR="${KEY}/usr.tar.gz"
+free=$(free_kb)
+need=$(( $(wc -c < "${KEY}/usr.tar.gz") / 1024 + 10240 ))
+if [ "${free}" -ge "${need}" ] && cp "${KEY}/usr.tar.gz" /tmp/usr.tar.gz; then
+    USR=/tmp/usr.tar.gz
+    LOG "usr.tar.gz copied into RAM (${free} kB were free)"
+else
+    rm -f /tmp/usr.tar.gz
+    LOG "usr.tar.gz stays on the key (${free} kB free, ${need} kB needed)"
+fi
+check_md5 "${USR}" "${USR_MD5}" usr.tar.gz
+gzip -t "${USR}" 2> /dev/null || ERROR "usr.tar.gz doesn't decompress"
+check_fits /tmp/zImage zImage mtd1
+check_fits /tmp/rootfs.img.gz rootfs.img.gz mtd2
+# The root filesystem is loaded uncompressed into the RAM disk, when its size is known.
+sectors=$(cat /sys/block/ram0/size 2> /dev/null)
+case "${sectors}" in
+''|*[!0-9]*) LOG "RAM disk size unknown: not checked" ;;
+*)
+    ram=$((sectors * 512))
+    raw=$(($(gzip -dc /tmp/rootfs.img.gz | wc -c)))
+    [ "${raw}" -le "${ram}" ] || ERROR "the root filesystem is ${raw} bytes uncompressed; the RAM disk holds ${ram}"
+    ;;
+esac
+ERROR_SOUND=none bash /mnt/usbkey/applysettings.sh --check || ERROR "lapinlibre.txt's settings failed their check"
+ERROR_SOUND=install-error.mp3
+LOG "Checks passed"
+stop_loop
+play checks-passed.mp3
+
+# 4. The kernel and the root filesystem.
+play install-start.mp3
+start_loop
+LOG "Writing the kernel to mtd1"
+erase_partition /dev/mtd1 || ERROR "erasing mtd1 failed"
+/sbin/nandwrite -pm /dev/mtd1 /tmp/zImage || ERROR "writing zImage to mtd1 failed"
+LOG "Writing the root filesystem to mtd2"
+erase_partition /dev/mtd2 || ERROR "erasing mtd2 failed"
+/sbin/nandwrite -pm /dev/mtd2 /tmp/rootfs.img.gz || ERROR "writing rootfs.img.gz to mtd2 failed"
+
+# 5. /usr: the rabbit's karotz.conf and voice.conf kept aside, /usr cleaned, the new one unpacked.
+for f in karotz.conf voice.conf; do
+    rm -f "/tmp/kept-${f}"
+    [ -f "${CONF}/${f}" ] && cp -p "${CONF}/${f}" "/tmp/kept-${f}"
+done
+LOG "Cleaning /usr"
+clean_usr
+# An earlier key's add-on record (the clean took the add-on itself).
+rm -f "${CONF}/freerabbits_build_id"
+LOG "Unpacking usr.tar.gz into /usr"
+if ! unpack_into_usr "${USR}"; then
+    # From the key, a second read usually succeeds where the first didn't: once more, on a clean
+    # /usr. From RAM, the same bytes would fail the same way.
+    [ "${USR}" = "${KEY}/usr.tar.gz" ] || ERROR "unpacking usr.tar.gz into /usr failed"
+    LOG "Unpacking from the key failed: cleaning /usr and trying once more"
+    clean_usr
+    unpack_into_usr "${USR}" || ERROR "unpacking usr.tar.gz into /usr failed twice"
+fi
+rm -f /tmp/usr.tar.gz
+mkdir -p "${CONF}"
+for f in karotz.conf voice.conf; do
+    if [ -f "/tmp/kept-${f}" ]; then
+        cp -p "/tmp/kept-${f}" "${CONF}/${f}" || ERROR "can't put the rabbit's ${f} back"
+        rm -f "/tmp/kept-${f}"
+    fi
+done
+
+# 6. The system version, and no leftovers of earlier installs.
+echo "${BUILD_VERSION}" > "${CONF}/sys_version"
+rm -rf /usr/install /usr/yaffs* /usr/.install_yaffs_start
+
+# 7. The settings and the build's id.
+bash /mnt/usbkey/applysettings.sh || ERROR "the settings in lapinlibre.txt were not applied"
+cp "${KEY}/build_id" "${CONF}/lapinlibre_build_id" || ERROR "can't record the build id"
+
+# 8. Done: the new root filesystem's inittab is copied at the next boot.
+stop_loop
+play install-done.mp3
+rm -f /usr/etc/inittab
+sync
+LOG "Rebooting into build ${BUILD_ID}"
+/sbin/reboot -f
+exit 0

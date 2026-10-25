@@ -1,0 +1,385 @@
+# Linux 2.6.32's APIs for the files kernel/src provides (first written for 2.6.28): pin numbers as S3C2410_GPx(n); the GPIO output values 2.6.32 dropped, as register fields in raw GPxCON writes and S3C2410_GPIO_OUTPUT in cfgpin(); <linux/gpio.h> for the GPIO helpers; the PLL shifts and headers moved under plat/; the platform's s3c_device_hwmon (pointer-array platform data), s3c_device_i2c0 with its platform-data setter (which also sets up GPE14/15, as 2.6.28's I2C driver did itself; frequency in place of bus_freq and max_freq) and the PWM timers s3c_device_timer[0] and [1] for the ears.
+old mode 100755
+new mode 100644
+--- a/arch/arm/mach-s3c2440/mach-rabbitv3.c
++++ b/arch/arm/mach-s3c2440/mach-rabbitv3.c
+@@ -26,6 +26,7 @@
+ #include <linux/mtd/nand.h>
+ #include <linux/mtd/partitions.h>
+ #include <linux/spi/spi.h>
++#include <linux/gpio.h>
+ 
+ #include <asm/sizes.h>
+ 
+@@ -44,10 +45,10 @@
+ #include <mach/idle.h>
+ #include <mach/fb.h>
+ #include <mach/spi.h>
+-#include <mach/usb-control.h>
+-#include <asm/plat-s3c24xx/udc.h>
+-#include <asm/plat-s3c/nand.h>
+-#include <asm/plat-s3c/iic.h>
++#include <plat/usb-control.h>
++#include <plat/udc.h>
++#include <plat/nand.h>
++#include <plat/iic.h>
+ #include <plat/hwmon.h>
+ #include <sound/s3c24xx_uda134x.h>
+ 
+@@ -56,6 +57,7 @@
+ #include <plat/clock.h>
+ #include <plat/devs.h>
+ #include <plat/cpu.h>
++#include <plat/pll.h>
+ 
+ static struct map_desc RabbitV3_iodesc[] __initdata = {
+ };
+@@ -70,6 +72,11 @@ static struct map_desc RabbitV3_iodesc[] __initdata = {
+ #define UFCON	(S3C2440_UFCON_TXTRIG16 | S3C2440_UFCON_RXTRIG8 | \
+ 		 S3C2410_UFCON_FIFOMODE)
+ 
++/* An output pin's field in GPBCON-GPHCON (01; 2.6.28's S3C2410_GPxn_OUTP), and in
++ * GPACON (0; 2.6.28's S3C2410_GPA0_OUT). */
++#define RABBITV3_GPCON_OUTPUT(n)	(0x01 << ((n) * 2))
++#define RABBITV3_GPACON_OUTPUT(n)	(0 << (n))
++
+ /* GPH has no S3C2410_GPH_PUPDIS() in this kernel. */
+ #define RABBITV3_GPH_PUPDIS(x)	(1 << (x))
+ 
+@@ -78,9 +85,9 @@ static struct map_desc RabbitV3_iodesc[] __initdata = {
+ #define RABBITV3_UPLL_MDIV	56
+ #define RABBITV3_UPLL_PDIV	2
+ #define RABBITV3_UPLL_SDIV	2
+-#define RABBITV3_UPLLCON_48MHZ	((RABBITV3_UPLL_MDIV << S3C2410_PLLCON_MDIVSHIFT) | \
+-				 (RABBITV3_UPLL_PDIV << S3C2410_PLLCON_PDIVSHIFT) | \
+-				 (RABBITV3_UPLL_SDIV << S3C2410_PLLCON_SDIVSHIFT))
++#define RABBITV3_UPLLCON_48MHZ	((RABBITV3_UPLL_MDIV << S3C24XX_PLLCON_MDIVSHIFT) | \
++				 (RABBITV3_UPLL_PDIV << S3C24XX_PLLCON_PDIVSHIFT) | \
++				 (RABBITV3_UPLL_SDIV << S3C24XX_PLLCON_SDIVSHIFT))
+ 
+ /* NAND layout: each partition follows the previous one, except for an
+  * unused 1 MB after "kernel rescue" and another after "ramdisk rescue"; the
+@@ -135,18 +142,9 @@ static struct s3c_hwmon_chcfg RabbitV3_hwmon_channels[] = {
+ 	{ .name = "AIN1", .mult = 1, .div = 1, },
+ };
+ 
++/* For the platform's s3c_device_hwmon (s3c-hwmon), given in RabbitV3_init(). */
+ static struct s3c_hwmon_pdata RabbitV3_hwmon_info = {
+-	.in	= RabbitV3_hwmon_channels,
+-	.nr_in	= ARRAY_SIZE(RabbitV3_hwmon_channels),
+-};
+-
+-struct platform_device s3c_device_hwmon = {
+-	.name	= "s3c24xx-hwmon",
+-	.id	= -1,
+-	.dev	= {
+-		.parent		= &s3c_device_adc.dev,
+-		.platform_data	= &RabbitV3_hwmon_info,
+-	},
++	.in	= { &RabbitV3_hwmon_channels[0], &RabbitV3_hwmon_channels[1], },
+ };
+ 
+ /* NAND: 256 MB, no ECC (the bootloader writes without it). */
+@@ -238,8 +236,7 @@ static struct s3c2410_spi_info RabbitV3_spi0_info = {
+ 
+ static struct s3c2410_platform_i2c RabbitV3_i2c_info = {
+ 	.slave_addr	= RABBITV3_I2C_SLAVE_ADDR,
+-	.bus_freq	= RABBITV3_I2C_FREQ,
+-	.max_freq	= RABBITV3_I2C_FREQ,
++	.frequency	= RABBITV3_I2C_FREQ,	/* at most; 2.6.28's bus_freq and max_freq */
+ };
+ 
+ /* hwport is the UART's number. */
+@@ -280,7 +277,7 @@ static struct s3c2410_hcd_info RabbitV3_usb_info = {
+ static struct gpio_keys_button RabbitV3_buttons[] = {
+ 	{
+ 		.code		= KEY_ENTER,
+-		.gpio		= S3C2410_GPF0,
++		.gpio		= S3C2410_GPF(0),
+ 		.active_low	= 0,
+ 		.desc		= "key_enter",
+ 	},
+@@ -301,9 +298,9 @@ static struct platform_device RabbitV3_button_device = {
+ 
+ /* The UDA1341 codec, its L3 bus on GPB2-4. */
+ static struct s3c24xx_uda134x_platform_data RabbitV3_uda134x_data = {
+-	.l3_clk		= S3C2410_GPB4,
+-	.l3_mode	= S3C2410_GPB2,
+-	.l3_data	= S3C2410_GPB3,
++	.l3_clk		= S3C2410_GPB(4),
++	.l3_mode	= S3C2410_GPB(2),
++	.l3_data	= S3C2410_GPB(3),
+ 	.model		= UDA134X_UDA1341,
+ };
+ 
+@@ -403,7 +400,7 @@ static struct platform_device *RabbitV3_devices[] __initdata = {
+ 	&s3c_device_rtc,
+ 	&s3c_device_adc,
+ 	&s3c_device_hwmon,
+-	&s3c_device_i2c,
++	&s3c_device_i2c0,
+ 	&s3c_device_iis,
+ 	&s3c_device_spi0,
+ 	&s3c_device_usb,
+@@ -411,8 +408,8 @@ static struct platform_device *RabbitV3_devices[] __initdata = {
+ 	&s3c_device_nand,
+ 	&RabbitV3_button_device,
+ 	&RabbitV3_uda134x,
+-	&s3c_device_pwm0,
+-	&s3c_device_pwm1,
++	&s3c_device_timer[0],	/* the ear motors' PWM */
++	&s3c_device_timer[1],
+ };
+ 
+ static struct platform_device *RabbitV3_usb[] __initdata = {
+@@ -424,7 +421,10 @@ static void __init RabbitV3_init(void)
+ 	s3c_device_nand.dev.platform_data = &RabbitV3_nand_info;
+ 	s3c24xx_udc_set_platdata(&RabbitV3_udc_cfg);
+ 	s3c_device_spi0.dev.platform_data = &RabbitV3_spi0_info;
+-	s3c_device_i2c.dev.platform_data = &RabbitV3_i2c_info;
++	/* The setter also gives the default pin set-up (GPE14/15), which
++	 * 2.6.28's I2C driver did itself. */
++	s3c_i2c0_set_platdata(&RabbitV3_i2c_info);
++	s3c_device_hwmon.dev.platform_data = &RabbitV3_hwmon_info;
+ 	RabbitV3_fb_info.default_display = 0;
+ 	s3c24xx_fb_set_platdata(&RabbitV3_fb_info);
+ 	platform_add_devices(RabbitV3_devices, ARRAY_SIZE(RabbitV3_devices));
+@@ -448,7 +448,7 @@ static void __init RabbitV3_map_io(void)
+ 
+ 	/* GPA: the memory bus (address lines, chip selects, NAND control);
+ 	 * GPA0 is an output. */
+-	__raw_writel(S3C2410_GPA0_OUT |
++	__raw_writel(RABBITV3_GPACON_OUTPUT(0) |
+ 		     S3C2410_GPA1_ADDR16 | S3C2410_GPA2_ADDR17 |
+ 		     S3C2410_GPA3_ADDR18 | S3C2410_GPA4_ADDR19 |
+ 		     S3C2410_GPA5_ADDR20 | S3C2410_GPA6_ADDR21 |
+@@ -465,8 +465,8 @@ static void __init RabbitV3_map_io(void)
+ 
+ 	/* GPB0-4 outputs, without pull-ups: GPB0/1 the ear motors (the ears
+ 	 * driver switches them to TOUT0/1), GPB2-4 the UDA1341's L3 bus. */
+-	__raw_writel(S3C2410_GPB0_OUTP | S3C2410_GPB1_OUTP | S3C2410_GPB2_OUTP |
+-		     S3C2410_GPB3_OUTP | S3C2410_GPB4_OUTP,
++	__raw_writel(RABBITV3_GPCON_OUTPUT(0) | RABBITV3_GPCON_OUTPUT(1) | RABBITV3_GPCON_OUTPUT(2) |
++		     RABBITV3_GPCON_OUTPUT(3) | RABBITV3_GPCON_OUTPUT(4),
+ 		     S3C2410_GPBCON);
+ 	__raw_writel(S3C2410_GPB_PUPDIS(0) | S3C2410_GPB_PUPDIS(1) |
+ 		     S3C2410_GPB_PUPDIS(2) | S3C2410_GPB_PUPDIS(3) |
+@@ -483,7 +483,7 @@ static void __init RabbitV3_map_io(void)
+ 	 * output (the I2S driver switches it while transmitting), SPI0. */
+ 	__raw_writel(S3C2410_GPE0_I2SLRCK | S3C2410_GPE1_I2SSCLK |
+ 		     S3C2410_GPE2_CDCLK | S3C2410_GPE3_I2SSDI |
+-		     S3C2410_GPE4_OUTP |
++		     RABBITV3_GPCON_OUTPUT(4) |
+ 		     S3C2410_GPE11_SPIMISO0 | S3C2410_GPE12_SPIMOSI0 |
+ 		     S3C2410_GPE13_SPICLK0,
+ 		     S3C2410_GPECON);
+@@ -494,7 +494,7 @@ static void __init RabbitV3_map_io(void)
+ 	/* GPG: the SPI chip selects nSS0/nSS1 (GPG2/3), SPICLK1 (GPG7), GPG9
+ 	 * an output, GPG11 as EINT19. */
+ 	__raw_writel(S3C2410_GPG2_nSS0 | S3C2410_GPG3_nSS1 |
+-		     S3C2410_GPG7_SPICLK1 | S3C2410_GPG9_OUTP |
++		     S3C2410_GPG7_SPICLK1 | RABBITV3_GPCON_OUTPUT(9) |
+ 		     S3C2410_GPG11_EINT19,
+ 		     S3C2410_GPGCON);
+ 	__raw_writel(S3C2410_GPG_PUPDIS(2) | S3C2410_GPG_PUPDIS(3) |
+@@ -530,8 +530,8 @@ int usb_RabbitV3_init(void)
+ static void s3c24xx_spidev_chip_select(struct s3c2410_spi_info *spi, int cs, int pol)
+ {
+ 	if (cs == RABBITV3_SPI_LED_CS) {
+-		s3c2410_gpio_cfgpin(S3C2410_GPG2, S3C2410_GPIO_OUTPUT);
+-		s3c2410_gpio_setpin(S3C2410_GPG2, pol);
++		s3c2410_gpio_cfgpin(S3C2410_GPG(2), S3C2410_GPIO_OUTPUT);
++		s3c2410_gpio_setpin(S3C2410_GPG(2), pol);
+ 	}
+ }
+ 
+@@ -539,10 +539,10 @@ static void RabbitV3_udc_pullup(enum s3c2410_udc_cmd_e cmd)
+ {
+ 	switch (cmd) {
+ 	case S3C2410_UDC_P_ENABLE:
+-		s3c2410_gpio_setpin(S3C2410_GPG11, RABBITV3_UDC_PULLUP_ON);
++		s3c2410_gpio_setpin(S3C2410_GPG(11), RABBITV3_UDC_PULLUP_ON);
+ 		break;
+ 	case S3C2410_UDC_P_DISABLE:
+-		s3c2410_gpio_setpin(S3C2410_GPG11, RABBITV3_UDC_PULLUP_OFF);
++		s3c2410_gpio_setpin(S3C2410_GPG(11), RABBITV3_UDC_PULLUP_OFF);
+ 		break;
+ 	default:
+ 		break;
+--- a/drivers/char/rabbit_button.c
++++ b/drivers/char/rabbit_button.c
+@@ -18,6 +18,7 @@
+ #include <asm/uaccess.h>
+ #include <mach/hardware.h>
+ #include <mach/regs-gpio.h>
++#include <linux/gpio.h>
+ 
+ #define RABBIT_BUTTON_MAJOR	52
+ #define RABBIT_BUTTON_NAME	"rabbit_button"
+@@ -78,7 +79,7 @@ static struct file_operations rabbit_button_fops = {
+ 
+ static irqreturn_t rabbit_button_Interrupt(int irq, void *dev_id)
+ {
+-	char state = s3c2410_gpio_getpin(S3C2410_GPF0) ? BUTTON_RELEASED : BUTTON_PRESSED;
++	char state = s3c2410_gpio_getpin(S3C2410_GPF(0)) ? BUTTON_RELEASED : BUTTON_PRESSED;
+ 	int i;
+ 
+ 	if (count == BUFFER_SIZE) {
+@@ -99,7 +100,7 @@ int rabbit_button_init(void)
+ 		printk("Rabbit Button Driver: unable to get major %d\n", RABBIT_BUTTON_MAJOR);
+ 		return -EIO;
+ 	}
+-	irq = s3c2410_gpio_getirq(S3C2410_GPF0);
++	irq = s3c2410_gpio_getirq(S3C2410_GPF(0));
+ 	if (irq < 0)
+ 		printk("Rabbit Button Driver: gpioToIrq fail");
+ 	if (request_irq(irq, rabbit_button_Interrupt, IRQF_SAMPLE_RANDOM | IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING,
+@@ -111,7 +112,7 @@ int rabbit_button_init(void)
+ 
+ void rabbit_button_exit(void)
+ {
+-	free_irq(s3c2410_gpio_getirq(S3C2410_GPF0), NULL);
++	free_irq(s3c2410_gpio_getirq(S3C2410_GPF(0)), NULL);
+ 	unregister_chrdev(RABBIT_BUTTON_MAJOR, RABBIT_BUTTON_NAME);
+ }
+ 
+old mode 100755
+new mode 100644
+--- a/drivers/char/rabbit_ears.c
++++ b/drivers/char/rabbit_ears.c
+@@ -28,6 +28,7 @@
+ #include <linux/interrupt.h>
+ #include <linux/time.h>
+ #include <linux/pwm.h>
++#include <linux/gpio.h>
+ #include <linux/err.h>
+ #include <asm/io.h>
+ #include <asm/uaccess.h>
+@@ -83,7 +84,8 @@
+ #define EAR_GPBCON_MASK		((3 << 0) | (3 << 2))
+ #define EAR_GPBCON		(S3C2410_GPB0_TOUT0 | S3C2410_GPB1_TOUT1)
+ #define EAR_GPFCON_MASK		((3 << 8) | (3 << 10))
+-#define EAR_GPFCON		(S3C2410_GPF4_OUTP | S3C2410_GPF5_OUTP)
++/* GPF4 and GPF5 as outputs (01 in each pin's field; 2.6.28's S3C2410_GPF4_OUTP | S3C2410_GPF5_OUTP). */
++#define EAR_GPFCON		((0x01 << 8) | (0x01 << 10))
+ 
+ struct ear_move {
+ 	int pwm;
+@@ -209,14 +211,14 @@ void move_left(int speed)
+ 	ears_status |= EAR_LEFT_MOVING;
+ 	if (speed > 0) {
+ 		do_gettimeofday(&left_start);
+-		s3c2410_gpio_setpin(S3C2410_GPF4, EAR_DIR_FORWARD);
++		s3c2410_gpio_setpin(S3C2410_GPF(4), EAR_DIR_FORWARD);
+ 		left_direction = 1;
+ 	} else if (speed == 0) {
+ 		ears_status &= ~EAR_LEFT_MOVING;
+ 		speed = PWM_SPEED_STOPPED;
+ 	} else {
+ 		do_gettimeofday(&left_start);
+-		s3c2410_gpio_setpin(S3C2410_GPF4, EAR_DIR_BACKWARD);
++		s3c2410_gpio_setpin(S3C2410_GPF(4), EAR_DIR_BACKWARD);
+ 		left_direction = -1;
+ 		speed = -speed;
+ 	}
+@@ -233,12 +235,12 @@ static irqreturn_t rabbit_ears_LeftInterrupt(int irq, void *dev_id)
+ 		ears_status |= EAR_LEFT_BLOCKED;
+ 	if (left_direction > 0) {
+ 		if (++left_position >= left_target) {
+-			s3c2410_gpio_setpin(S3C2410_GPF4, EAR_DIR_BACKWARD);
++			s3c2410_gpio_setpin(S3C2410_GPF(4), EAR_DIR_BACKWARD);
+ 			move_left(0);
+ 		}
+ 	} else {
+ 		if (--left_position <= left_target) {
+-			s3c2410_gpio_setpin(S3C2410_GPF4, EAR_DIR_FORWARD);
++			s3c2410_gpio_setpin(S3C2410_GPF(4), EAR_DIR_FORWARD);
+ 			move_left(0);
+ 		}
+ 	}
+@@ -342,14 +344,14 @@ void move_right(int speed)
+ 	ears_status |= EAR_RIGHT_MOVING;
+ 	if (speed > 0) {
+ 		do_gettimeofday(&right_start);
+-		s3c2410_gpio_setpin(S3C2410_GPF5, EAR_DIR_FORWARD);
++		s3c2410_gpio_setpin(S3C2410_GPF(5), EAR_DIR_FORWARD);
+ 		right_direction = 1;
+ 	} else if (speed == 0) {
+ 		ears_status &= ~EAR_RIGHT_MOVING;
+ 		speed = PWM_SPEED_STOPPED;
+ 	} else {
+ 		do_gettimeofday(&right_start);
+-		s3c2410_gpio_setpin(S3C2410_GPF5, EAR_DIR_BACKWARD);
++		s3c2410_gpio_setpin(S3C2410_GPF(5), EAR_DIR_BACKWARD);
+ 		right_direction = -1;
+ 		speed = -speed;
+ 	}
+@@ -366,12 +368,12 @@ static irqreturn_t rabbit_ears_RightInterrupt(int irq, void *dev_id)
+ 		ears_status |= EAR_RIGHT_BLOCKED;
+ 	if (right_direction > 0) {
+ 		if (++right_position >= right_target) {
+-			s3c2410_gpio_setpin(S3C2410_GPF5, EAR_DIR_BACKWARD);
++			s3c2410_gpio_setpin(S3C2410_GPF(5), EAR_DIR_BACKWARD);
+ 			move_right(0);
+ 		}
+ 	} else {
+ 		if (--right_position <= right_target) {
+-			s3c2410_gpio_setpin(S3C2410_GPF5, EAR_DIR_FORWARD);
++			s3c2410_gpio_setpin(S3C2410_GPF(5), EAR_DIR_FORWARD);
+ 			move_right(0);
+ 		}
+ 	}
+--- a/drivers/char/rabbit_poweron.c
++++ b/drivers/char/rabbit_poweron.c
+@@ -11,6 +11,7 @@
+ #include <asm/uaccess.h>
+ #include <mach/hardware.h>
+ #include <mach/regs-gpio.h>
++#include <linux/gpio.h>
+ 
+ #define RABBIT_POWERON_MAJOR	53
+ #define RABBIT_POWERON_NAME	"rabbit_poweron"
+@@ -31,7 +32,7 @@ int rabbit_poweron_release(struct inode *inode, struct file *file)
+ 
+ ssize_t rabbit_poweron_read(struct file *file, char __user *buf, size_t len, loff_t *ppos)
+ {
+-	char state = s3c2410_gpio_getpin(S3C2410_GPC2) ? POWERON_OFF : POWERON_ON;
++	char state = s3c2410_gpio_getpin(S3C2410_GPC(2)) ? POWERON_OFF : POWERON_ON;
+ 
+ 	if (copy_to_user(buf, &state, sizeof(state))) {
+ 		printk("Rabbit poweron Driver - copy_to_useri() error\n");
+--- a/drivers/media/video/s3c2440camif.c
++++ b/drivers/media/video/s3c2440camif.c
+@@ -1339,8 +1339,8 @@ DECLARE_MUTEX(regs_mutex);
+ 
+ static void __inline__ ov7675_poweron(void)
+ {
+-	s3c2410_gpio_cfgpin(S3C2410_GPG5, S3C2410_GPG5_OUTP);
+-	s3c2410_gpio_setpin(S3C2410_GPG5, OV7675_PWDN_OFF);
++	s3c2410_gpio_cfgpin(S3C2410_GPG(5), S3C2410_GPIO_OUTPUT);
++	s3c2410_gpio_setpin(S3C2410_GPG(5), OV7675_PWDN_OFF);
+ 	mdelay(OV7675_POWERON_MS);
+ }
+ 
+@@ -1588,7 +1588,7 @@ static int __init camif_init(void)
+ 	sccb_init();
+ 	hw_reset_camif();
+ 	has_ov7675 = s3c2440_ov7675_init() >= 0;
+-	s3c2410_gpio_setpin(S3C2410_GPG4, 1);	/* RABBITV3: GPG4 high; nothing here says what it drives */
++	s3c2410_gpio_setpin(S3C2410_GPG(4), 1);	/* RABBITV3: GPG4 high; nothing here says what it drives */
+ 	return 0;
+ 
+ error4:
+--- a/drivers/media/video/sccb.h
++++ b/drivers/media/video/sccb.h
+@@ -2,8 +2,8 @@
+ #define __SOFT_SCCB_H__
+ 
+ /* RABBITV3: the OV7675 SCCB bus is on GPG7 (clock) and GPG3 (data) */
+-#define SIO_C	S3C2410_GPG7
+-#define SIO_D	S3C2410_GPG3
++#define SIO_C	S3C2410_GPG(7)
++#define SIO_D	S3C2410_GPG(3)
+ 
+ #define State(x)	s3c2410_gpio_getpin(x)
+ #define High(x)		do{s3c2410_gpio_setpin(x,1); smp_mb();}while(0)

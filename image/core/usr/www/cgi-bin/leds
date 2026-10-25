@@ -1,0 +1,33 @@
+#!/bin/sh
+# SPDX-License-Identifier: MIT
+# leds: the LED, fixed or pulsing for ever. Unless nomemory=1, the setting is kept in RAM as the
+# API's LED state, which status reports and the API restores after its own momentary uses.
+#   color     RRGGBB (the API's last colour, else 00FF00); 000000 turns the LED off
+#   pulse     1: pulse between color and color2 (0)
+#   color2    the second pulse colour (000000)
+#   speed     the pulse period in ms, 25 to 10000 (700)
+#   nomemory  1: a momentary setting, not kept (0)
+. /usr/share/lapinlibre/web.sh
+web_begin change
+param_color color ""
+color=$PV
+param_flag pulse 0
+pulse=$PV
+param_color color2 000000
+color2=$PV
+param_int speed 25 10000 700
+speed=$PV
+param_flag nomemory 0
+nomemory=$PV
+# blink alone is ignored; with a pulse it is refused.
+if [ "$pulse" = 1 ] && param blink && [ -n "$PV" ] && [ "$PV" != 0 ]; then
+    web_fail "pulse and blink can't be used together"
+fi
+
+web_hardware
+[ -n "$color" ] || color=$LED_COLOR
+led_set "$color" "$pulse" "$color2" "$speed" || dbus_failed Led $? "led-daemon refused the setting"
+[ "$nomemory" = 1 ] || state_write led "$color $pulse $color2 $speed"
+web_unlock
+web_ok
+reply_json "{\"color\":\"$color\",\"secondary_color\":\"$color2\",\"pulse\":\"$pulse\",\"no_memory\":\"$nomemory\",\"speed\":\"$speed\",\"return\":\"0\"}"

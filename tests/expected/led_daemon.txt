@@ -1,0 +1,57 @@
+== registered: True
+== interface
+method com.mindscape.karotz.KarotzInterface.fade(in:s,in:s,in:i,out:b)
+method com.mindscape.karotz.KarotzInterface.light(in:s,in:s,out:b)
+method com.mindscape.karotz.KarotzInterface.pulse(in:s,in:s,in:s,in:i,in:i,out:b)
+signal com.mindscape.karotz.KarotzInterface.event(out:s,out:i)
+signal com.mindscape.karotz.KarotzInterface.registered()
+== calls
+light('string:l1', 'string:FF0000') -> boolean true
+light('string:l1', 'string:') -> boolean true
+light('string:l1', 'string:none') -> boolean false
+light('string:l1', 'string:zz0000') -> boolean false
+light('string:l1', 'string:12') -> boolean false
+fade('string:f1', 'string:00FF00', 'int32:10') -> boolean true
+fade('string:f2', 'string:0000FF', 'int32:300') -> boolean true
+fade('string:f3', 'string:nope', 'int32:300') -> boolean false
+fade('string:f4', 'string:FFFFFF', 'int32:2000') -> boolean true
+fade('string:f5', 'string:101010', 'int32:200') -> boolean true
+pulse('string:p1', 'string:FF0000', 'string:0000FF', 'int32:100', 'int32:400') -> boolean true
+pulse('string:p2', 'string:xx', 'string:00FF00', 'int32:5', 'int32:-1') -> boolean true
+fade('string:f6', 'string:000000', 'int32:100') -> boolean true
+pulse('string:p3', 'string:FF00FF', 'string:00FFFF', 'int32:200', 'int32:-1') -> boolean true
+pulse('string:p4', 'string:FFFF00', 'string:', 'int32:200', 'int32:-1') -> boolean true
+light('string:l2', 'string:808080') -> boolean true
+pulse('string:p5', 'string:010203', 'string:A0B0C0', 'int32:100', 'int32:300') -> boolean true
+fade('string:f7', 'string:FF8000', 'int32:3000') -> boolean true
+light('string:l3', 'string:000000') -> boolean true
+== signals
+com.mindscape.karotz.KarotzInterface.registered()
+com.mindscape.karotz.KarotzInterface.event(string "l1", int32 4)
+com.mindscape.karotz.KarotzInterface.event(string "l1", int32 4)
+com.mindscape.karotz.KarotzInterface.event(string "l1", int32 5)
+com.mindscape.karotz.KarotzInterface.event(string "l1", int32 5)
+com.mindscape.karotz.KarotzInterface.event(string "l1", int32 5)
+com.mindscape.karotz.KarotzInterface.event(string "f1", int32 4)
+com.mindscape.karotz.KarotzInterface.event(string "f2", int32 4)
+com.mindscape.karotz.KarotzInterface.event(string "f4", int32 5)
+com.mindscape.karotz.KarotzInterface.event(string "f5", int32 4)
+com.mindscape.karotz.KarotzInterface.event(string "p1", int32 4)
+com.mindscape.karotz.KarotzInterface.event(string "p2", int32 5)
+com.mindscape.karotz.KarotzInterface.event(string "f6", int32 4)
+com.mindscape.karotz.KarotzInterface.event(string "p3", int32 5)
+com.mindscape.karotz.KarotzInterface.event(string "p4", int32 5)
+com.mindscape.karotz.KarotzInterface.event(string "l2", int32 4)
+com.mindscape.karotz.KarotzInterface.event(string "p5", int32 4)
+com.mindscape.karotz.KarotzInterface.event(string "f7", int32 5)
+com.mindscape.karotz.KarotzInterface.event(string "l3", int32 4)
+== device I/O
+open /dev/spidev0.1
+ioctl /dev/spidev0.1 0x40016b01
+ioctl /dev/spidev0.1 0x80016b01
+ioctl /dev/spidev0.1 0x40016b03
+ioctl /dev/spidev0.1 0x80016b03
+ioctl /dev/spidev0.1 0x40046b04
+ioctl /dev/spidev0.1 0x80046b04
+ioctl /dev/spidev0.1 0x40206b00
+== daemon still running: True

@@ -1,0 +1,15 @@
+== registered: True
+== signals
+com.mindscape.karotz.KarotzInterface.click()
+com.mindscape.karotz.KarotzInterface.dclick()
+com.mindscape.karotz.KarotzInterface.tclick()
+com.mindscape.karotz.KarotzInterface.mclick(int32 5)
+com.mindscape.karotz.KarotzInterface.lclick_start()
+com.mindscape.karotz.KarotzInterface.lclick_stop()
+com.mindscape.karotz.KarotzInterface.dclick()
+com.mindscape.karotz.KarotzInterface.lclick_start()
+com.mindscape.karotz.KarotzInterface.lclick_stop()
+== device I/O
+open /dev/rabbit_button
+read /dev/rabbit_button 1
+== daemon still running: True

@@ -1,0 +1,10 @@
+#!/bin/sh
+# SPDX-License-Identifier: MIT
+# stories_list (read-only): the stories stories plays: the MP3 files of the stick's stories
+# folder, by name (numbers first, in their order), each with its label from stories/stories.txt
+# ("id:label" lines) or else its name. Empty without a stick.
+. /usr/share/lapinlibre/web.sh
+web_begin read
+items=""
+usb_mounted && items=$(labelled_json "$WEB_STORIES" "$WEB_STORIES/stories.txt" name)
+reply_json "{\"stories\":[$items],\"return\":\"0\"}"

@@ -1,0 +1,130 @@
+== registered: True
+login: authentication token sent
+== logged in: True, applications ['devicetest', 'hello']
+== configuration (download, install, available)
+call Ears move("", 14, 30, 14, 30)
+call Ears move("", 14, 30, 14, 30)
+call Ears reset("", "B")
+call Ears reset("", "B")
+call K2k k2k_hangup()
+call K2k k2k_hangup()
+call Led pulse("", "00FF00", "000000", 1600, -1)
+call Led pulse("", "00FF00", "000000", 1600, -1)
+call Led pulse("", "FFA500", "000000", 1600, -1)
+call Multimedia play("", "lock::yes", 0)
+call Multimedia play("", "lock::yes", 0)
+call Multimedia stop("", 0)
+call Multimedia stop("", 0)
+call Scheduler add_weekly_entry("E_STATUS_KAROTZ_SLEEP", 0, 23, 59, 0)
+call Scheduler add_weekly_entry("E_STATUS_KAROTZ_SLEEP", 1, 23, 59, 0)
+call Scheduler add_weekly_entry("E_STATUS_KAROTZ_SLEEP", 2, 23, 59, 0)
+call Scheduler add_weekly_entry("E_STATUS_KAROTZ_SLEEP", 3, 23, 59, 0)
+call Scheduler add_weekly_entry("E_STATUS_KAROTZ_SLEEP", 4, 23, 59, 0)
+call Scheduler add_weekly_entry("E_STATUS_KAROTZ_SLEEP", 5, 23, 59, 0)
+call Scheduler add_weekly_entry("E_STATUS_KAROTZ_SLEEP", 6, 23, 59, 0)
+call Scheduler add_weekly_entry("E_STATUS_KAROTZ_WAKEUP", 0, 0, 0, 0)
+call Scheduler add_weekly_entry("E_STATUS_KAROTZ_WAKEUP", 1, 0, 0, 0)
+call Scheduler add_weekly_entry("E_STATUS_KAROTZ_WAKEUP", 2, 0, 0, 0)
+call Scheduler add_weekly_entry("E_STATUS_KAROTZ_WAKEUP", 3, 0, 0, 0)
+call Scheduler add_weekly_entry("E_STATUS_KAROTZ_WAKEUP", 4, 0, 0, 0)
+call Scheduler add_weekly_entry("E_STATUS_KAROTZ_WAKEUP", 5, 0, 0, 0)
+call Scheduler add_weekly_entry("E_STATUS_KAROTZ_WAKEUP", 6, 0, 0, 0)
+call Scheduler delete_all_entry()
+call Voice asr_stop("", 0)
+call Voice asr_stop("", 0)
+call Voice tts_stop("", 0)
+call Voice tts_stop("", 0)
+vm killall
+vm start --app_folder=/usr/karotz/apps
+vm killall
+vm start --app_folder=/usr/karotz/apps
+run: hello (default) starts in about 3 s
+== the one-shot date schedule (the push resets the rabbit)
+call Ears move("", 14, 30, 14, 30)
+call Ears reset("", "B")
+call K2k k2k_hangup()
+call Led pulse("", "00FF00", "000000", 1600, -1)
+call Multimedia play("", "lock::yes", 0)
+call Multimedia stop("", 0)
+call Scheduler add_date_entry("<uuid>", <date>)
+call Scheduler add_weekly_entry("E_STATUS_KAROTZ_SLEEP", 0, 23, 59, 0)
+call Scheduler add_weekly_entry("E_STATUS_KAROTZ_SLEEP", 1, 23, 59, 0)
+call Scheduler add_weekly_entry("E_STATUS_KAROTZ_SLEEP", 2, 23, 59, 0)
+call Scheduler add_weekly_entry("E_STATUS_KAROTZ_SLEEP", 3, 23, 59, 0)
+call Scheduler add_weekly_entry("E_STATUS_KAROTZ_SLEEP", 4, 23, 59, 0)
+call Scheduler add_weekly_entry("E_STATUS_KAROTZ_SLEEP", 5, 23, 59, 0)
+call Scheduler add_weekly_entry("E_STATUS_KAROTZ_SLEEP", 6, 23, 59, 0)
+call Scheduler add_weekly_entry("E_STATUS_KAROTZ_WAKEUP", 0, 0, 0, 0)
+call Scheduler add_weekly_entry("E_STATUS_KAROTZ_WAKEUP", 1, 0, 0, 0)
+call Scheduler add_weekly_entry("E_STATUS_KAROTZ_WAKEUP", 2, 0, 0, 0)
+call Scheduler add_weekly_entry("E_STATUS_KAROTZ_WAKEUP", 3, 0, 0, 0)
+call Scheduler add_weekly_entry("E_STATUS_KAROTZ_WAKEUP", 4, 0, 0, 0)
+call Scheduler add_weekly_entry("E_STATUS_KAROTZ_WAKEUP", 5, 0, 0, 0)
+call Scheduler add_weekly_entry("E_STATUS_KAROTZ_WAKEUP", 6, 0, 0, 0)
+call Scheduler delete_all_entry()
+call Voice asr_stop("", 0)
+call Voice tts_stop("", 0)
+vm killall
+vm start --app_folder=/usr/karotz/apps
+the date is about 3 s after the run, in Europe/Paris
+== the schedule fires (the VM starts the application), nothing else is sent
+vm command hello SCHEDULER default
+take: interactiveId: "<u3>" response { code: OK }
+== interactive
+call Multimedia stop("", 0)
+call Voice tts_stop("", 0)
+call Voice asr_stop("", 0)
+call Led pulse("", "4FFF68", "000000", 1600, -1)
+ears: interactiveId: "<u3>" response { code: OK }
+led: interactiveId: "<u3>" response { code: OK }
+say: interactiveId: "<u3>" response { code: OK }
+== requests
+call Ears move("<uuid>", 5, 30, 7, 30)
+call Led light("<uuid>", "00FF00")
+call Voice tts_speak("<uuid>", "bonjour", "fr-FR", 1)
+release: interactiveId: "<u3>" response { code: OK }
+== release (available, reset)
+call Ears reset("", "B")
+call Multimedia stop("", 0)
+call Voice tts_stop("", 0)
+call Voice asr_stop("", 0)
+call Multimedia play("", "lock::yes", 0)
+call K2k k2k_hangup()
+call Led pulse("", "00FF00", "000000", 1600, -1)
+call Ears move("", 14, 30, 14, 30)
+vm killall
+vm start --app_folder=/usr/karotz/apps
+== the instance's RFID tag
+call Led pulse("", "FFA500", "000000", 500, 500)
+call Multimedia play("", "/usr/karotz/sounds/notify.mp3", 1)
+call Ears move_step("", 17, 30, 17, 30)
+call Led pulse("", "00FF00", "000000", 1600, -1)
+vm command hello RFID;E0040100C0FFEE42;3;FLAT;4;BLUE;content tagged
+== files
+hello/config.bin: 0a0568656c6c6f1201311a0548656c6c6f2206686f73746564520374747352046561727352036c6564a2062f6a0764656661756c74722432346538646330352d333030382d356366332d386562642d376265313236343935306264a206406210453030343031303043304646454534326a06746167676564722466663466623835642d343330392d356166612d383161332d663265366133376361343566
+/etc/TZ: b'CET-1CEST,M3.5.0,M10.5.0/3\n'
+== signals
+com.mindscape.karotz.KarotzInterface.registered()
+com.mindscape.karotz.KarotzInterface.karotz_status_changed(int32 15)
+com.mindscape.karotz.KarotzInterface.karotz_status_changed(int32 14)
+com.mindscape.karotz.KarotzInterface.karotz_status_changed(int32 20)
+com.mindscape.karotz.KarotzInterface.karotz_status_changed(int32 16)
+com.mindscape.karotz.KarotzInterface.karotz_status_changed(int32 25)
+com.mindscape.karotz.KarotzInterface.karotz_status_changed(int32 16)
+com.mindscape.karotz.KarotzInterface.karotz_status_changed(int32 25)
+com.mindscape.karotz.KarotzInterface.karotz_status_changed(int32 16)
+com.mindscape.karotz.KarotzInterface.schedule_event(string "<uuid>", int32 0)
+com.mindscape.karotz.KarotzInterface.karotz_status_changed(int32 21)
+com.mindscape.karotz.KarotzInterface.karotz_status_changed(int32 22)
+com.mindscape.karotz.KarotzInterface.karotz_status_changed(int32 16)
+com.mindscape.karotz.KarotzInterface.tag_in(string "E0040100C0FFEE42", string "content", int32 3, int32 1, int32 4, int32 2)
+== device I/O
+system cp -f /usr/etc/conf/account.conf /tmp/account.conf
+system rm /etc/conf/playsounds
+system /bin/unzip -o /tmp/file<random> -d /usr/karotz/apps/devicetest
+system /bin/unzip -o /tmp/file<random> -d /usr/karotz/apps/hello
+system killall karotzVM
+system /sbin/ifconfig wlan0 | head -n1 | awk -F' ' '{ print $5 }' > /tmp/mac_addr
+system /sbin/ifconfig `/sbin/route | head -n3 | tail -n1 | awk -F' ' '{ print $8 }'` | grep inet | awk -F: '{ print $2 }' | awk '{ print $1 }' > /tmp/ip_addr
+system killall karotzVM
+== daemon still running: True

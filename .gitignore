@@ -1,0 +1,13 @@
+# SPDX-License-Identifier: MIT
+# Download cache, build trees and results (see scripts/common.sh for where
+# they go when the repository is on a Windows drive under WSL)
+/dl/
+/work/
+/out/
+# Network settings for the install image
+.env
+__pycache__/
+*.pyc
+.venv/
+/tools/app-server/platform_message_pb2.py
+/tools/app-server/uploads/

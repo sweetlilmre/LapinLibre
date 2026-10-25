@@ -1,0 +1,11 @@
+# SPDX-License-Identifier: GPL-2.0-or-later
+config BR2_PACKAGE_PYTHON24_KAROTZ
+	bool "python24-karotz"
+	depends on BR2_USE_WCHAR
+	select BR2_PACKAGE_EXPAT
+	select BR2_PACKAGE_ZLIB
+	help
+	  Python 2.4.5 (python2.4), for the rabbit's scripts,
+	  with Buildroot 2010.11's python.mk recipe.
+
+	  https://www.python.org/

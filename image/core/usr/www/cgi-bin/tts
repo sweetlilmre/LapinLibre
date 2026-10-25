@@ -1,0 +1,76 @@
+#!/bin/sh
+# SPDX-License-Identifier: MIT
+# tts: says a text through voice-daemon and the speech server voice.conf names for the language.
+# The answer comes once voice-daemon has taken the text, before the speech ends.
+#   text     what to say: 1 to 1000 bytes of UTF-8 (required). One pair of double quotes around
+#            it, and any < and >, are left out; tabs and line ends become spaces
+#   voice    a voice number from 1 to 88, a language code (en, en-GB) or a voice name; the
+#            rabbit's language when it is a name, absent, or a language without a speech server
+#   mute     1: say nothing (0)
+#   nocache  accepted and ignored: there is no speech cache
+. /usr/share/lapinlibre/web.sh
+web_begin change text
+param text
+case $? in
+1) web_fail "parameter text is required" ;;
+2) web_fail "parameter text must be text without control characters" ;;
+esac
+text=$PV
+case $text in
+\"*\") [ ${#text} -ge 2 ] && text=${text#\"} && text=${text%\"} ;;
+esac
+case $text in *[\<\>]*) text=$(printf '%s' "$text" | tr -d '<>') ;; esac
+case $text in " "* | *" ") text=$(printf '%s\n' "$text" | sed 's/^ *//; s/ *$//') ;; esac
+[ -n "$text" ] || web_fail "parameter text is empty"
+bytes=$(printf '%s' "$text" | wc -c | tr -d ' ')
+[ "$bytes" -le 1000 ] || web_fail "parameter text is longer than 1000 bytes"
+valid_utf8 "$text" || web_fail "parameter text must be valid UTF-8"
+
+param voice
+[ $? = 2 ] && web_fail "parameter voice must be a voice number from 1 to 88, a language code or a name"
+voice=$PV
+rabbit_lang
+read_tts_servers
+lang=$RL
+gender=female
+case $voice in
+'') ;;
+*[!0-9]*)
+    case $voice in
+    [a-z][a-z] | [a-z][a-z]-[A-Z][A-Z]) lang=$voice ;;
+    *[!A-Za-z]*) web_fail "parameter voice must be a voice number from 1 to 88, a language code or a name" ;;
+    *) [ ${#voice} -le 32 ] || web_fail "parameter voice must be a voice number from 1 to 88, a language code or a name" ;;
+    esac
+    ;;
+*)
+    n=$(strip_zeros "$voice")
+    [ -n "$n" ] && [ ${#n} -le 2 ] && [ "$n" -ge 1 ] && [ "$n" -le 88 ] ||
+        web_fail "parameter voice must be a voice number from 1 to 88, a language code or a name"
+    voice_of "$n"
+    lang=$VL gender=$VG
+    ;;
+esac
+has_tts_server "$lang" || lang=$RL
+param_flag mute 0
+mute=$PV
+param_flag nocache 0
+
+web_hardware
+played=false
+if [ "$mute" = 0 ]; then
+    dbus_call Voice tts_speak "string:$WEB_ID" "string:$text" "string:$lang" int32:1
+    r=$?
+    if [ $r = 1 ]; then
+        if has_tts_server "$lang"; then
+            web_fail "voice-daemon is already speaking: try again when it has finished"
+        fi
+        web_fail "no speech server is set for $lang: set SERVER= (or TTS_SERVER=) in lapinlibre.txt"
+    fi
+    [ $r = 0 ] || dbus_failed Voice $r ""
+    played=true
+fi
+web_unlock
+web_log "ok, $bytes bytes of text"
+id=$(printf '%s' "$lang:$gender:$text" | md5sum | cut -c1-32)
+json_str "$lang"
+reply_json "{\"return\":\"0\",\"id\":\"$id\",\"played\":$played,\"cache\":false,\"voicelanguage\":$J,\"voicegender\":\"$gender\"}"

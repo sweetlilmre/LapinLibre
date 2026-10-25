@@ -1,0 +1,19 @@
+#!/bin/sh
+# SPDX-License-Identifier: MIT
+# rfid_start_record: starts tag learning for 2 minutes: the tag listener then adds each new tag
+# laid on the nose to the tag store (with its type and colour) instead of running actions. The
+# playback stops, the LED pulses orange and a tone plays (no tone while the rabbit sleeps). It
+# ends with rfid_stop_record, or by itself after 2 minutes.
+. /usr/share/lapinlibre/web.sh
+web_begin change
+web_hardware asleep
+dbus_call Multimedia stop "string:$WEB_ID" int32:1 || web_log "the playback couldn't be stopped"
+rm -f "$WEB_RUN/playback"
+stamp=$(date +%s)
+state_write learning "$stamp" || web_fail "tag learning couldn't be started"
+led_learning || web_log "the LED couldn't be set"
+tone "$WEB_TONE_LEARN_START"
+web_unlock
+learn_timer "$stamp" &
+web_ok
+reply_json '{"return":"0"}'

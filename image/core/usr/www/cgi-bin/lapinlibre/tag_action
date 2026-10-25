@@ -1,0 +1,25 @@
+#!/bin/sh
+# SPDX-License-Identifier: MIT
+# lapinlibre/tag_action (read-only): a learned tag's action, for the web page's tag editor: cmd
+# (0 none, 3 a URL request, 5 one of the API's endpoints); for 5 the endpoint and its query; for 3
+# the URL, the user and whether a password is stored (password_set 1 or 0), never the password.
+#   tag  the tag's id: 16 hexadecimal digits (required)
+. /usr/share/lapinlibre/web.sh
+web_begin read
+param_tag
+tag_get "$TG" || web_fail "no tag $TG is known"
+jo_begin
+jo_str tag "$T_ID"
+jo_str cmd "$T_CMD"
+case $T_CMD in
+5)
+    jo_str endpoint "$T_A1"
+    jo_str query "$T_A2"
+    ;;
+3)
+    jo_str url "$T_A1"
+    jo_str user "$T_A2"
+    if [ -n "$T_A3" ]; then jo_str password_set 1; else jo_str password_set 0; fi
+    ;;
+esac
+reply_json "{\"return\":\"0\",$JO}"

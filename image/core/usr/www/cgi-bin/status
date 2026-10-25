@@ -1,0 +1,67 @@
+#!/bin/sh
+# SPDX-License-Identifier: MIT
+# status (read-only): the rabbit's state in the shape OpenKarotz clients read (whether it sleeps,
+# the LED the API last set, space, counts), with LapinLibre's own status added under
+# "lapinlibre".
+#   format  json (the default) or xml
+. /usr/share/lapinlibre/web.sh
+web_begin read
+param_choice format json json xml
+format=$PV
+
+lapinlibre_status
+own=$JO
+read_build
+read_api_state
+read_counts
+first_line /sys/class/net/wlan0/address
+wlan_mac=$FL
+disk_usage /usr
+usr_free=$DU_FREE_HUMAN
+usr_percent=$DU_USED_PERCENT
+# Without a stick: usb_free_space -1 and usb_percent_used_space empty, as clients of status read
+# them (get_free_space, for its own clients, gives -1 for the percentage).
+usb_free=-1
+usb_percent=""
+if usb_mounted && disk_usage /mnt/usbkey; then
+    usb_free=$DU_FREE_HUMAN
+    usb_percent=$DU_USED_PERCENT
+fi
+
+if [ "$format" = xml ]; then
+    out='<?xml version="1.0" encoding="UTF-8"?>'"$NL<OPENKAROTZ>"
+    for pair in "VERSION=$VERSION" "EARS_DISABLED=$EARS_DISABLED" "SLEEP=$SLEEP" "SLEEP_TIME=$SLEEP_TIME" \
+        "LED_COLOR=$LED_COLOR" "LED_PULSE=$LED_PULSE" "TTS_CACHE_SIZE=0" "ETH_MAC=00:00:00:00:00:00" \
+        "WLAN_MAC=$wlan_mac" "KAROTZ_USED_SPACE=$usr_percent" "USB_USED_SPACE=$usb_percent" "RETURN=0"; do
+        name=${pair%%=*}
+        xml_text "${pair#*=}"
+        out="$out<$name>$X</$name>"
+    done
+    out="$out</OPENKAROTZ>"
+    reply_text_begin
+    [ "$WEB_HEAD" = 1 ] || printf '%s\n' "$out"
+    exit 0
+fi
+
+jo_begin
+jo_str version "$VERSION"
+jo_str ears_disabled "$EARS_DISABLED"
+jo_str sleep "$SLEEP"
+jo_str sleep_time "$SLEEP_TIME"
+jo_str led_color "$LED_COLOR"
+jo_str led_pulse "$LED_PULSE"
+jo_str tts_cache_size 0
+jo_str usb_free_space "$usb_free"
+jo_str karotz_free_space "$usr_free"
+jo_str eth_mac 00:00:00:00:00:00
+jo_str wlan_mac "$wlan_mac"
+jo_str nb_tags "$NB_TAGS"
+jo_str nb_moods "$NB_MOODS"
+jo_str nb_sounds "$NB_SOUNDS"
+jo_str nb_stories "$NB_STORIES"
+jo_str karotz_percent_used_space "$usr_percent"
+jo_str usb_percent_used_space "$usb_percent"
+jo_str data_dir "$WEB_DATA"
+jo_str return 0
+jo_raw lapinlibre "{$own}"
+reply_json "{$JO}"

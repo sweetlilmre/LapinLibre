@@ -1,0 +1,70 @@
+== registered: True
+== platform connection: 1
+== authentication
+conn 1: id: "<u1>" | correlationId: "p-auth" | authenticationResponse { |   login: "rabbit-id" |   authentication: "e427b20810b376f0505139bf360771ff" | }
+== information query (answered twice)
+conn 1: id: "<u2>" | correlationId: "p-info" | karotzinfo_response { |   infos { |     key: "mac_address" |     value: "00:0f:3d:12:34:56" |   } |   infos { |     key: "set_hard_drive_size" |     value: "<n>" |   } |   infos { |     key: "set_hard_drive_used" |     value: "<n>" |   } |   infos { |     key: "ip_address" |     value: "10.9.0.2" |   } |   infos { |     key: "lang" |     value: "fr-FR" |   } | }
+conn 1: id: "<u>" | karotzinfo_response { |   infos { |     key: "mac_address" |     value: "00:0f:3d:12:34:56" |   } |   infos { |     key: "set_hard_drive_size" |     value: "<n>" |   } |   infos { |     key: "set_hard_drive_used" |     value: "<n>" |   } |   infos { |     key: "ip_address" |     value: "10.9.0.2" |   } |   infos { |     key: "lang" |     value: "fr-FR" |   } | }
+== configuration (download, install, available)
+conn 1: id: "<u>" | karotzinfo_response { |   infos { |     key: "mac_address" |     value: "00:0f:3d:12:34:56" |   } |   infos { |     key: "set_hard_drive_size" |     value: "<n>" |   } |   infos { |     key: "set_hard_drive_used" |     value: "<n>" |   } |   infos { |     key: "ip_address" |     value: "10.9.0.2" |   } |   infos { |     key: "lang" |     value: "fr-FR" |   } | }
+call Multimedia play("", "/usr/karotz/sounds/acknowledge.mp3", 1)
+call Led pulse("", "FFA500", "000000", 1600, -1)
+call Ears reset("", "B")
+call Multimedia stop("", 0)
+call Voice tts_stop("", 0)
+call Voice asr_stop("", 0)
+call Multimedia play("", "lock::yes", 0)
+call K2k k2k_hangup()
+call Led pulse("", "00FF00", "000000", 1600, -1)
+call Ears move("", 14, 30, 14, 30)
+http GET /file/app-new/1/get (libcurl-agent/1.0 karotz)
+vm killall
+vm start --app_folder=/usr/karotz/apps
+== schedules
+conn 1: id: "<u3>" | correlationId: "p-schedule" | response { |   code: OK | }
+call Scheduler delete_all_entry()
+call Scheduler add_weekly_entry("<uuid>", <day>, 7, 30, 0)
+call Scheduler add_weekly_entry("E_STATUS_KAROTZ_WAKEUP", <day>, 7, 0, 0)
+call Scheduler add_weekly_entry("E_STATUS_KAROTZ_SLEEP", <day>, 22, 0, 0)
+== contacts and social
+conn 1: id: "<u4>" | correlationId: "p-getcontacts" | response { |   code: OK | } | contactList { |   contacts { |     firstname: "Ann" |     uuid: "u-ann" |   } | }
+conn 1: id: "<u5>" | correlationId: "p-social" | response { |   code: OK | } | social { |   twitterConsumerKey: "ck" |   facebookToken: "fb" | }
+== pending messages
+call Led pulse("", "00FF00", "0000FF", 1600, -1)
+call Led pulse("", "00FF00", "000000", 1600, -1)
+== interactive start with an unknown configId
+conn 1: id: "<u6>" | correlationId: "p-start-bad" | response { |   code: ERROR | }
+== interactive start
+conn 1: id: "<u7>" | correlationId: "p-start" | interactiveId: "ia-1" | response { |   code: OK | }
+call Multimedia stop("", 0)
+call Voice tts_stop("", 0)
+call Voice asr_stop("", 0)
+call Led pulse("", "4FFF68", "000000", 1600, -1)
+== a periodic schedule for app-new
+conn 1: id: "<u8>" | correlationId: "p-sched" | response { |   code: OK | }
+call Scheduler delete_all_entry()
+call Scheduler add_periodic_entry("<uuid>", 600, 0)
+== app-new leaves the configuration
+conn 1: id: "<u>" | karotzinfo_response { |   infos { |     key: "mac_address" |     value: "00:0f:3d:12:34:56" |   } |   infos { |     key: "set_hard_drive_size" |     value: "<n>" |   } |   infos { |     key: "set_hard_drive_used" |     value: "<n>" |   } |   infos { |     key: "ip_address" |     value: "10.9.0.2" |   } |   infos { |     key: "lang" |     value: "fr-FR" |   } | }
+== its schedule fires
+== signals
+com.mindscape.karotz.KarotzInterface.registered()
+com.mindscape.karotz.KarotzInterface.karotz_status_changed(int32 15)
+com.mindscape.karotz.KarotzInterface.karotz_status_changed(int32 14)
+com.mindscape.karotz.KarotzInterface.karotz_status_changed(int32 20)
+com.mindscape.karotz.KarotzInterface.karotz_status_changed(int32 16)
+com.mindscape.karotz.KarotzInterface.karotz_status_changed(int32 21)
+com.mindscape.karotz.KarotzInterface.schedule_event(string "<uuid>", int32 1)
+== device I/O
+system cp -f /usr/etc/conf/account.conf /tmp/account.conf
+system /sbin/ifconfig wlan0 | head -n1 | awk -F' ' '{ print $5 }' > /tmp/mac_addr
+system /sbin/ifconfig `/sbin/route | head -n3 | tail -n1 | awk -F' ' '{ print $8 }'` | grep inet | awk -F: '{ print $2 }' | awk '{ print $1 }' > /tmp/ip_addr
+system echo 1 > /etc/conf/playsounds
+system /bin/unzip -o /tmp/file<random> -d /usr/karotz/apps/app-new
+system killall karotzVM
+system /sbin/ifconfig wlan0 | head -n1 | awk -F' ' '{ print $5 }' > /tmp/mac_addr
+system /sbin/ifconfig `/sbin/route | head -n3 | tail -n1 | awk -F' ' '{ print $8 }'` | grep inet | awk -F: '{ print $2 }' | awk '{ print $1 }' > /tmp/ip_addr
+system rm /etc/conf/playsounds
+system /sbin/ifconfig wlan0 | head -n1 | awk -F' ' '{ print $5 }' > /tmp/mac_addr
+system /sbin/ifconfig `/sbin/route | head -n3 | tail -n1 | awk -F' ' '{ print $8 }'` | grep inet | awk -F: '{ print $2 }' | awk '{ print $1 }' > /tmp/ip_addr
+== daemon still running: True

@@ -1,0 +1,45 @@
+# The initramfs entries gen_init_cpio makes (the built-in default list: /dev, /dev/console, /root) take their time from SOURCE_DATE_EPOCH when it is set, so two builds of the same source give the same kernel.
+--- a/usr/gen_init_cpio.c
++++ b/usr/gen_init_cpio.c
+@@ -20,6 +20,14 @@
+ #define xstr(s) #s
+ #define str(s) xstr(s)
+ 
++/* The time of the entries made here: SOURCE_DATE_EPOCH when it is set, else now. */
++static time_t default_mtime(void)
++{
++	const char *epoch = getenv("SOURCE_DATE_EPOCH");
++
++	return epoch && *epoch ? (time_t)strtol(epoch, NULL, 10) : time(NULL);
++}
++
+ static unsigned int offset;
+ static unsigned int ino = 721;
+ 
+@@ -102,7 +110,7 @@
+ 			 unsigned int mode, uid_t uid, gid_t gid)
+ {
+ 	char s[256];
+-	time_t mtime = time(NULL);
++	time_t mtime = default_mtime();
+ 
+ 	sprintf(s,"%s%08X%08X%08lX%08lX%08X%08lX"
+ 	       "%08X%08X%08X%08X%08X%08X%08X",
+@@ -150,7 +158,7 @@
+ 		       uid_t uid, gid_t gid)
+ {
+ 	char s[256];
+-	time_t mtime = time(NULL);
++	time_t mtime = default_mtime();
+ 
+ 	sprintf(s,"%s%08X%08X%08lX%08lX%08X%08lX"
+ 	       "%08X%08X%08X%08X%08X%08X%08X",
+@@ -238,7 +246,7 @@
+ 		       unsigned int maj, unsigned int min)
+ {
+ 	char s[256];
+-	time_t mtime = time(NULL);
++	time_t mtime = default_mtime();
+ 
+ 	if (dev_type == 'b')
+ 		mode |= S_IFBLK;

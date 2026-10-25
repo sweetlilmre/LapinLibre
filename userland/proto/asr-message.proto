@@ -1,0 +1,29 @@
+// SPDX-License-Identifier: MIT
+// asr-message.proto
+
+package lapinlibre.asr;
+
+enum ReturnCode {
+  OK = 1;
+  ERROR = 2;
+  TIMEOUT = 3;
+  TERMINATED = 4;
+  CANCELLED = 5;
+  BUSY = 6;
+  COMPFAILURE = 7;
+  NOMATCH = 8;
+  NOINPUT = 9;
+}
+
+message AsrMsg {
+  optional string grammar = 1;
+  optional bytes audio = 2;
+  optional Response response = 3;
+}
+
+message Response {
+  required ReturnCode code = 1;
+  optional int32 score = 2;
+  optional string words = 3;
+  optional string semantic = 4;
+}

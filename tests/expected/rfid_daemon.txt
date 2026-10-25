@@ -1,0 +1,26 @@
+== registered: True
+== interface
+method com.mindscape.karotz.KarotzInterface.getTags(out:s,out:b)
+signal com.mindscape.karotz.KarotzInterface.registered()
+signal com.mindscape.karotz.KarotzInterface.tag_in(out:s,out:s,out:i,out:i,out:i,out:i)
+signal com.mindscape.karotz.KarotzInterface.tag_out(out:s)
+== calls
+getTags() -> string "" | boolean true
+getTags() -> string ";D002665544332211:13121110:17161514:1B1A1918:1F1E1D1C:23222120:27262524:2B2A2928:00011004:33323130:37363534:3B3A3938:3F3E3D3C:43424140:47464544:4B4A4948:4F4E4D4C:FFFFFFFF:" | boolean true
+== reader FIFO full: True
+== signals
+com.mindscape.karotz.KarotzInterface.registered()
+com.mindscape.karotz.KarotzInterface.tag_in(string "D002665544332211", string "13121110:17161514:1B1A1918:1F1E1D1C:23222120:27262524:2B2A2928:00011004:33323130:37363534:3B3A3938:3F3E3D3C:43424140:47464544:4B4A4948:4F4E4D4C:FFFFFFFF:", int32 1, int32 1, int32 0, int32 4)
+com.mindscape.karotz.KarotzInterface.tag_out(string "D002665544332211")
+com.mindscape.karotz.KarotzInterface.tag_in(string "D002060504030201", string "43424140:47464544:4B4A4948:4F4E4D4C:53525150:57565554:5B5A5958:1234A7FF:63626160:67666564:6B6A6968:6F6E6D6C:73727170:77767574:7B7A7978:7F7E7D7C:FFFFFFFF:", int32 4660, int32 10, int32 63, int32 31)
+com.mindscape.karotz.KarotzInterface.tag_in(string "D002665544332211", string "13121110:17161514:1B1A1918:1F1E1D1C:23222120:27262524:2B2A2928:00011004:33323130:37363534:3B3A3938:3F3E3D3C:43424140:47464544:4B4A4948:4F4E4D4C:FFFFFFFF:", int32 1, int32 1, int32 0, int32 4)
+com.mindscape.karotz.KarotzInterface.tag_out(string "D002060504030201")
+com.mindscape.karotz.KarotzInterface.tag_out(string "D002665544332211")
+== device I/O
+open /dev/i2c-0
+ioctl /dev/i2c-0 0x703
+write /dev/i2c-0 2
+write /dev/i2c-0 1
+read /dev/i2c-0 1
+write /dev/i2c-0 2
+== daemon still running: True

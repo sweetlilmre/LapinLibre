@@ -1,0 +1,24 @@
+inet: build accept4 only when there is a system call for it
+
+With kernel headers that have neither __NR_accept4 nor __NR_socketcall (ARM
+EABI before Linux 2.6.36), socketcalls.c still built accept4, with an empty
+body: it made no system call and returned 0. Every other call without a
+system call is left out of libc (or, with UCLIBC_HAS_STUBS, is a stub in
+stubs.c failing with ENOSYS). GLib found accept4 and used it:
+g_socket_accept() took the 0 as the new connection (descriptor 0, stdin), and
+the controller, serving applications through a GSocketService, looped on it.
+Left out, programs configure without it (GLib then calls accept).
+
+--- a/libc/inet/socketcalls.c
++++ b/libc/inet/socketcalls.c
+@@ -80,7 +80,9 @@
+ lt_libc_hidden(accept)
+ #endif
+
+-#ifdef L_accept4
++/* Only with a system call for it, like the calls stubs.c covers: an empty
++   one would return 0. */
++#if defined(L_accept4) && (defined(__NR_accept4) || defined(__NR_socketcall))
+ static int __NC(accept4)(int fd, struct sockaddr *addr, socklen_t *addrlen, int flags)
+ {
+ # ifdef __NR_accept4

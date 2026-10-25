@@ -1,0 +1,43 @@
+#!/bin/sh
+# SPDX-License-Identifier: MIT
+# sound: stops what multimedia-daemon plays, then plays a sound by its name (the stick's sounds
+# folder first, then the core's own) or an http(s) URL (a file, a stream or a playlist). The
+# answer comes once the playback has started.
+#   id   a sound's name, as sound_list gives it
+#   url  an http:// or https:// URL
+# Exactly one of the two.
+. /usr/share/lapinlibre/web.sh
+web_begin change
+param id
+case $? in 2) web_fail "parameter id must be a sound's name" ;; esac
+id=$PV
+param url
+case $? in 2) web_fail "parameter url must be an http:// or https:// URL" ;; esac
+url=$PV
+if [ -n "$id" ] && [ -n "$url" ]; then
+    web_fail "give either id or url, not both"
+elif [ -n "$id" ]; then
+    valid_id "$id" || web_fail "parameter id must be a sound's name (letters, digits, _ and -)"
+    sound_path "$id" || web_fail "no sound is called $id"
+    target=$SP
+elif [ -n "$url" ]; then
+    valid_url "$url" || web_fail "parameter url must be an http:// or https:// URL"
+    target=$url
+else
+    web_fail "give id (a sound's name) or url"
+fi
+
+web_hardware
+dbus_call Multimedia stop "string:$WEB_ID" int32:1
+r=$?
+[ $r -ge 2 ] && dbus_failed Multimedia $r ""
+dbus_do Multimedia "multimedia-daemon couldn't play it (it may be busy with music)" \
+    play "string:$WEB_ID" "string:$target" int32:1
+state_write playback playing
+web_unlock
+web_ok
+if [ -n "$url" ]; then
+    json_str "$url"
+    reply_json "{\"return\":\"0\",\"url\":$J}"
+fi
+reply_json '{"return":"0"}'

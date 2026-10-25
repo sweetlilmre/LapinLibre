@@ -1,0 +1,8 @@
+#!/bin/sh
+# SPDX-License-Identifier: MIT
+# lapinlibre/status (read-only): LapinLibre's own status for the web page: the build, the network,
+# the time, the load, memory and space, the servers, the controller's state and which daemons run.
+. /usr/share/lapinlibre/web.sh
+web_begin read
+lapinlibre_status
+reply_json "{\"return\":\"0\",$JO}"

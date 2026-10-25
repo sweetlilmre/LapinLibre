@@ -1,0 +1,13 @@
+# SPDX-License-Identifier: MIT
+# Everything here runs in a Linux shell, on the build host or on the rabbit:
+# keep LF endings, whatever the checkout's platform.
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.mp3 binary
+*.gz binary
+*.tar binary
+*.zip binary
+*.gpg binary
+# Violet's signed file, kept byte for byte (its lines end in CRLF).
+image/usbkey/autorun.sig -text

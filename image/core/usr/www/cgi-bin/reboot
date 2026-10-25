@@ -1,0 +1,9 @@
+#!/bin/sh
+# SPDX-License-Identifier: MIT
+# reboot: answers, then the rabbit reboots about 10 s later. The delayed reboot runs in its own
+# session with no link to the request, so the answer is sent first.
+. /usr/share/lapinlibre/web.sh
+web_begin change
+setsid reboot -d 10 < /dev/null > /dev/null 2>&1 &
+web_ok
+reply_json '{"return":"0"}'

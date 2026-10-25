@@ -1,0 +1,25 @@
+sys/stat.h: offer statx only with the system call
+
+libc builds statx only when the kernel headers have __NR_statx (Linux
+4.11). With older headers <sys/stat.h> still declared it, so GLib 2.86,
+which checks for statx by compiling, used it and failed to link
+("undefined reference to statx").
+
+--- a/include/sys/stat.h
++++ b/include/sys/stat.h
+@@ -392,8 +392,14 @@
+ #undef _STAT_VER
+ #undef _MKNOD_VER
+ 
++/* statx only with the system call: libc builds it from it (Linux 4.11), and
++   a declaration without it makes programs that check by compiling (GLib) fail
++   to link. */
+ #ifdef __USE_GNU
+-# include <bits/statx.h>
++# include <sys/syscall.h>
++# ifdef __NR_statx
++#  include <bits/statx.h>
++# endif
+ #endif
+ 
+ __END_DECLS

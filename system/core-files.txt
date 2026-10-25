@@ -1,0 +1,1414 @@
+# SPDX-License-Identifier: MIT
+# LapinLibre's core image: every entry of the root filesystem (rootfs:) and of
+# /usr (usr:), its own boot included. One entry per line:
+#   part:path f MODE UID:GID SOURCE        a file. SOURCE: target, the system build's target at the same
+#                                          path (rootfs:P is target P, usr:P is target usr/P);
+#                                          target:PATH, the target's file at PATH; own, our build;
+#                                          core, image/core/<part>/<path> in this repository;
+#                                          generated, made by image/tools/image.py (the sounds,
+#                                          inetd.conf, the pinned firmware)
+#   part:path l TARGET                     a symbolic link
+#   part:path d MODE UID:GID               a directory
+#   part:path c|b MODE UID:GID RDEV        a device node
+# "# ..." after an entry says why it is there, where that isn't obvious. Libraries are listed where
+# they are; the build's library check adds any that are missing from the system build's target and fails
+# on any listed that nothing uses.
+
+rootfs:bin d 0755 0:0
+rootfs:bin/[ l /bin/busybox
+rootfs:bin/[[ l /bin/busybox
+rootfs:bin/addgroup l busybox
+rootfs:bin/adduser l busybox
+rootfs:bin/ar l /bin/busybox
+rootfs:bin/arping l /bin/busybox
+rootfs:bin/ash l busybox
+rootfs:bin/awk l /bin/busybox
+rootfs:bin/basename l /bin/busybox
+rootfs:bin/bash f 0755 0:0 target
+rootfs:bin/bunzip2 l /bin/busybox
+rootfs:bin/busybox f 0755 0:0 target
+rootfs:bin/bzcat l /bin/busybox
+rootfs:bin/cat l busybox
+rootfs:bin/catv l busybox
+rootfs:bin/chattr l busybox
+rootfs:bin/chgrp l busybox
+rootfs:bin/chmod l busybox
+rootfs:bin/chown l busybox
+rootfs:bin/chrt l /bin/busybox
+rootfs:bin/chvt l /bin/busybox
+rootfs:bin/cksum l /bin/busybox
+rootfs:bin/clear l /bin/busybox
+rootfs:bin/cmp l /bin/busybox
+rootfs:bin/cp l busybox
+rootfs:bin/cpio l busybox
+rootfs:bin/crontab l /bin/busybox
+rootfs:bin/cut l /bin/busybox
+rootfs:bin/date l busybox
+rootfs:bin/dc l /bin/busybox
+rootfs:bin/dd l busybox
+rootfs:bin/deallocvt l /bin/busybox
+rootfs:bin/delgroup l busybox
+rootfs:bin/deluser l busybox
+rootfs:bin/df l busybox
+rootfs:bin/diff l /bin/busybox
+rootfs:bin/dirname l /bin/busybox
+rootfs:bin/dmesg l busybox
+rootfs:bin/dnsdomainname l busybox
+rootfs:bin/dos2unix l /bin/busybox
+rootfs:bin/dropbear l /sbin/dropbear
+rootfs:bin/dropbearkey l /sbin/dropbear
+rootfs:bin/du l /bin/busybox
+rootfs:bin/dumpkmap l busybox
+rootfs:bin/echo l busybox
+rootfs:bin/egrep l busybox
+rootfs:bin/eject l /bin/busybox
+rootfs:bin/env l /bin/busybox
+rootfs:bin/ether-wake l /bin/busybox
+rootfs:bin/expr l /bin/busybox
+rootfs:bin/false l busybox
+rootfs:bin/fdflush l busybox
+rootfs:bin/fdformat l /bin/busybox
+rootfs:bin/fgconsole l /bin/busybox
+rootfs:bin/fgrep l busybox
+rootfs:bin/find l /bin/busybox
+rootfs:bin/flock l /bin/busybox
+rootfs:bin/fold l /bin/busybox
+rootfs:bin/free l /bin/busybox
+rootfs:bin/fuser l /bin/busybox
+rootfs:bin/getopt l busybox
+rootfs:bin/gpg f 0755 0:0 target:usr/bin/gpg
+rootfs:bin/grep l busybox
+rootfs:bin/gunzip l busybox
+rootfs:bin/gzip l busybox
+rootfs:bin/head l /bin/busybox
+rootfs:bin/hexdump l /bin/busybox
+rootfs:bin/hostid l /bin/busybox
+rootfs:bin/hostname l busybox
+rootfs:bin/id l /bin/busybox
+rootfs:bin/install l /bin/busybox
+rootfs:bin/ip l busybox
+rootfs:bin/ipaddr l busybox
+rootfs:bin/ipcrm l /bin/busybox
+rootfs:bin/ipcs l /bin/busybox
+rootfs:bin/iplink l busybox
+rootfs:bin/iproute l busybox
+rootfs:bin/iprule l busybox
+rootfs:bin/iptunnel l busybox
+rootfs:bin/kill l busybox
+rootfs:bin/killall l /bin/busybox
+rootfs:bin/killall5 l /bin/busybox
+rootfs:bin/last l /bin/busybox
+rootfs:bin/length l /bin/busybox
+rootfs:bin/less l /bin/busybox
+rootfs:bin/linux32 l busybox
+rootfs:bin/linux64 l busybox
+rootfs:bin/ln l busybox
+rootfs:bin/logger l /bin/busybox
+rootfs:bin/login l busybox
+rootfs:bin/logname l /bin/busybox
+rootfs:bin/ls l busybox
+rootfs:bin/lsattr l busybox
+rootfs:bin/lspci l /bin/busybox
+rootfs:bin/lsusb l /bin/busybox
+rootfs:bin/lzcat l /bin/busybox
+rootfs:bin/lzma l /bin/busybox
+rootfs:bin/md5sum l /bin/busybox
+rootfs:bin/mesg l /bin/busybox
+rootfs:bin/mkdir l busybox
+rootfs:bin/mkfifo l /bin/busybox
+rootfs:bin/mknod l busybox
+rootfs:bin/mktemp l busybox
+rootfs:bin/more l busybox
+rootfs:bin/mount l busybox
+rootfs:bin/mountpoint l busybox
+rootfs:bin/mt l busybox
+rootfs:bin/mv l busybox
+rootfs:bin/nc l /bin/busybox
+rootfs:bin/netstat l busybox
+rootfs:bin/nice l busybox
+rootfs:bin/nohup l /bin/busybox
+rootfs:bin/nslookup l /bin/busybox
+rootfs:bin/od l /bin/busybox
+rootfs:bin/openvt l /bin/busybox
+rootfs:bin/passwd l /bin/busybox
+rootfs:bin/patch l /bin/busybox
+rootfs:bin/pidof l busybox
+rootfs:bin/ping l busybox
+rootfs:bin/pipe_progress l busybox
+rootfs:bin/printenv l busybox
+rootfs:bin/printf l /bin/busybox
+rootfs:bin/ps l busybox
+rootfs:bin/pwd l busybox
+rootfs:bin/readlink l /bin/busybox
+rootfs:bin/realpath l /bin/busybox
+rootfs:bin/renice l /bin/busybox
+rootfs:bin/reset l /bin/busybox
+rootfs:bin/resize l /bin/busybox
+rootfs:bin/rev l busybox
+rootfs:bin/rm l busybox
+rootfs:bin/rmdir l busybox
+rootfs:bin/run-parts l busybox
+rootfs:bin/sed l busybox
+rootfs:bin/seq l /bin/busybox
+rootfs:bin/setarch l busybox
+rootfs:bin/setkeycodes l /bin/busybox
+rootfs:bin/setsid l /bin/busybox
+rootfs:bin/sh l busybox
+rootfs:bin/sha1sum l /bin/busybox
+rootfs:bin/sha256sum l /bin/busybox
+rootfs:bin/sha512sum l /bin/busybox
+rootfs:bin/sleep l busybox
+rootfs:bin/smemcap l /bin/busybox
+rootfs:bin/sort l /bin/busybox
+rootfs:bin/strings l /bin/busybox
+rootfs:bin/stty l busybox
+rootfs:bin/su l busybox
+rootfs:bin/sync l busybox
+rootfs:bin/tail l /bin/busybox
+rootfs:bin/tar l busybox
+rootfs:bin/tee l /bin/busybox
+rootfs:bin/telnet l /bin/busybox
+rootfs:bin/test l /bin/busybox
+rootfs:bin/tftp l /bin/busybox
+rootfs:bin/time l /bin/busybox
+rootfs:bin/timeout l busybox  # runs a command with a time limit (BusyBox's timeout applet)
+rootfs:bin/top l /bin/busybox
+rootfs:bin/touch l busybox
+rootfs:bin/tr l /bin/busybox
+rootfs:bin/traceroute l /bin/busybox
+rootfs:bin/true l busybox
+rootfs:bin/tty l /bin/busybox
+rootfs:bin/umount l busybox
+rootfs:bin/uname l busybox
+rootfs:bin/uniq l /bin/busybox
+rootfs:bin/unix2dos l /bin/busybox
+rootfs:bin/unlzma l /bin/busybox
+rootfs:bin/unxz l /bin/busybox
+rootfs:bin/unzip l /bin/busybox
+rootfs:bin/uptime l /bin/busybox
+rootfs:bin/usleep l busybox
+rootfs:bin/uudecode l /bin/busybox
+rootfs:bin/uuencode l /bin/busybox
+rootfs:bin/vi l busybox
+rootfs:bin/vlock l /bin/busybox
+rootfs:bin/watch l busybox
+rootfs:bin/wc l /bin/busybox
+rootfs:bin/wget l /bin/busybox
+rootfs:bin/which l /bin/busybox
+rootfs:bin/who l /bin/busybox
+rootfs:bin/whoami l /bin/busybox
+rootfs:bin/xargs l /bin/busybox
+rootfs:bin/xz l /bin/busybox
+rootfs:bin/xzcat l /bin/busybox
+rootfs:bin/yes l /bin/busybox
+rootfs:bin/zcat l busybox
+rootfs:dev d 0755 0:0
+rootfs:dev/console c 0644 0:0 0x501
+rootfs:etc l /usr/etc
+rootfs:karotz d 0755 0:0
+rootfs:karotz/bin d 0755 0:0
+rootfs:karotz/bin/ears f 0755 0:0 own
+rootfs:karotz/bin/led f 0755 0:0 own
+rootfs:karotz/bin/power f 0755 0:0 own
+rootfs:karotz/etc d 0775 0:0
+rootfs:karotz/etc/gpg d 0755 0:0
+rootfs:karotz/etc/gpg/pubring.gpg f 0644 0:0 core  # Karotz's public keyring, as Karotz made it: pinned (config.toml [key.md5])
+rootfs:karotz/etc/gpg/trustdb.gpg f 0644 0:0 core  # its trust database, pinned the same way
+rootfs:karotz/scripts d 0775 0:0
+rootfs:karotz/scripts/www d 0755 0:0
+rootfs:karotz/sounds d 0775 0:0
+rootfs:lib d 0755 0:0
+rootfs:lib/firmware d 0755 0:0  # requested firmware, which mdev loads from here
+rootfs:lib/ld-uClibc-1.0.57.so f 0755 0:0 target
+rootfs:lib/ld-uClibc.so.0 l ld-uClibc-1.0.57.so
+rootfs:lib/ld-uClibc.so.1 l ld-uClibc-1.0.57.so
+rootfs:lib/libc.so.0 l libuClibc-1.0.57.so
+rootfs:lib/libc.so.1 l libuClibc-1.0.57.so
+rootfs:lib/libcrypt.so.0 l libc.so.0  # merged into uClibc-ng's libc
+rootfs:lib/libcurses.so l libncurses.so.6.6
+rootfs:lib/libdl.so.0 l libc.so.0  # merged into uClibc-ng's libc
+rootfs:lib/libgcc_s.so l libgcc_s.so.1
+rootfs:lib/libgcc_s.so.1 f 0644 0:0 target
+rootfs:lib/libhistory.so l libhistory.so.8.3
+rootfs:lib/libhistory.so.8 l libhistory.so.8.3
+rootfs:lib/libhistory.so.8.3 f 0755 0:0 target:usr/lib/libhistory.so.8.3
+rootfs:lib/libiconv.so l libiconv.so.2.7.0
+rootfs:lib/libiconv.so.2 l libiconv.so.2.7.0
+rootfs:lib/libiconv.so.2.7.0 f 0755 0:0 target:usr/lib/libiconv.so.2.7.0
+rootfs:lib/libintl.so l libintl.so.8.4.0
+rootfs:lib/libintl.so.8 l libintl.so.8.4.0
+rootfs:lib/libintl.so.8.4.0 f 0644 0:0 target:usr/lib/libintl.so.8.4.0
+rootfs:lib/libm.so.0 l libc.so.0  # merged into uClibc-ng's libc
+rootfs:lib/libncurses.so l libncurses.so.6.6
+rootfs:lib/libncurses.so.6 l libncurses.so.6.6
+rootfs:lib/libncurses.so.6.6 f 0755 0:0 target:usr/lib/libncurses.so.6.6
+rootfs:lib/libnsl.so.0 l libc.so.0  # merged into uClibc-ng's libc
+rootfs:lib/libpthread.so.0 l libc.so.0  # merged into uClibc-ng's libc
+rootfs:lib/libreadline.so l libreadline.so.8.3
+rootfs:lib/libreadline.so.8 l libreadline.so.8.3
+rootfs:lib/libreadline.so.8.3 f 0755 0:0 target:usr/lib/libreadline.so.8.3
+rootfs:lib/libresolv.so.0 l libc.so.0  # merged into uClibc-ng's libc
+rootfs:lib/librt.so.0 l libc.so.0  # merged into uClibc-ng's libc
+rootfs:lib/libuClibc-1.0.57.so f 0755 0:0 target
+rootfs:lib/libutil.so.0 l libc.so.0  # merged into uClibc-ng's libc
+rootfs:lib/libz.so l libz.so.1.3.2
+rootfs:lib/libz.so.1 l libz.so.1.3.2
+rootfs:lib/libz.so.1.3.2 f 0755 0:0 target:usr/lib/libz.so.1.3.2
+rootfs:mnt d 0755 0:0
+rootfs:mnt/usbkey d 0755 0:0
+rootfs:opt d 0755 0:0
+rootfs:proc d 0755 0:0
+rootfs:ramdisk l /dev/shm
+rootfs:run l var/run  # the system build's programs (Buildroot) put runtime state in /run, the rabbit's scripts in /var/run (D-Bus's socket)
+rootfs:sbin d 0755 0:0
+rootfs:sbin/bootchartd l ../bin/busybox
+rootfs:sbin/chroot l /bin/busybox
+rootfs:sbin/crond l /bin/busybox
+rootfs:sbin/devmem l ../bin/busybox
+rootfs:sbin/dnsd l /bin/busybox
+rootfs:sbin/dropbear f 0755 0:0 target:usr/sbin/dropbear
+rootfs:sbin/flash_erase f 0755 0:0 target:usr/sbin/flash_erase  # the flash erase tool; mtd-utils 2 has no flash_eraseall
+rootfs:sbin/freeramdisk l ../bin/busybox
+rootfs:sbin/fsck l ../bin/busybox
+rootfs:sbin/getty l ../bin/busybox
+rootfs:sbin/halt l ../bin/busybox
+rootfs:sbin/hdparm l ../bin/busybox
+rootfs:sbin/hwclock l ../bin/busybox
+rootfs:sbin/ifconfig l ../bin/busybox
+rootfs:sbin/ifdown l ../bin/busybox
+rootfs:sbin/ifup l ../bin/busybox
+rootfs:sbin/inetd l /bin/busybox
+rootfs:sbin/init l ../bin/busybox
+rootfs:sbin/insmod l ../bin/busybox
+rootfs:sbin/iwconfig f 0755 0:0 target
+rootfs:sbin/iwgetid l iwconfig
+rootfs:sbin/iwlist l iwconfig
+rootfs:sbin/iwpriv l iwconfig
+rootfs:sbin/iwspy l iwconfig
+rootfs:sbin/klogd l ../bin/busybox
+rootfs:sbin/ldconfig f 0755 0:0 target
+rootfs:sbin/loadfont l /bin/busybox
+rootfs:sbin/loadkmap l ../bin/busybox
+rootfs:sbin/losetup l ../bin/busybox
+rootfs:sbin/lsmod l ../bin/busybox
+rootfs:sbin/makedevs l ../bin/busybox
+rootfs:sbin/mdev l ../bin/busybox
+rootfs:sbin/mkswap l ../bin/busybox
+rootfs:sbin/modinfo l ../bin/busybox
+rootfs:sbin/modprobe l ../bin/busybox
+rootfs:sbin/nameif l ../bin/busybox
+rootfs:sbin/nanddump f 0755 0:0 target:usr/sbin/nanddump
+rootfs:sbin/nandwrite f 0755 0:0 target:usr/sbin/nandwrite
+rootfs:sbin/pivot_root l ../bin/busybox
+rootfs:sbin/poweroff l ../bin/busybox
+rootfs:sbin/rdate l /bin/busybox
+rootfs:sbin/readprofile l /bin/busybox
+rootfs:sbin/reboot l ../bin/busybox
+rootfs:sbin/rmmod l ../bin/busybox
+rootfs:sbin/route l ../bin/busybox
+rootfs:sbin/runlevel l ../bin/busybox
+rootfs:sbin/setconsole l ../bin/busybox
+rootfs:sbin/setlogcons l /bin/busybox
+rootfs:sbin/start-stop-daemon l ../bin/busybox
+rootfs:sbin/sulogin l ../bin/busybox
+rootfs:sbin/swapoff l ../bin/busybox
+rootfs:sbin/swapon l ../bin/busybox
+rootfs:sbin/switch_root l ../bin/busybox
+rootfs:sbin/sysctl l ../bin/busybox
+rootfs:sbin/syslogd l ../bin/busybox
+rootfs:sbin/telnetd l /bin/busybox
+rootfs:sbin/udhcpc l ../bin/busybox
+rootfs:sbin/vconfig l ../bin/busybox
+rootfs:sbin/watchdog l ../bin/busybox
+rootfs:sys d 0755 0:0
+rootfs:tmp l var/tmp
+rootfs:usr d 0755 0:0
+rootfs:var d 0755 0:0
+rootfs:www l /usr/www
+usr:bin d 0755 0:0
+usr:bin/abxtest f 0755 0:0 target
+usr:bin/chattr f 0755 0:0 target:bin/chattr
+usr:bin/cjpeg f 0755 0:0 target  # libjpeg tool
+usr:bin/curl f 0755 0:0 target
+usr:bin/dbus-binding-tool f 0755 0:0 target
+usr:bin/dbus-cleanup-sockets f 0755 0:0 target
+usr:bin/dbus-daemon f 0755 0:0 target
+usr:bin/dbus-launch f 0755 0:0 target
+usr:bin/dbus-monitor f 0755 0:0 target
+usr:bin/dbus-send f 0755 0:0 target
+usr:bin/dbus-uuidgen f 0755 0:0 target
+usr:bin/djpeg f 0755 0:0 target  # libjpeg tool
+usr:bin/dumpsexp f 0755 0:0 target
+usr:bin/ffmpeg f 0755 0:0 target
+usr:bin/flac f 0755 0:0 target
+usr:bin/gdbus f 0755 0:0 target
+usr:bin/gio-querymodules f 0755 0:0 target
+usr:bin/glib-compile-schemas f 0755 0:0 target
+usr:bin/gpg-error f 0755 0:0 target
+usr:bin/gsettings f 0755 0:0 target
+usr:bin/hmac256 f 0755 0:0 target
+usr:bin/iconv f 0755 0:0 target
+usr:bin/jpegtran f 0755 0:0 target  # libjpeg tool
+usr:bin/karotz-player f 0755 0:0 own
+usr:bin/ldd f 0755 0:0 target
+usr:bin/libpng-config l libpng14-config
+usr:bin/lockfile-check f 0755 0:0 target
+usr:bin/lockfile-create f 0755 0:0 target
+usr:bin/lockfile-remove f 0755 0:0 target
+usr:bin/lockfile-touch f 0755 0:0 target
+usr:bin/lsattr f 0755 0:0 target:bin/lsattr
+usr:bin/madplay f 0755 0:0 target
+usr:bin/mail-lock f 0755 0:0 target
+usr:bin/mail-touchlock f 0755 0:0 target
+usr:bin/mail-unlock f 0755 0:0 target
+usr:bin/metaflac f 0755 0:0 target
+usr:bin/mpd f 0755 0:0 target
+usr:bin/netcat f 0755 0:0 target
+usr:bin/openssl f 0755 0:0 target
+usr:bin/python l python2.4
+usr:bin/python2.4 f 0755 0:0 target
+usr:bin/rdjpgcom f 0755 0:0 target  # libjpeg tool
+usr:bin/smtpd.py f 0755 0:0 target
+usr:bin/speexdec f 0755 0:0 target
+usr:bin/speexenc f 0755 0:0 target
+usr:bin/strace f 0755 0:0 target
+usr:bin/uuidgen f 0755 0:0 target
+usr:bin/v8-shell f 0755 0:0 own
+usr:bin/wrjpgcom f 0755 0:0 target  # libjpeg tool
+usr:bin/xmlcatalog f 0755 0:0 target
+usr:bin/xmllint f 0755 0:0 target
+usr:devtools d 0755 0:0
+usr:etc d 0755 0:0
+usr:etc/conf d 0755 0:0
+usr:etc/connman d 0755 0:0
+usr:etc/dbus-1 d 0755 0:0
+usr:etc/dbus-1/system.d d 0755 0:0
+usr:etc/init.d d 0755 0:0
+usr:etc/mpd d 0755 0:0
+usr:etc/mpd/playlists d 0755 0:0
+usr:install d 0755 0:0
+usr:karotz d 0755 0:0
+usr:karotz/apps d 0755 0:0
+usr:karotz/bin d 0755 0:0
+usr:karotz/bin/button-daemon f 0755 0:0 own
+usr:karotz/bin/controller f 0755 0:0 own
+usr:karotz/bin/ears-daemon f 0755 0:0 own
+usr:karotz/bin/immortaldog f 0755 0:0 own
+usr:karotz/bin/k2k-daemon f 0755 0:0 own
+usr:karotz/bin/karotzVM f 0755 0:0 own
+usr:karotz/bin/led-daemon f 0755 0:0 own
+usr:karotz/bin/multimedia-daemon f 0755 0:0 own
+usr:karotz/bin/rfid-daemon f 0755 0:0 own
+usr:karotz/bin/scheduler-daemon f 0755 0:0 own
+usr:karotz/bin/serial-daemon f 0755 0:0 own
+usr:karotz/bin/voice-daemon f 0755 0:0 own
+usr:karotz/bin/webcam-daemon f 0755 0:0 own
+usr:karotz/lib d 0755 0:0
+usr:karotz/lib/libkarotz-common.so f 0755 0:0 own
+usr:karotz/lib/libkarotz-messages.so f 0755 0:0 own
+usr:karotz/messages d 0755 0:0
+usr:karotz/res d 0755 0:0
+usr:karotz/res/lang d 0755 0:0
+usr:lib d 0755 0:0
+usr:lib/crda d 0755 0:0
+usr:lib/crda/regulatory.bin f 0644 0:0 target
+usr:lib/gio d 0755 0:0
+usr:lib/gio/modules d 0755 0:0
+usr:lib/libFLAC.so l libFLAC.so.14.0.0
+usr:lib/libFLAC.so.14 l libFLAC.so.14.0.0
+usr:lib/libFLAC.so.14.0.0 f 0755 0:0 target
+usr:lib/libatomic.so l libatomic.so.1.2.0
+usr:lib/libatomic.so.1 l libatomic.so.1.2.0
+usr:lib/libatomic.so.1.2.0 f 0755 0:0 target:lib/libatomic.so.1.2.0
+usr:lib/libavcodec.so l libavcodec.so.60.31.102
+usr:lib/libavcodec.so.60 l libavcodec.so.60.31.102
+usr:lib/libavcodec.so.60.31.102 f 0755 0:0 target
+usr:lib/libavdevice.so l libavdevice.so.60.3.100
+usr:lib/libavdevice.so.60 l libavdevice.so.60.3.100
+usr:lib/libavdevice.so.60.3.100 f 0755 0:0 target
+usr:lib/libavfilter.so l libavfilter.so.9.12.100
+usr:lib/libavfilter.so.9 l libavfilter.so.9.12.100
+usr:lib/libavfilter.so.9.12.100 f 0755 0:0 target
+usr:lib/libavformat.so l libavformat.so.60.16.100
+usr:lib/libavformat.so.60 l libavformat.so.60.16.100
+usr:lib/libavformat.so.60.16.100 f 0755 0:0 target
+usr:lib/libavutil.so l libavutil.so.58.29.100
+usr:lib/libavutil.so.58 l libavutil.so.58.29.100
+usr:lib/libavutil.so.58.29.100 f 0755 0:0 target
+usr:lib/libblkid.so.1 l libblkid.so.1.1.0
+usr:lib/libblkid.so.1.1.0 f 0755 0:0 target:lib/libblkid.so.1.1.0
+usr:lib/libcom_err.so l libcom_err.so.2
+usr:lib/libcom_err.so.2 l libcom_err.so.2.1
+usr:lib/libcom_err.so.2.1 f 0755 0:0 target
+usr:lib/libcrypto.so l libcrypto.so.3
+usr:lib/libcrypto.so.3 f 0755 0:0 target
+usr:lib/libcurl.so l libcurl.so.4.8.0
+usr:lib/libcurl.so.4 l libcurl.so.4.8.0
+usr:lib/libcurl.so.4.8.0 f 0755 0:0 target
+usr:lib/libdbus-1.so l libdbus-1.so.3.32.4
+usr:lib/libdbus-1.so.3 l libdbus-1.so.3.32.4
+usr:lib/libdbus-1.so.3.32.4 f 0755 0:0 target
+usr:lib/libdbus-glib-1.so l libdbus-glib-1.so.2.3.6
+usr:lib/libdbus-glib-1.so.2 l libdbus-glib-1.so.2.3.6
+usr:lib/libdbus-glib-1.so.2.3.6 f 0755 0:0 target
+usr:lib/libe2p.so l libe2p.so.2
+usr:lib/libe2p.so.2 l libe2p.so.2.3
+usr:lib/libe2p.so.2.3 f 0755 0:0 target
+usr:lib/libeXosip2.so l libeXosip2.so.6.2.0
+usr:lib/libeXosip2.so.6 l libeXosip2.so.6.2.0
+usr:lib/libeXosip2.so.6.2.0 f 0755 0:0 target
+usr:lib/libexpat.so l libexpat.so.1.12.1
+usr:lib/libexpat.so.1 l libexpat.so.1.12.1
+usr:lib/libexpat.so.1.12.1 f 0755 0:0 target
+usr:lib/libffi.so l libffi.so.8.1.4
+usr:lib/libffi.so.8 l libffi.so.8.1.4
+usr:lib/libffi.so.8.1.4 f 0755 0:0 target
+usr:lib/libgcc_s.so l libgcc_s.so.1
+usr:lib/libgcc_s.so.1 f 0644 0:0 target:lib/libgcc_s.so.1
+usr:lib/libgcrypt.so l libgcrypt.so.20.7.0
+usr:lib/libgcrypt.so.20 l libgcrypt.so.20.7.0
+usr:lib/libgcrypt.so.20.7.0 f 0755 0:0 target
+usr:lib/libgio-2.0.so l libgio-2.0.so.0.8600.5
+usr:lib/libgio-2.0.so.0 l libgio-2.0.so.0.8600.5
+usr:lib/libgio-2.0.so.0.8600.5 f 0755 0:0 target
+usr:lib/libglib-2.0.so l libglib-2.0.so.0.8600.5
+usr:lib/libglib-2.0.so.0 l libglib-2.0.so.0.8600.5
+usr:lib/libglib-2.0.so.0.8600.5 f 0755 0:0 target
+usr:lib/libgmodule-2.0.so l libgmodule-2.0.so.0.8600.5
+usr:lib/libgmodule-2.0.so.0 l libgmodule-2.0.so.0.8600.5
+usr:lib/libgmodule-2.0.so.0.8600.5 f 0755 0:0 target
+usr:lib/libgobject-2.0.so l libgobject-2.0.so.0.8600.5
+usr:lib/libgobject-2.0.so.0 l libgobject-2.0.so.0.8600.5
+usr:lib/libgobject-2.0.so.0.8600.5 f 0755 0:0 target
+usr:lib/libgpg-error.so l libgpg-error.so.0.42.1
+usr:lib/libgpg-error.so.0 l libgpg-error.so.0.42.1
+usr:lib/libgpg-error.so.0.42.1 f 0755 0:0 target
+usr:lib/libgthread-2.0.so l libgthread-2.0.so.0.8600.5
+usr:lib/libgthread-2.0.so.0 l libgthread-2.0.so.0.8600.5
+usr:lib/libgthread-2.0.so.0.8600.5 f 0755 0:0 target
+usr:lib/libid3tag.so l libid3tag.so.0.16.3
+usr:lib/libid3tag.so.0 l libid3tag.so.0.16.3
+usr:lib/libid3tag.so.0.16.3 f 0755 0:0 target
+usr:lib/libjpeg.so l libjpeg.so.8.3.2
+usr:lib/libjpeg.so.8 l libjpeg.so.8.3.2
+usr:lib/libjpeg.so.8.3.2 f 0755 0:0 target
+usr:lib/liblinphone.so l liblinphone.so.4.0.0
+usr:lib/liblinphone.so.4 l liblinphone.so.4.0.0
+usr:lib/liblinphone.so.4.0.0 f 0755 0:0 target
+usr:lib/liblockfile.so l liblockfile.so.1.0
+usr:lib/liblockfile.so.1 l liblockfile.so
+usr:lib/liblockfile.so.1.0 f 0755 0:0 target
+usr:lib/libmad.so l libmad.so.0.2.1
+usr:lib/libmad.so.0 l libmad.so.0.2.1
+usr:lib/libmad.so.0.2.1 f 0755 0:0 target
+usr:lib/libmediastreamer.so l libmediastreamer.so.1.0.0
+usr:lib/libmediastreamer.so.1 l libmediastreamer.so.1.0.0
+usr:lib/libmediastreamer.so.1.0.0 f 0755 0:0 target
+usr:lib/libmms.so l libmms.so.0.0.2
+usr:lib/libmms.so.0 l libmms.so.0.0.2
+usr:lib/libmms.so.0.0.2 f 0755 0:0 target
+usr:lib/libmount.so.1 l libmount.so.1.1.0
+usr:lib/libmount.so.1.1.0 f 0755 0:0 target:lib/libmount.so.1.1.0
+usr:lib/libmpd.so l libmpd.so.0.0.0
+usr:lib/libmpd.so.0 l libmpd.so.0.0.0
+usr:lib/libmpd.so.0.0.0 f 0755 0:0 target
+usr:lib/libnl-3.so l libnl-3.so.200.26.0
+usr:lib/libnl-3.so.200 l libnl-3.so.200.26.0
+usr:lib/libnl-3.so.200.26.0 f 0755 0:0 target
+usr:lib/libnl-genl-3.so l libnl-genl-3.so.200.26.0
+usr:lib/libnl-genl-3.so.200 l libnl-genl-3.so.200.26.0
+usr:lib/libnl-genl-3.so.200.26.0 f 0755 0:0 target
+usr:lib/libogg.so l libogg.so.0.8.6
+usr:lib/libogg.so.0 l libogg.so.0.8.6
+usr:lib/libogg.so.0.8.6 f 0755 0:0 target
+usr:lib/libortp.so l libortp.so.8.0.0
+usr:lib/libortp.so.8 l libortp.so.8.0.0
+usr:lib/libortp.so.8.0.0 f 0755 0:0 target
+usr:lib/libosip2.so l libosip2.so.6.2.0
+usr:lib/libosip2.so.6 l libosip2.so.6.2.0
+usr:lib/libosip2.so.6.2.0 f 0755 0:0 target
+usr:lib/libosipparser2.so l libosipparser2.so.6.2.0
+usr:lib/libosipparser2.so.6 l libosipparser2.so.6.2.0
+usr:lib/libosipparser2.so.6.2.0 f 0755 0:0 target
+usr:lib/libpcre2-8.so l libpcre2-8.so.0.15.0
+usr:lib/libpcre2-8.so.0 l libpcre2-8.so.0.15.0
+usr:lib/libpcre2-8.so.0.15.0 f 0755 0:0 target
+usr:lib/libprotobuf.so l libprotobuf.so.6.0.0
+usr:lib/libprotobuf.so.6 l libprotobuf.so.6.0.0
+usr:lib/libprotobuf.so.6.0.0 f 0755 0:0 target
+usr:lib/libpython2.4.so l libpython2.4.so.1.0
+usr:lib/libpython2.4.so.1.0 f 0555 0:0 target
+usr:lib/libreg.so f 0644 0:0 target
+usr:lib/libspeex.so l libspeex.so.1.5.2
+usr:lib/libspeex.so.1 l libspeex.so.1.5.2
+usr:lib/libspeex.so.1.5.2 f 0755 0:0 target
+usr:lib/libspeexdsp.so l libspeexdsp.so.1.5.2
+usr:lib/libspeexdsp.so.1 l libspeexdsp.so.1.5.2
+usr:lib/libspeexdsp.so.1.5.2 f 0755 0:0 target
+usr:lib/libssl.so l libssl.so.3
+usr:lib/libssl.so.3 f 0755 0:0 target
+usr:lib/libstdc++.so l libstdc++.so.6.0.33
+usr:lib/libstdc++.so.6 l libstdc++.so.6.0.33
+usr:lib/libstdc++.so.6.0.33 f 0755 0:0 target
+usr:lib/libswresample.so l libswresample.so.4.12.100
+usr:lib/libswresample.so.4 l libswresample.so.4.12.100
+usr:lib/libswresample.so.4.12.100 f 0755 0:0 target
+usr:lib/libuuid.so.1 l libuuid.so.1.3.0
+usr:lib/libuuid.so.1.3.0 f 0755 0:0 target:lib/libuuid.so.1.3.0
+usr:lib/libv8.so f 0755 0:0 own
+usr:lib/libvorbisidec.so l libvorbisidec.so.1.0.3
+usr:lib/libvorbisidec.so.1 l libvorbisidec.so.1.0.3
+usr:lib/libvorbisidec.so.1.0.3 f 0755 0:0 target
+usr:lib/libxml2.so.16 l libxml2.so.16.1.3
+usr:lib/libxml2.so.16.1.3 f 0755 0:0 target
+usr:lib/python2.4 d 0755 0:0
+usr:lib/python2.4/BaseHTTPServer.py f 0644 0:0 target
+usr:lib/python2.4/Bastion.py f 0644 0:0 target
+usr:lib/python2.4/CGIHTTPServer.py f 0644 0:0 target
+usr:lib/python2.4/ConfigParser.py f 0644 0:0 target
+usr:lib/python2.4/Cookie.py f 0644 0:0 target
+usr:lib/python2.4/DocXMLRPCServer.py f 0644 0:0 target
+usr:lib/python2.4/HTMLParser.py f 0644 0:0 target
+usr:lib/python2.4/LICENSE.txt f 0644 0:0 target
+usr:lib/python2.4/MimeWriter.py f 0644 0:0 target
+usr:lib/python2.4/Queue.py f 0644 0:0 target
+usr:lib/python2.4/SimpleHTTPServer.py f 0644 0:0 target
+usr:lib/python2.4/SimpleXMLRPCServer.py f 0644 0:0 target
+usr:lib/python2.4/SocketServer.py f 0644 0:0 target
+usr:lib/python2.4/StringIO.py f 0644 0:0 target
+usr:lib/python2.4/UserDict.py f 0644 0:0 target
+usr:lib/python2.4/UserList.py f 0644 0:0 target
+usr:lib/python2.4/UserString.py f 0755 0:0 target
+usr:lib/python2.4/_LWPCookieJar.py f 0644 0:0 target
+usr:lib/python2.4/_MozillaCookieJar.py f 0644 0:0 target
+usr:lib/python2.4/__future__.py f 0644 0:0 target
+usr:lib/python2.4/__phello__.foo.py f 0644 0:0 target
+usr:lib/python2.4/_strptime.py f 0644 0:0 target
+usr:lib/python2.4/_threading_local.py f 0644 0:0 target
+usr:lib/python2.4/aifc.py f 0644 0:0 target
+usr:lib/python2.4/anydbm.py f 0644 0:0 target
+usr:lib/python2.4/asynchat.py f 0644 0:0 target
+usr:lib/python2.4/asyncore.py f 0644 0:0 target
+usr:lib/python2.4/atexit.py f 0644 0:0 target
+usr:lib/python2.4/audiodev.py f 0644 0:0 target
+usr:lib/python2.4/base64.py f 0755 0:0 target
+usr:lib/python2.4/bdb.py f 0644 0:0 target
+usr:lib/python2.4/binhex.py f 0644 0:0 target
+usr:lib/python2.4/bisect.py f 0644 0:0 target
+usr:lib/python2.4/calendar.py f 0644 0:0 target
+usr:lib/python2.4/cgi.py f 0755 0:0 target
+usr:lib/python2.4/cgitb.py f 0644 0:0 target
+usr:lib/python2.4/chunk.py f 0644 0:0 target
+usr:lib/python2.4/cmd.py f 0644 0:0 target
+usr:lib/python2.4/code.py f 0644 0:0 target
+usr:lib/python2.4/codecs.py f 0644 0:0 target
+usr:lib/python2.4/codeop.py f 0644 0:0 target
+usr:lib/python2.4/colorsys.py f 0644 0:0 target
+usr:lib/python2.4/commands.py f 0644 0:0 target
+usr:lib/python2.4/compileall.py f 0644 0:0 target
+usr:lib/python2.4/compiler d 0755 0:0
+usr:lib/python2.4/compiler/__init__.py f 0644 0:0 target
+usr:lib/python2.4/compiler/ast.py f 0644 0:0 target
+usr:lib/python2.4/compiler/consts.py f 0644 0:0 target
+usr:lib/python2.4/compiler/future.py f 0644 0:0 target
+usr:lib/python2.4/compiler/misc.py f 0644 0:0 target
+usr:lib/python2.4/compiler/pyassem.py f 0644 0:0 target
+usr:lib/python2.4/compiler/pycodegen.py f 0644 0:0 target
+usr:lib/python2.4/compiler/symbols.py f 0644 0:0 target
+usr:lib/python2.4/compiler/syntax.py f 0644 0:0 target
+usr:lib/python2.4/compiler/transformer.py f 0644 0:0 target
+usr:lib/python2.4/compiler/visitor.py f 0644 0:0 target
+usr:lib/python2.4/cookielib.py f 0644 0:0 target
+usr:lib/python2.4/copy.py f 0644 0:0 target
+usr:lib/python2.4/copy_reg.py f 0644 0:0 target
+usr:lib/python2.4/csv.py f 0644 0:0 target
+usr:lib/python2.4/dbhash.py f 0644 0:0 target
+usr:lib/python2.4/decimal.py f 0644 0:0 target
+usr:lib/python2.4/difflib.py f 0644 0:0 target
+usr:lib/python2.4/dircache.py f 0644 0:0 target
+usr:lib/python2.4/dis.py f 0644 0:0 target
+usr:lib/python2.4/distutils d 0755 0:0
+usr:lib/python2.4/distutils/README f 0644 0:0 target
+usr:lib/python2.4/distutils/__init__.py f 0644 0:0 target
+usr:lib/python2.4/distutils/archive_util.py f 0644 0:0 target
+usr:lib/python2.4/distutils/bcppcompiler.py f 0644 0:0 target
+usr:lib/python2.4/distutils/ccompiler.py f 0644 0:0 target
+usr:lib/python2.4/distutils/cmd.py f 0644 0:0 target
+usr:lib/python2.4/distutils/command d 0755 0:0
+usr:lib/python2.4/distutils/command/__init__.py f 0644 0:0 target
+usr:lib/python2.4/distutils/command/bdist.py f 0644 0:0 target
+usr:lib/python2.4/distutils/command/bdist_dumb.py f 0644 0:0 target
+usr:lib/python2.4/distutils/command/bdist_rpm.py f 0644 0:0 target
+usr:lib/python2.4/distutils/command/bdist_wininst.py f 0644 0:0 target
+usr:lib/python2.4/distutils/command/build.py f 0644 0:0 target
+usr:lib/python2.4/distutils/command/build_clib.py f 0644 0:0 target
+usr:lib/python2.4/distutils/command/build_ext.py f 0644 0:0 target
+usr:lib/python2.4/distutils/command/build_py.py f 0644 0:0 target
+usr:lib/python2.4/distutils/command/build_scripts.py f 0644 0:0 target
+usr:lib/python2.4/distutils/command/clean.py f 0644 0:0 target
+usr:lib/python2.4/distutils/command/command_template f 0644 0:0 target
+usr:lib/python2.4/distutils/command/config.py f 0644 0:0 target
+usr:lib/python2.4/distutils/command/install.py f 0644 0:0 target
+usr:lib/python2.4/distutils/command/install_data.py f 0644 0:0 target
+usr:lib/python2.4/distutils/command/install_headers.py f 0644 0:0 target
+usr:lib/python2.4/distutils/command/install_lib.py f 0644 0:0 target
+usr:lib/python2.4/distutils/command/install_scripts.py f 0644 0:0 target
+usr:lib/python2.4/distutils/command/register.py f 0644 0:0 target
+usr:lib/python2.4/distutils/command/sdist.py f 0644 0:0 target
+usr:lib/python2.4/distutils/command/wininst-6.exe f 0644 0:0 target
+usr:lib/python2.4/distutils/command/wininst-7.1.exe f 0644 0:0 target
+usr:lib/python2.4/distutils/core.py f 0644 0:0 target
+usr:lib/python2.4/distutils/cygwinccompiler.py f 0644 0:0 target
+usr:lib/python2.4/distutils/debug.py f 0644 0:0 target
+usr:lib/python2.4/distutils/dep_util.py f 0644 0:0 target
+usr:lib/python2.4/distutils/dir_util.py f 0644 0:0 target
+usr:lib/python2.4/distutils/dist.py f 0644 0:0 target
+usr:lib/python2.4/distutils/emxccompiler.py f 0644 0:0 target
+usr:lib/python2.4/distutils/errors.py f 0644 0:0 target
+usr:lib/python2.4/distutils/extension.py f 0644 0:0 target
+usr:lib/python2.4/distutils/fancy_getopt.py f 0644 0:0 target
+usr:lib/python2.4/distutils/file_util.py f 0644 0:0 target
+usr:lib/python2.4/distutils/filelist.py f 0644 0:0 target
+usr:lib/python2.4/distutils/log.py f 0644 0:0 target
+usr:lib/python2.4/distutils/msvccompiler.py f 0644 0:0 target
+usr:lib/python2.4/distutils/mwerkscompiler.py f 0644 0:0 target
+usr:lib/python2.4/distutils/spawn.py f 0644 0:0 target
+usr:lib/python2.4/distutils/sysconfig.py f 0644 0:0 target
+usr:lib/python2.4/distutils/tests d 0755 0:0
+usr:lib/python2.4/distutils/tests/__init__.py f 0644 0:0 target
+usr:lib/python2.4/distutils/tests/support.py f 0644 0:0 target
+usr:lib/python2.4/distutils/tests/test_build_py.py f 0644 0:0 target
+usr:lib/python2.4/distutils/tests/test_build_scripts.py f 0644 0:0 target
+usr:lib/python2.4/distutils/tests/test_dist.py f 0644 0:0 target
+usr:lib/python2.4/distutils/tests/test_install.py f 0644 0:0 target
+usr:lib/python2.4/distutils/tests/test_install_scripts.py f 0644 0:0 target
+usr:lib/python2.4/distutils/text_file.py f 0644 0:0 target
+usr:lib/python2.4/distutils/unixccompiler.py f 0644 0:0 target
+usr:lib/python2.4/distutils/util.py f 0644 0:0 target
+usr:lib/python2.4/distutils/version.py f 0644 0:0 target
+usr:lib/python2.4/doctest.py f 0644 0:0 target
+usr:lib/python2.4/dumbdbm.py f 0644 0:0 target
+usr:lib/python2.4/dummy_thread.py f 0644 0:0 target
+usr:lib/python2.4/dummy_threading.py f 0644 0:0 target
+usr:lib/python2.4/email d 0755 0:0
+usr:lib/python2.4/email/Charset.py f 0644 0:0 target
+usr:lib/python2.4/email/Encoders.py f 0644 0:0 target
+usr:lib/python2.4/email/Errors.py f 0644 0:0 target
+usr:lib/python2.4/email/FeedParser.py f 0644 0:0 target
+usr:lib/python2.4/email/Generator.py f 0644 0:0 target
+usr:lib/python2.4/email/Header.py f 0644 0:0 target
+usr:lib/python2.4/email/Iterators.py f 0644 0:0 target
+usr:lib/python2.4/email/MIMEAudio.py f 0644 0:0 target
+usr:lib/python2.4/email/MIMEBase.py f 0644 0:0 target
+usr:lib/python2.4/email/MIMEImage.py f 0644 0:0 target
+usr:lib/python2.4/email/MIMEMessage.py f 0644 0:0 target
+usr:lib/python2.4/email/MIMEMultipart.py f 0644 0:0 target
+usr:lib/python2.4/email/MIMENonMultipart.py f 0644 0:0 target
+usr:lib/python2.4/email/MIMEText.py f 0644 0:0 target
+usr:lib/python2.4/email/Message.py f 0644 0:0 target
+usr:lib/python2.4/email/Parser.py f 0644 0:0 target
+usr:lib/python2.4/email/Utils.py f 0644 0:0 target
+usr:lib/python2.4/email/__init__.py f 0644 0:0 target
+usr:lib/python2.4/email/_parseaddr.py f 0644 0:0 target
+usr:lib/python2.4/email/base64MIME.py f 0644 0:0 target
+usr:lib/python2.4/email/quopriMIME.py f 0644 0:0 target
+usr:lib/python2.4/email/test d 0755 0:0
+usr:lib/python2.4/email/test/__init__.py f 0644 0:0 target
+usr:lib/python2.4/email/test/data d 0755 0:0
+usr:lib/python2.4/email/test/data/PyBanner048.gif f 0644 0:0 target
+usr:lib/python2.4/email/test/data/audiotest.au f 0644 0:0 target
+usr:lib/python2.4/email/test/data/msg_01.txt f 0644 0:0 target
+usr:lib/python2.4/email/test/data/msg_02.txt f 0644 0:0 target
+usr:lib/python2.4/email/test/data/msg_03.txt f 0644 0:0 target
+usr:lib/python2.4/email/test/data/msg_04.txt f 0644 0:0 target
+usr:lib/python2.4/email/test/data/msg_05.txt f 0644 0:0 target
+usr:lib/python2.4/email/test/data/msg_06.txt f 0644 0:0 target
+usr:lib/python2.4/email/test/data/msg_07.txt f 0644 0:0 target
+usr:lib/python2.4/email/test/data/msg_08.txt f 0644 0:0 target
+usr:lib/python2.4/email/test/data/msg_09.txt f 0644 0:0 target
+usr:lib/python2.4/email/test/data/msg_10.txt f 0644 0:0 target
+usr:lib/python2.4/email/test/data/msg_11.txt f 0644 0:0 target
+usr:lib/python2.4/email/test/data/msg_12.txt f 0644 0:0 target
+usr:lib/python2.4/email/test/data/msg_12a.txt f 0644 0:0 target
+usr:lib/python2.4/email/test/data/msg_13.txt f 0644 0:0 target
+usr:lib/python2.4/email/test/data/msg_14.txt f 0644 0:0 target
+usr:lib/python2.4/email/test/data/msg_15.txt f 0644 0:0 target
+usr:lib/python2.4/email/test/data/msg_16.txt f 0644 0:0 target
+usr:lib/python2.4/email/test/data/msg_17.txt f 0644 0:0 target
+usr:lib/python2.4/email/test/data/msg_18.txt f 0644 0:0 target
+usr:lib/python2.4/email/test/data/msg_19.txt f 0644 0:0 target
+usr:lib/python2.4/email/test/data/msg_20.txt f 0644 0:0 target
+usr:lib/python2.4/email/test/data/msg_21.txt f 0644 0:0 target
+usr:lib/python2.4/email/test/data/msg_22.txt f 0644 0:0 target
+usr:lib/python2.4/email/test/data/msg_23.txt f 0644 0:0 target
+usr:lib/python2.4/email/test/data/msg_24.txt f 0644 0:0 target
+usr:lib/python2.4/email/test/data/msg_25.txt f 0644 0:0 target
+usr:lib/python2.4/email/test/data/msg_26.txt f 0644 0:0 target
+usr:lib/python2.4/email/test/data/msg_27.txt f 0644 0:0 target
+usr:lib/python2.4/email/test/data/msg_28.txt f 0644 0:0 target
+usr:lib/python2.4/email/test/data/msg_29.txt f 0644 0:0 target
+usr:lib/python2.4/email/test/data/msg_30.txt f 0644 0:0 target
+usr:lib/python2.4/email/test/data/msg_31.txt f 0644 0:0 target
+usr:lib/python2.4/email/test/data/msg_32.txt f 0644 0:0 target
+usr:lib/python2.4/email/test/data/msg_33.txt f 0644 0:0 target
+usr:lib/python2.4/email/test/data/msg_34.txt f 0644 0:0 target
+usr:lib/python2.4/email/test/data/msg_35.txt f 0644 0:0 target
+usr:lib/python2.4/email/test/data/msg_36.txt f 0644 0:0 target
+usr:lib/python2.4/email/test/data/msg_37.txt f 0644 0:0 target
+usr:lib/python2.4/email/test/data/msg_38.txt f 0644 0:0 target
+usr:lib/python2.4/email/test/data/msg_39.txt f 0644 0:0 target
+usr:lib/python2.4/email/test/data/msg_40.txt f 0644 0:0 target
+usr:lib/python2.4/email/test/data/msg_41.txt f 0644 0:0 target
+usr:lib/python2.4/email/test/data/msg_42.txt f 0644 0:0 target
+usr:lib/python2.4/email/test/data/msg_43.txt f 0644 0:0 target
+usr:lib/python2.4/email/test/data/msg_44.txt f 0644 0:0 target
+usr:lib/python2.4/email/test/test_email.py f 0644 0:0 target
+usr:lib/python2.4/email/test/test_email_codecs.py f 0644 0:0 target
+usr:lib/python2.4/email/test/test_email_torture.py f 0644 0:0 target
+usr:lib/python2.4/encodings d 0755 0:0
+usr:lib/python2.4/encodings/__init__.py f 0644 0:0 target
+usr:lib/python2.4/encodings/aliases.py f 0644 0:0 target
+usr:lib/python2.4/encodings/ascii.py f 0644 0:0 target
+usr:lib/python2.4/encodings/base64_codec.py f 0644 0:0 target
+usr:lib/python2.4/encodings/big5.py f 0644 0:0 target
+usr:lib/python2.4/encodings/big5hkscs.py f 0644 0:0 target
+usr:lib/python2.4/encodings/bz2_codec.py f 0644 0:0 target
+usr:lib/python2.4/encodings/charmap.py f 0644 0:0 target
+usr:lib/python2.4/encodings/cp037.py f 0644 0:0 target
+usr:lib/python2.4/encodings/cp1006.py f 0644 0:0 target
+usr:lib/python2.4/encodings/cp1026.py f 0644 0:0 target
+usr:lib/python2.4/encodings/cp1140.py f 0644 0:0 target
+usr:lib/python2.4/encodings/cp1250.py f 0644 0:0 target
+usr:lib/python2.4/encodings/cp1251.py f 0644 0:0 target
+usr:lib/python2.4/encodings/cp1252.py f 0644 0:0 target
+usr:lib/python2.4/encodings/cp1253.py f 0644 0:0 target
+usr:lib/python2.4/encodings/cp1254.py f 0644 0:0 target
+usr:lib/python2.4/encodings/cp1255.py f 0644 0:0 target
+usr:lib/python2.4/encodings/cp1256.py f 0644 0:0 target
+usr:lib/python2.4/encodings/cp1257.py f 0644 0:0 target
+usr:lib/python2.4/encodings/cp1258.py f 0644 0:0 target
+usr:lib/python2.4/encodings/cp424.py f 0644 0:0 target
+usr:lib/python2.4/encodings/cp437.py f 0644 0:0 target
+usr:lib/python2.4/encodings/cp500.py f 0644 0:0 target
+usr:lib/python2.4/encodings/cp737.py f 0644 0:0 target
+usr:lib/python2.4/encodings/cp775.py f 0644 0:0 target
+usr:lib/python2.4/encodings/cp850.py f 0644 0:0 target
+usr:lib/python2.4/encodings/cp852.py f 0644 0:0 target
+usr:lib/python2.4/encodings/cp855.py f 0644 0:0 target
+usr:lib/python2.4/encodings/cp856.py f 0644 0:0 target
+usr:lib/python2.4/encodings/cp857.py f 0644 0:0 target
+usr:lib/python2.4/encodings/cp860.py f 0644 0:0 target
+usr:lib/python2.4/encodings/cp861.py f 0644 0:0 target
+usr:lib/python2.4/encodings/cp862.py f 0644 0:0 target
+usr:lib/python2.4/encodings/cp863.py f 0644 0:0 target
+usr:lib/python2.4/encodings/cp864.py f 0644 0:0 target
+usr:lib/python2.4/encodings/cp865.py f 0644 0:0 target
+usr:lib/python2.4/encodings/cp866.py f 0644 0:0 target
+usr:lib/python2.4/encodings/cp869.py f 0644 0:0 target
+usr:lib/python2.4/encodings/cp874.py f 0644 0:0 target
+usr:lib/python2.4/encodings/cp875.py f 0644 0:0 target
+usr:lib/python2.4/encodings/cp932.py f 0644 0:0 target
+usr:lib/python2.4/encodings/cp949.py f 0644 0:0 target
+usr:lib/python2.4/encodings/cp950.py f 0644 0:0 target
+usr:lib/python2.4/encodings/euc_jis_2004.py f 0644 0:0 target
+usr:lib/python2.4/encodings/euc_jisx0213.py f 0644 0:0 target
+usr:lib/python2.4/encodings/euc_jp.py f 0644 0:0 target
+usr:lib/python2.4/encodings/euc_kr.py f 0644 0:0 target
+usr:lib/python2.4/encodings/gb18030.py f 0644 0:0 target
+usr:lib/python2.4/encodings/gb2312.py f 0644 0:0 target
+usr:lib/python2.4/encodings/gbk.py f 0644 0:0 target
+usr:lib/python2.4/encodings/hex_codec.py f 0644 0:0 target
+usr:lib/python2.4/encodings/hp_roman8.py f 0644 0:0 target
+usr:lib/python2.4/encodings/hz.py f 0644 0:0 target
+usr:lib/python2.4/encodings/idna.py f 0644 0:0 target
+usr:lib/python2.4/encodings/iso2022_jp.py f 0644 0:0 target
+usr:lib/python2.4/encodings/iso2022_jp_1.py f 0644 0:0 target
+usr:lib/python2.4/encodings/iso2022_jp_2.py f 0644 0:0 target
+usr:lib/python2.4/encodings/iso2022_jp_2004.py f 0644 0:0 target
+usr:lib/python2.4/encodings/iso2022_jp_3.py f 0644 0:0 target
+usr:lib/python2.4/encodings/iso2022_jp_ext.py f 0644 0:0 target
+usr:lib/python2.4/encodings/iso2022_kr.py f 0644 0:0 target
+usr:lib/python2.4/encodings/iso8859_1.py f 0644 0:0 target
+usr:lib/python2.4/encodings/iso8859_10.py f 0644 0:0 target
+usr:lib/python2.4/encodings/iso8859_11.py f 0644 0:0 target
+usr:lib/python2.4/encodings/iso8859_13.py f 0644 0:0 target
+usr:lib/python2.4/encodings/iso8859_14.py f 0644 0:0 target
+usr:lib/python2.4/encodings/iso8859_15.py f 0644 0:0 target
+usr:lib/python2.4/encodings/iso8859_16.py f 0644 0:0 target
+usr:lib/python2.4/encodings/iso8859_2.py f 0644 0:0 target
+usr:lib/python2.4/encodings/iso8859_3.py f 0644 0:0 target
+usr:lib/python2.4/encodings/iso8859_4.py f 0644 0:0 target
+usr:lib/python2.4/encodings/iso8859_5.py f 0644 0:0 target
+usr:lib/python2.4/encodings/iso8859_6.py f 0644 0:0 target
+usr:lib/python2.4/encodings/iso8859_7.py f 0644 0:0 target
+usr:lib/python2.4/encodings/iso8859_8.py f 0644 0:0 target
+usr:lib/python2.4/encodings/iso8859_9.py f 0644 0:0 target
+usr:lib/python2.4/encodings/johab.py f 0644 0:0 target
+usr:lib/python2.4/encodings/koi8_r.py f 0644 0:0 target
+usr:lib/python2.4/encodings/koi8_u.py f 0644 0:0 target
+usr:lib/python2.4/encodings/latin_1.py f 0644 0:0 target
+usr:lib/python2.4/encodings/mac_cyrillic.py f 0644 0:0 target
+usr:lib/python2.4/encodings/mac_greek.py f 0644 0:0 target
+usr:lib/python2.4/encodings/mac_iceland.py f 0644 0:0 target
+usr:lib/python2.4/encodings/mac_latin2.py f 0644 0:0 target
+usr:lib/python2.4/encodings/mac_roman.py f 0644 0:0 target
+usr:lib/python2.4/encodings/mac_turkish.py f 0644 0:0 target
+usr:lib/python2.4/encodings/mbcs.py f 0644 0:0 target
+usr:lib/python2.4/encodings/palmos.py f 0644 0:0 target
+usr:lib/python2.4/encodings/ptcp154.py f 0644 0:0 target
+usr:lib/python2.4/encodings/punycode.py f 0644 0:0 target
+usr:lib/python2.4/encodings/quopri_codec.py f 0644 0:0 target
+usr:lib/python2.4/encodings/raw_unicode_escape.py f 0644 0:0 target
+usr:lib/python2.4/encodings/rot_13.py f 0644 0:0 target
+usr:lib/python2.4/encodings/shift_jis.py f 0644 0:0 target
+usr:lib/python2.4/encodings/shift_jis_2004.py f 0644 0:0 target
+usr:lib/python2.4/encodings/shift_jisx0213.py f 0644 0:0 target
+usr:lib/python2.4/encodings/string_escape.py f 0644 0:0 target
+usr:lib/python2.4/encodings/tis_620.py f 0644 0:0 target
+usr:lib/python2.4/encodings/undefined.py f 0644 0:0 target
+usr:lib/python2.4/encodings/unicode_escape.py f 0644 0:0 target
+usr:lib/python2.4/encodings/unicode_internal.py f 0644 0:0 target
+usr:lib/python2.4/encodings/utf_16.py f 0644 0:0 target
+usr:lib/python2.4/encodings/utf_16_be.py f 0644 0:0 target
+usr:lib/python2.4/encodings/utf_16_le.py f 0644 0:0 target
+usr:lib/python2.4/encodings/utf_7.py f 0644 0:0 target
+usr:lib/python2.4/encodings/utf_8.py f 0644 0:0 target
+usr:lib/python2.4/encodings/uu_codec.py f 0644 0:0 target
+usr:lib/python2.4/encodings/zlib_codec.py f 0644 0:0 target
+usr:lib/python2.4/filecmp.py f 0644 0:0 target
+usr:lib/python2.4/fileinput.py f 0644 0:0 target
+usr:lib/python2.4/fnmatch.py f 0644 0:0 target
+usr:lib/python2.4/formatter.py f 0644 0:0 target
+usr:lib/python2.4/fpformat.py f 0644 0:0 target
+usr:lib/python2.4/ftplib.py f 0644 0:0 target
+usr:lib/python2.4/getopt.py f 0644 0:0 target
+usr:lib/python2.4/getpass.py f 0644 0:0 target
+usr:lib/python2.4/gettext.py f 0644 0:0 target
+usr:lib/python2.4/glob.py f 0644 0:0 target
+usr:lib/python2.4/gopherlib.py f 0644 0:0 target
+usr:lib/python2.4/gzip.py f 0644 0:0 target
+usr:lib/python2.4/heapq.py f 0644 0:0 target
+usr:lib/python2.4/hmac.py f 0644 0:0 target
+usr:lib/python2.4/hotshot d 0755 0:0
+usr:lib/python2.4/hotshot/__init__.py f 0644 0:0 target
+usr:lib/python2.4/hotshot/log.py f 0644 0:0 target
+usr:lib/python2.4/hotshot/stats.py f 0644 0:0 target
+usr:lib/python2.4/hotshot/stones.py f 0644 0:0 target
+usr:lib/python2.4/htmlentitydefs.py f 0644 0:0 target
+usr:lib/python2.4/htmllib.py f 0644 0:0 target
+usr:lib/python2.4/httplib.py f 0644 0:0 target
+usr:lib/python2.4/idlelib d 0755 0:0
+usr:lib/python2.4/idlelib/AutoExpand.py f 0644 0:0 target
+usr:lib/python2.4/idlelib/Bindings.py f 0644 0:0 target
+usr:lib/python2.4/idlelib/CREDITS.txt f 0644 0:0 target
+usr:lib/python2.4/idlelib/CallTipWindow.py f 0644 0:0 target
+usr:lib/python2.4/idlelib/CallTips.py f 0644 0:0 target
+usr:lib/python2.4/idlelib/ChangeLog f 0644 0:0 target
+usr:lib/python2.4/idlelib/ClassBrowser.py f 0644 0:0 target
+usr:lib/python2.4/idlelib/CodeContext.py f 0644 0:0 target
+usr:lib/python2.4/idlelib/ColorDelegator.py f 0644 0:0 target
+usr:lib/python2.4/idlelib/Debugger.py f 0644 0:0 target
+usr:lib/python2.4/idlelib/Delegator.py f 0644 0:0 target
+usr:lib/python2.4/idlelib/EditorWindow.py f 0644 0:0 target
+usr:lib/python2.4/idlelib/FileList.py f 0644 0:0 target
+usr:lib/python2.4/idlelib/FormatParagraph.py f 0644 0:0 target
+usr:lib/python2.4/idlelib/GrepDialog.py f 0644 0:0 target
+usr:lib/python2.4/idlelib/HISTORY.txt f 0644 0:0 target
+usr:lib/python2.4/idlelib/IOBinding.py f 0644 0:0 target
+usr:lib/python2.4/idlelib/Icons d 0755 0:0
+usr:lib/python2.4/idlelib/Icons/folder.gif f 0644 0:0 target
+usr:lib/python2.4/idlelib/Icons/idle.icns f 0644 0:0 target
+usr:lib/python2.4/idlelib/Icons/minusnode.gif f 0644 0:0 target
+usr:lib/python2.4/idlelib/Icons/openfolder.gif f 0644 0:0 target
+usr:lib/python2.4/idlelib/Icons/plusnode.gif f 0644 0:0 target
+usr:lib/python2.4/idlelib/Icons/python.gif f 0644 0:0 target
+usr:lib/python2.4/idlelib/Icons/tk.gif f 0644 0:0 target
+usr:lib/python2.4/idlelib/IdleHistory.py f 0644 0:0 target
+usr:lib/python2.4/idlelib/MultiStatusBar.py f 0644 0:0 target
+usr:lib/python2.4/idlelib/NEWS.txt f 0644 0:0 target
+usr:lib/python2.4/idlelib/ObjectBrowser.py f 0644 0:0 target
+usr:lib/python2.4/idlelib/OutputWindow.py f 0644 0:0 target
+usr:lib/python2.4/idlelib/ParenMatch.py f 0644 0:0 target
+usr:lib/python2.4/idlelib/PathBrowser.py f 0644 0:0 target
+usr:lib/python2.4/idlelib/Percolator.py f 0644 0:0 target
+usr:lib/python2.4/idlelib/PyParse.py f 0644 0:0 target
+usr:lib/python2.4/idlelib/PyShell.py f 0644 0:0 target
+usr:lib/python2.4/idlelib/README.txt f 0644 0:0 target
+usr:lib/python2.4/idlelib/RemoteDebugger.py f 0644 0:0 target
+usr:lib/python2.4/idlelib/RemoteObjectBrowser.py f 0644 0:0 target
+usr:lib/python2.4/idlelib/ReplaceDialog.py f 0644 0:0 target
+usr:lib/python2.4/idlelib/ScriptBinding.py f 0644 0:0 target
+usr:lib/python2.4/idlelib/ScrolledList.py f 0644 0:0 target
+usr:lib/python2.4/idlelib/SearchDialog.py f 0644 0:0 target
+usr:lib/python2.4/idlelib/SearchDialogBase.py f 0644 0:0 target
+usr:lib/python2.4/idlelib/SearchEngine.py f 0644 0:0 target
+usr:lib/python2.4/idlelib/StackViewer.py f 0644 0:0 target
+usr:lib/python2.4/idlelib/TODO.txt f 0644 0:0 target
+usr:lib/python2.4/idlelib/ToolTip.py f 0644 0:0 target
+usr:lib/python2.4/idlelib/TreeWidget.py f 0644 0:0 target
+usr:lib/python2.4/idlelib/UndoDelegator.py f 0644 0:0 target
+usr:lib/python2.4/idlelib/WidgetRedirector.py f 0644 0:0 target
+usr:lib/python2.4/idlelib/WindowList.py f 0644 0:0 target
+usr:lib/python2.4/idlelib/ZoomHeight.py f 0644 0:0 target
+usr:lib/python2.4/idlelib/__init__.py f 0644 0:0 target
+usr:lib/python2.4/idlelib/aboutDialog.py f 0644 0:0 target
+usr:lib/python2.4/idlelib/buildapp.py f 0644 0:0 target
+usr:lib/python2.4/idlelib/config-extensions.def f 0644 0:0 target
+usr:lib/python2.4/idlelib/config-highlight.def f 0644 0:0 target
+usr:lib/python2.4/idlelib/config-keys.def f 0644 0:0 target
+usr:lib/python2.4/idlelib/config-main.def f 0644 0:0 target
+usr:lib/python2.4/idlelib/configDialog.py f 0644 0:0 target
+usr:lib/python2.4/idlelib/configHandler.py f 0644 0:0 target
+usr:lib/python2.4/idlelib/configHelpSourceEdit.py f 0644 0:0 target
+usr:lib/python2.4/idlelib/configSectionNameDialog.py f 0644 0:0 target
+usr:lib/python2.4/idlelib/dynOptionMenuWidget.py f 0644 0:0 target
+usr:lib/python2.4/idlelib/extend.txt f 0644 0:0 target
+usr:lib/python2.4/idlelib/help.txt f 0644 0:0 target
+usr:lib/python2.4/idlelib/idle.bat f 0755 0:0 target
+usr:lib/python2.4/idlelib/idle.py f 0644 0:0 target
+usr:lib/python2.4/idlelib/idle.pyw f 0644 0:0 target
+usr:lib/python2.4/idlelib/idlever.py f 0644 0:0 target
+usr:lib/python2.4/idlelib/keybindingDialog.py f 0644 0:0 target
+usr:lib/python2.4/idlelib/rpc.py f 0644 0:0 target
+usr:lib/python2.4/idlelib/run.py f 0644 0:0 target
+usr:lib/python2.4/idlelib/tabpage.py f 0644 0:0 target
+usr:lib/python2.4/idlelib/testcode.py f 0644 0:0 target
+usr:lib/python2.4/idlelib/textView.py f 0644 0:0 target
+usr:lib/python2.4/ihooks.py f 0644 0:0 target
+usr:lib/python2.4/imaplib.py f 0644 0:0 target
+usr:lib/python2.4/imghdr.py f 0644 0:0 target
+usr:lib/python2.4/imputil.py f 0644 0:0 target
+usr:lib/python2.4/inspect.py f 0644 0:0 target
+usr:lib/python2.4/keyword.py f 0755 0:0 target
+usr:lib/python2.4/lib-dynload d 0755 0:0
+usr:lib/python2.4/lib-dynload/_bisect.so f 0755 0:0 target
+usr:lib/python2.4/lib-dynload/_codecs_cn.so f 0755 0:0 target
+usr:lib/python2.4/lib-dynload/_codecs_hk.so f 0755 0:0 target
+usr:lib/python2.4/lib-dynload/_codecs_iso2022.so f 0755 0:0 target
+usr:lib/python2.4/lib-dynload/_codecs_jp.so f 0755 0:0 target
+usr:lib/python2.4/lib-dynload/_codecs_kr.so f 0755 0:0 target
+usr:lib/python2.4/lib-dynload/_codecs_tw.so f 0755 0:0 target
+usr:lib/python2.4/lib-dynload/_csv.so f 0755 0:0 target
+usr:lib/python2.4/lib-dynload/_heapq.so f 0755 0:0 target
+usr:lib/python2.4/lib-dynload/_hotshot.so f 0755 0:0 target
+usr:lib/python2.4/lib-dynload/_locale.so f 0755 0:0 target
+usr:lib/python2.4/lib-dynload/_multibytecodec.so f 0755 0:0 target
+usr:lib/python2.4/lib-dynload/_random.so f 0755 0:0 target
+usr:lib/python2.4/lib-dynload/_socket.so f 0755 0:0 target
+usr:lib/python2.4/lib-dynload/_testcapi.so f 0755 0:0 target
+usr:lib/python2.4/lib-dynload/_weakref.so f 0755 0:0 target
+usr:lib/python2.4/lib-dynload/array.so f 0755 0:0 target
+usr:lib/python2.4/lib-dynload/audioop.so f 0755 0:0 target
+usr:lib/python2.4/lib-dynload/binascii.so f 0755 0:0 target
+usr:lib/python2.4/lib-dynload/cPickle.so f 0755 0:0 target
+usr:lib/python2.4/lib-dynload/cStringIO.so f 0755 0:0 target
+usr:lib/python2.4/lib-dynload/cmath.so f 0755 0:0 target
+usr:lib/python2.4/lib-dynload/collections.so f 0755 0:0 target
+usr:lib/python2.4/lib-dynload/crypt.so f 0755 0:0 target
+usr:lib/python2.4/lib-dynload/datetime.so f 0755 0:0 target
+usr:lib/python2.4/lib-dynload/dl.so f 0755 0:0 target
+usr:lib/python2.4/lib-dynload/fcntl.so f 0755 0:0 target
+usr:lib/python2.4/lib-dynload/grp.so f 0755 0:0 target
+usr:lib/python2.4/lib-dynload/imageop.so f 0755 0:0 target
+usr:lib/python2.4/lib-dynload/itertools.so f 0755 0:0 target
+usr:lib/python2.4/lib-dynload/math.so f 0755 0:0 target
+usr:lib/python2.4/lib-dynload/md5.so f 0755 0:0 target
+usr:lib/python2.4/lib-dynload/mmap.so f 0755 0:0 target
+usr:lib/python2.4/lib-dynload/operator.so f 0755 0:0 target
+usr:lib/python2.4/lib-dynload/parser.so f 0755 0:0 target
+usr:lib/python2.4/lib-dynload/pyexpat.so f 0755 0:0 target
+usr:lib/python2.4/lib-dynload/regex.so f 0755 0:0 target
+usr:lib/python2.4/lib-dynload/resource.so f 0755 0:0 target
+usr:lib/python2.4/lib-dynload/rgbimg.so f 0755 0:0 target
+usr:lib/python2.4/lib-dynload/select.so f 0755 0:0 target
+usr:lib/python2.4/lib-dynload/sha.so f 0755 0:0 target
+usr:lib/python2.4/lib-dynload/strop.so f 0755 0:0 target
+usr:lib/python2.4/lib-dynload/struct.so f 0755 0:0 target
+usr:lib/python2.4/lib-dynload/syslog.so f 0755 0:0 target
+usr:lib/python2.4/lib-dynload/termios.so f 0755 0:0 target
+usr:lib/python2.4/lib-dynload/time.so f 0755 0:0 target
+usr:lib/python2.4/lib-dynload/timing.so f 0755 0:0 target
+usr:lib/python2.4/lib-dynload/unicodedata.so f 0755 0:0 target
+usr:lib/python2.4/lib-dynload/zlib.so f 0755 0:0 target
+usr:lib/python2.4/lib-old d 0755 0:0
+usr:lib/python2.4/lib-old/Para.py f 0644 0:0 target
+usr:lib/python2.4/lib-old/addpack.py f 0644 0:0 target
+usr:lib/python2.4/lib-old/cmp.py f 0644 0:0 target
+usr:lib/python2.4/lib-old/cmpcache.py f 0644 0:0 target
+usr:lib/python2.4/lib-old/codehack.py f 0644 0:0 target
+usr:lib/python2.4/lib-old/dircmp.py f 0644 0:0 target
+usr:lib/python2.4/lib-old/dump.py f 0644 0:0 target
+usr:lib/python2.4/lib-old/find.py f 0644 0:0 target
+usr:lib/python2.4/lib-old/fmt.py f 0644 0:0 target
+usr:lib/python2.4/lib-old/grep.py f 0644 0:0 target
+usr:lib/python2.4/lib-old/lockfile.py f 0644 0:0 target
+usr:lib/python2.4/lib-old/newdir.py f 0644 0:0 target
+usr:lib/python2.4/lib-old/ni.py f 0644 0:0 target
+usr:lib/python2.4/lib-old/packmail.py f 0644 0:0 target
+usr:lib/python2.4/lib-old/poly.py f 0644 0:0 target
+usr:lib/python2.4/lib-old/rand.py f 0644 0:0 target
+usr:lib/python2.4/lib-old/tb.py f 0644 0:0 target
+usr:lib/python2.4/lib-old/util.py f 0644 0:0 target
+usr:lib/python2.4/lib-old/whatsound.py f 0644 0:0 target
+usr:lib/python2.4/lib-old/zmod.py f 0644 0:0 target
+usr:lib/python2.4/linecache.py f 0644 0:0 target
+usr:lib/python2.4/locale.py f 0644 0:0 target
+usr:lib/python2.4/logging d 0755 0:0
+usr:lib/python2.4/logging/__init__.py f 0644 0:0 target
+usr:lib/python2.4/logging/config.py f 0644 0:0 target
+usr:lib/python2.4/logging/handlers.py f 0644 0:0 target
+usr:lib/python2.4/macpath.py f 0644 0:0 target
+usr:lib/python2.4/macurl2path.py f 0644 0:0 target
+usr:lib/python2.4/mailbox.py f 0755 0:0 target
+usr:lib/python2.4/mailcap.py f 0644 0:0 target
+usr:lib/python2.4/markupbase.py f 0644 0:0 target
+usr:lib/python2.4/mhlib.py f 0644 0:0 target
+usr:lib/python2.4/mimetools.py f 0644 0:0 target
+usr:lib/python2.4/mimetypes.py f 0644 0:0 target
+usr:lib/python2.4/mimify.py f 0755 0:0 target
+usr:lib/python2.4/modulefinder.py f 0644 0:0 target
+usr:lib/python2.4/multifile.py f 0644 0:0 target
+usr:lib/python2.4/mutex.py f 0644 0:0 target
+usr:lib/python2.4/netrc.py f 0644 0:0 target
+usr:lib/python2.4/new.py f 0644 0:0 target
+usr:lib/python2.4/nntplib.py f 0644 0:0 target
+usr:lib/python2.4/ntpath.py f 0644 0:0 target
+usr:lib/python2.4/nturl2path.py f 0644 0:0 target
+usr:lib/python2.4/opcode.py f 0644 0:0 target
+usr:lib/python2.4/optparse.py f 0644 0:0 target
+usr:lib/python2.4/os.py f 0644 0:0 target
+usr:lib/python2.4/os2emxpath.py f 0644 0:0 target
+usr:lib/python2.4/pdb.doc f 0644 0:0 target
+usr:lib/python2.4/pdb.py f 0755 0:0 target
+usr:lib/python2.4/pickle.py f 0644 0:0 target
+usr:lib/python2.4/pickletools.py f 0644 0:0 target
+usr:lib/python2.4/pipes.py f 0644 0:0 target
+usr:lib/python2.4/pkgutil.py f 0644 0:0 target
+usr:lib/python2.4/plat-linux3 d 0755 0:0
+usr:lib/python2.4/plat-linux3/regen f 0755 0:0 target
+usr:lib/python2.4/platform.py f 0755 0:0 target
+usr:lib/python2.4/popen2.py f 0644 0:0 target
+usr:lib/python2.4/poplib.py f 0644 0:0 target
+usr:lib/python2.4/posixfile.py f 0644 0:0 target
+usr:lib/python2.4/posixpath.py f 0644 0:0 target
+usr:lib/python2.4/pprint.py f 0644 0:0 target
+usr:lib/python2.4/profile.doc f 0644 0:0 target
+usr:lib/python2.4/profile.py f 0755 0:0 target
+usr:lib/python2.4/pstats.py f 0644 0:0 target
+usr:lib/python2.4/pty.py f 0644 0:0 target
+usr:lib/python2.4/py_compile.py f 0644 0:0 target
+usr:lib/python2.4/pyclbr.py f 0644 0:0 target
+usr:lib/python2.4/pydoc.py f 0755 0:0 target
+usr:lib/python2.4/quopri.py f 0755 0:0 target
+usr:lib/python2.4/random.py f 0644 0:0 target
+usr:lib/python2.4/re.py f 0644 0:0 target
+usr:lib/python2.4/reconvert.py f 0755 0:0 target
+usr:lib/python2.4/regex_syntax.py f 0644 0:0 target
+usr:lib/python2.4/regsub.py f 0644 0:0 target
+usr:lib/python2.4/repr.py f 0644 0:0 target
+usr:lib/python2.4/rexec.py f 0644 0:0 target
+usr:lib/python2.4/rfc822.py f 0644 0:0 target
+usr:lib/python2.4/rlcompleter.py f 0644 0:0 target
+usr:lib/python2.4/robotparser.py f 0644 0:0 target
+usr:lib/python2.4/sched.py f 0644 0:0 target
+usr:lib/python2.4/sets.py f 0644 0:0 target
+usr:lib/python2.4/sgmllib.py f 0644 0:0 target
+usr:lib/python2.4/shelve.py f 0644 0:0 target
+usr:lib/python2.4/shlex.py f 0644 0:0 target
+usr:lib/python2.4/shutil.py f 0644 0:0 target
+usr:lib/python2.4/simplejson d 0755 0:0
+usr:lib/python2.4/simplejson/__init__.py f 0644 0:0 target
+usr:lib/python2.4/simplejson/_speedups.c f 0644 0:0 target
+usr:lib/python2.4/simplejson/decoder.py f 0644 0:0 target
+usr:lib/python2.4/simplejson/encoder.py f 0644 0:0 target
+usr:lib/python2.4/simplejson/scanner.py f 0644 0:0 target
+usr:lib/python2.4/simplejson/tool.py f 0644 0:0 target
+usr:lib/python2.4/site-packages d 0755 0:0
+usr:lib/python2.4/site-packages/README f 0644 0:0 target
+usr:lib/python2.4/site-packages/_dbus_bindings.so f 0755 0:0 target
+usr:lib/python2.4/site-packages/_dbus_glib_bindings.so f 0755 0:0 target
+usr:lib/python2.4/site-packages/dbus d 0755 0:0
+usr:lib/python2.4/site-packages/dbus/__init__.py f 0644 0:0 target
+usr:lib/python2.4/site-packages/dbus/__init__.pyc f 0644 0:0 target
+usr:lib/python2.4/site-packages/dbus/__init__.pyo f 0644 0:0 target
+usr:lib/python2.4/site-packages/dbus/_dbus.py f 0644 0:0 target
+usr:lib/python2.4/site-packages/dbus/_dbus.pyc f 0644 0:0 target
+usr:lib/python2.4/site-packages/dbus/_dbus.pyo f 0644 0:0 target
+usr:lib/python2.4/site-packages/dbus/_expat_introspect_parser.py f 0644 0:0 target
+usr:lib/python2.4/site-packages/dbus/_expat_introspect_parser.pyc f 0644 0:0 target
+usr:lib/python2.4/site-packages/dbus/_expat_introspect_parser.pyo f 0644 0:0 target
+usr:lib/python2.4/site-packages/dbus/_version.py f 0644 0:0 target
+usr:lib/python2.4/site-packages/dbus/_version.pyc f 0644 0:0 target
+usr:lib/python2.4/site-packages/dbus/_version.pyo f 0644 0:0 target
+usr:lib/python2.4/site-packages/dbus/bus.py f 0644 0:0 target
+usr:lib/python2.4/site-packages/dbus/bus.pyc f 0644 0:0 target
+usr:lib/python2.4/site-packages/dbus/bus.pyo f 0644 0:0 target
+usr:lib/python2.4/site-packages/dbus/connection.py f 0644 0:0 target
+usr:lib/python2.4/site-packages/dbus/connection.pyc f 0644 0:0 target
+usr:lib/python2.4/site-packages/dbus/connection.pyo f 0644 0:0 target
+usr:lib/python2.4/site-packages/dbus/dbus_bindings.py f 0644 0:0 target
+usr:lib/python2.4/site-packages/dbus/dbus_bindings.pyc f 0644 0:0 target
+usr:lib/python2.4/site-packages/dbus/dbus_bindings.pyo f 0644 0:0 target
+usr:lib/python2.4/site-packages/dbus/decorators.py f 0644 0:0 target
+usr:lib/python2.4/site-packages/dbus/decorators.pyc f 0644 0:0 target
+usr:lib/python2.4/site-packages/dbus/decorators.pyo f 0644 0:0 target
+usr:lib/python2.4/site-packages/dbus/exceptions.py f 0644 0:0 target
+usr:lib/python2.4/site-packages/dbus/exceptions.pyc f 0644 0:0 target
+usr:lib/python2.4/site-packages/dbus/exceptions.pyo f 0644 0:0 target
+usr:lib/python2.4/site-packages/dbus/glib.py f 0644 0:0 target
+usr:lib/python2.4/site-packages/dbus/glib.pyc f 0644 0:0 target
+usr:lib/python2.4/site-packages/dbus/glib.pyo f 0644 0:0 target
+usr:lib/python2.4/site-packages/dbus/gobject_service.py f 0644 0:0 target
+usr:lib/python2.4/site-packages/dbus/gobject_service.pyc f 0644 0:0 target
+usr:lib/python2.4/site-packages/dbus/gobject_service.pyo f 0644 0:0 target
+usr:lib/python2.4/site-packages/dbus/lowlevel.py f 0644 0:0 target
+usr:lib/python2.4/site-packages/dbus/lowlevel.pyc f 0644 0:0 target
+usr:lib/python2.4/site-packages/dbus/lowlevel.pyo f 0644 0:0 target
+usr:lib/python2.4/site-packages/dbus/mainloop d 0755 0:0
+usr:lib/python2.4/site-packages/dbus/mainloop/__init__.py f 0644 0:0 target
+usr:lib/python2.4/site-packages/dbus/mainloop/__init__.pyc f 0644 0:0 target
+usr:lib/python2.4/site-packages/dbus/mainloop/__init__.pyo f 0644 0:0 target
+usr:lib/python2.4/site-packages/dbus/mainloop/glib.py f 0644 0:0 target
+usr:lib/python2.4/site-packages/dbus/mainloop/glib.pyc f 0644 0:0 target
+usr:lib/python2.4/site-packages/dbus/mainloop/glib.pyo f 0644 0:0 target
+usr:lib/python2.4/site-packages/dbus/proxies.py f 0644 0:0 target
+usr:lib/python2.4/site-packages/dbus/proxies.pyc f 0644 0:0 target
+usr:lib/python2.4/site-packages/dbus/proxies.pyo f 0644 0:0 target
+usr:lib/python2.4/site-packages/dbus/server.py f 0644 0:0 target
+usr:lib/python2.4/site-packages/dbus/server.pyc f 0644 0:0 target
+usr:lib/python2.4/site-packages/dbus/server.pyo f 0644 0:0 target
+usr:lib/python2.4/site-packages/dbus/service.py f 0644 0:0 target
+usr:lib/python2.4/site-packages/dbus/service.pyc f 0644 0:0 target
+usr:lib/python2.4/site-packages/dbus/service.pyo f 0644 0:0 target
+usr:lib/python2.4/site-packages/dbus/types.py f 0644 0:0 target
+usr:lib/python2.4/site-packages/dbus/types.pyc f 0644 0:0 target
+usr:lib/python2.4/site-packages/dbus/types.pyo f 0644 0:0 target
+usr:lib/python2.4/site-packages/dbus_bindings.py f 0644 0:0 target
+usr:lib/python2.4/site-packages/dbus_bindings.pyc f 0644 0:0 target
+usr:lib/python2.4/site-packages/dbus_bindings.pyo f 0644 0:0 target
+usr:lib/python2.4/site.py f 0644 0:0 target
+usr:lib/python2.4/smtpd.py f 0755 0:0 target
+usr:lib/python2.4/smtplib.py f 0755 0:0 target
+usr:lib/python2.4/sndhdr.py f 0644 0:0 target
+usr:lib/python2.4/socket.py f 0644 0:0 target
+usr:lib/python2.4/sre.py f 0644 0:0 target
+usr:lib/python2.4/sre_compile.py f 0644 0:0 target
+usr:lib/python2.4/sre_constants.py f 0644 0:0 target
+usr:lib/python2.4/sre_parse.py f 0644 0:0 target
+usr:lib/python2.4/stat.py f 0644 0:0 target
+usr:lib/python2.4/statcache.py f 0644 0:0 target
+usr:lib/python2.4/statvfs.py f 0644 0:0 target
+usr:lib/python2.4/string.py f 0644 0:0 target
+usr:lib/python2.4/stringold.py f 0644 0:0 target
+usr:lib/python2.4/stringprep.py f 0644 0:0 target
+usr:lib/python2.4/subprocess.py f 0644 0:0 target
+usr:lib/python2.4/sunau.py f 0644 0:0 target
+usr:lib/python2.4/sunaudio.py f 0644 0:0 target
+usr:lib/python2.4/symbol.py f 0755 0:0 target
+usr:lib/python2.4/symtable.py f 0644 0:0 target
+usr:lib/python2.4/tabnanny.py f 0755 0:0 target
+usr:lib/python2.4/tarfile.py f 0644 0:0 target
+usr:lib/python2.4/telnetlib.py f 0644 0:0 target
+usr:lib/python2.4/tempfile.py f 0644 0:0 target
+usr:lib/python2.4/textwrap.py f 0644 0:0 target
+usr:lib/python2.4/this.py f 0644 0:0 target
+usr:lib/python2.4/threading.py f 0644 0:0 target
+usr:lib/python2.4/timeit.py f 0644 0:0 target
+usr:lib/python2.4/toaiff.py f 0644 0:0 target
+usr:lib/python2.4/token.py f 0755 0:0 target
+usr:lib/python2.4/tokenize.py f 0644 0:0 target
+usr:lib/python2.4/trace.py f 0644 0:0 target
+usr:lib/python2.4/traceback.py f 0644 0:0 target
+usr:lib/python2.4/tty.py f 0644 0:0 target
+usr:lib/python2.4/types.py f 0644 0:0 target
+usr:lib/python2.4/tzparse.py f 0644 0:0 target
+usr:lib/python2.4/unittest.py f 0644 0:0 target
+usr:lib/python2.4/urllib.py f 0644 0:0 target
+usr:lib/python2.4/urllib2.py f 0644 0:0 target
+usr:lib/python2.4/urlparse.py f 0644 0:0 target
+usr:lib/python2.4/user.py f 0644 0:0 target
+usr:lib/python2.4/uu.py f 0755 0:0 target
+usr:lib/python2.4/warnings.py f 0644 0:0 target
+usr:lib/python2.4/wave.py f 0644 0:0 target
+usr:lib/python2.4/weakref.py f 0644 0:0 target
+usr:lib/python2.4/webbrowser.py f 0644 0:0 target
+usr:lib/python2.4/whichdb.py f 0644 0:0 target
+usr:lib/python2.4/whrandom.py f 0644 0:0 target
+usr:lib/python2.4/xdrlib.py f 0644 0:0 target
+usr:lib/python2.4/xml d 0755 0:0
+usr:lib/python2.4/xml/__init__.py f 0644 0:0 target
+usr:lib/python2.4/xml/dom d 0755 0:0
+usr:lib/python2.4/xml/dom/NodeFilter.py f 0644 0:0 target
+usr:lib/python2.4/xml/dom/__init__.py f 0644 0:0 target
+usr:lib/python2.4/xml/dom/domreg.py f 0644 0:0 target
+usr:lib/python2.4/xml/dom/expatbuilder.py f 0644 0:0 target
+usr:lib/python2.4/xml/dom/minicompat.py f 0644 0:0 target
+usr:lib/python2.4/xml/dom/minidom.py f 0644 0:0 target
+usr:lib/python2.4/xml/dom/pulldom.py f 0644 0:0 target
+usr:lib/python2.4/xml/dom/xmlbuilder.py f 0644 0:0 target
+usr:lib/python2.4/xml/parsers d 0755 0:0
+usr:lib/python2.4/xml/parsers/__init__.py f 0644 0:0 target
+usr:lib/python2.4/xml/parsers/expat.py f 0644 0:0 target
+usr:lib/python2.4/xml/sax d 0755 0:0
+usr:lib/python2.4/xml/sax/__init__.py f 0644 0:0 target
+usr:lib/python2.4/xml/sax/_exceptions.py f 0644 0:0 target
+usr:lib/python2.4/xml/sax/expatreader.py f 0644 0:0 target
+usr:lib/python2.4/xml/sax/handler.py f 0644 0:0 target
+usr:lib/python2.4/xml/sax/saxutils.py f 0644 0:0 target
+usr:lib/python2.4/xml/sax/xmlreader.py f 0644 0:0 target
+usr:lib/python2.4/xmllib.py f 0644 0:0 target
+usr:lib/python2.4/xmlrpclib.py f 0644 0:0 target
+usr:lib/python2.4/zipfile.py f 0644 0:0 target
+usr:lib/terminfo l /usr/share/terminfo
+usr:sbin d 0755 0:0
+usr:sbin/crda f 0755 0:0 target:sbin/crda
+usr:sbin/iw f 0755 0:0 target
+usr:sbin/wpa_supplicant f 0755 0:0 target
+usr:scripts d 0755 0:0
+usr:scripts/k2k d 0755 0:0
+usr:scripts/k2k/playback f 0755 0:0 own
+usr:scripts/k2k/rec f 0755 0:0 own
+usr:share d 0755 0:0
+usr:share/dbus-1 d 0755 0:0
+usr:share/dbus-1/system.conf f 0644 0:0 target  # D-Bus 1.14's own; it includes /etc/dbus-1/system.d (karotz.conf)
+usr:share/dbus-1/session.conf f 0644 0:0 target
+usr:share/dbus-1/services d 0755 0:0
+usr:share/dbus-1/session.d d 0755 0:0
+usr:share/dbus-1/system-services d 0755 0:0
+usr:share/dbus-1/system.d d 0755 0:0
+usr:share/dbus-1/system.d/wpa_supplicant.conf f 0644 0:0 target
+
+# --- the boot ---
+rootfs:linuxrc f 0755 0:0 core
+rootfs:karotz/etc/inittab f 0644 0:0 core
+rootfs:karotz/etc/fstab f 0644 0:0 core
+rootfs:karotz/etc/mdev.conf f 0644 0:0 core  # mdev's rules: the USB stick, USB Ethernet
+rootfs:karotz/etc/shells f 0644 0:0 core
+rootfs:karotz/etc/passwd f 0644 0:0 core  # every account locked: SSH is by key only
+rootfs:karotz/etc/group f 0644 0:0 core
+rootfs:karotz/etc/profile f 0644 0:0 core
+rootfs:karotz/etc/hosts f 0644 0:0 core
+rootfs:karotz/etc/ld.so.conf f 0644 0:0 core
+rootfs:karotz/etc/motd f 0644 0:0 core
+rootfs:karotz/etc/rootfs_version f 0644 0:0 core  # the version an old Free Rabbits key's autorun compares
+rootfs:karotz/etc/httpd.conf f 0644 0:0 core  # the fixed part of httpd's settings; inetd.sh makes the one httpd reads
+rootfs:karotz/etc/inetd.conf f 0644 0:0 generated  # the web page's httpd, with the configuration inetd.sh makes in RAM; inetd.sh adds telnet when the install set it
+rootfs:karotz/scripts/startup.sh f 0755 0:0 core
+rootfs:karotz/scripts/network.sh f 0755 0:0 core  # the Wi-Fi and address from /usr/etc/conf, which the install writes
+rootfs:karotz/scripts/usbkey.sh f 0755 0:0 core  # mounts and unmounts the USB stick, for mdev
+rootfs:karotz/scripts/udhcpc_script.sh f 0755 0:0 target:usr/share/udhcpc/default.script  # Buildroot's; the path is the mini-USB set-up's
+rootfs:karotz/scripts/sshd.sh f 0755 0:0 core
+rootfs:karotz/scripts/inetd.sh f 0755 0:0 core
+rootfs:lib/firmware/rt73.bin f 0644 0:0 generated  # the Wi-Fi's firmware, linux-firmware 20260916
+rootfs:lib/firmware/LICENCE.ralink-firmware.txt f 0644 0:0 generated  # its licence, which must travel with it
+
+# --- /usr ---
+usr:etc/init.d/S30dbus-daemon f 0755 0:0 target:etc/init.d/S30dbus-daemon  # Buildroot's D-Bus start
+usr:etc/init.d/S40lapinlibre f 0755 0:0 core  # uuid.conf, the playsounds default, the daemons, the button watcher, the controller and mdnsd
+usr:etc/usbkey.d d 0755 0:0
+usr:etc/usbkey.d/50mpd f 0755 0:0 core  # mpd rescans the stick's music
+usr:scripts/dbus_watcher f 0755 0:0 core  # the head button's tones and its /etc/button.d hooks, under immortaldog
+usr:scripts/tag_listener f 0755 0:0 core  # the web API's tag listener: tag learning and the tags' stored actions, under immortaldog
+usr:etc/button.d d 0755 0:0
+usr:www d 0755 0:0
+usr:www/index.html f 0644 0:0 core  # the web page httpd serves, with its script and style
+usr:www/app.js f 0644 0:0 core
+usr:www/style.css f 0644 0:0 core
+usr:www/cgi-bin d 0755 0:0  # the web API: each program sources /usr/share/lapinlibre/web.sh
+usr:www/cgi-bin/status f 0755 0:0 core
+usr:www/cgi-bin/get_version f 0755 0:0 core
+usr:www/cgi-bin/get_free_space f 0755 0:0 core
+usr:www/cgi-bin/tools_log f 0755 0:0 core
+usr:www/cgi-bin/reboot f 0755 0:0 core
+usr:www/cgi-bin/leds f 0755 0:0 core  # the hardware endpoints: each drives our daemons over D-Bus, never taking the controller's control
+usr:www/cgi-bin/ears f 0755 0:0 core
+usr:www/cgi-bin/ears_reset f 0755 0:0 core
+usr:www/cgi-bin/ears_random f 0755 0:0 core
+usr:www/cgi-bin/ears_mode f 0755 0:0 core  # keeps its one setting in /usr/etc/conf/web
+usr:www/cgi-bin/sleep f 0755 0:0 core  # the API's own sleep flag, in RAM
+usr:www/cgi-bin/wakeup f 0755 0:0 core
+usr:www/cgi-bin/sound f 0755 0:0 core
+usr:www/cgi-bin/sound_control f 0755 0:0 core
+usr:www/cgi-bin/sound_list f 0755 0:0 core
+usr:www/cgi-bin/tts f 0755 0:0 core  # speech through voice-daemon and the app server's speech server
+usr:www/cgi-bin/voice_list f 0755 0:0 core
+usr:www/cgi-bin/display_cache f 0755 0:0 core  # there is no speech cache: always empty
+usr:www/cgi-bin/clear_cache f 0755 0:0 core
+usr:www/cgi-bin/snapshot f 0755 0:0 core  # snapshots kept in RAM, the newest 10
+usr:www/cgi-bin/snapshot_view f 0755 0:0 core
+usr:www/cgi-bin/snapshot_list f 0755 0:0 core
+usr:www/cgi-bin/snapshot_get f 0755 0:0 core
+usr:www/cgi-bin/clear_snapshots f 0755 0:0 core
+usr:www/cgi-bin/tools_ps f 0755 0:0 core
+usr:www/cgi-bin/setclock f 0755 0:0 core  # one ntpd query, as the start-up's
+usr:www/cgi-bin/rfid_start_record f 0755 0:0 core  # RFID tags: learning sets a flag in RAM for the tag listener; the store is /usr/etc/conf/web/tags
+usr:www/cgi-bin/rfid_stop_record f 0755 0:0 core
+usr:www/cgi-bin/rfid_list f 0755 0:0 core
+usr:www/cgi-bin/rfid_list_ext f 0755 0:0 core
+usr:www/cgi-bin/rfid_info f 0755 0:0 core
+usr:www/cgi-bin/rfid_rename f 0755 0:0 core
+usr:www/cgi-bin/rfid_delete f 0755 0:0 core
+usr:www/cgi-bin/rfid_unassign f 0755 0:0 core
+usr:www/cgi-bin/clear_rfid f 0755 0:0 core
+usr:www/cgi-bin/tag_list f 0755 0:0 core  # always an error pointing to rfid_list
+usr:www/cgi-bin/rfid_assign_url f 0755 0:0 core  # a tag's URL request, kept as data and sent by the listener with curl
+usr:www/cgi-bin/rfid_test_url f 0755 0:0 core
+usr:www/cgi-bin/rfid_assign_karotz f 0755 0:0 core  # a tag's action as one of the API's own endpoints, from an allow-list
+usr:www/cgi-bin/moods_list f 0755 0:0 core  # the user's own files on the USB stick: moods/, stories/, radios.txt
+usr:www/cgi-bin/stories f 0755 0:0 core
+usr:www/cgi-bin/stories_list f 0755 0:0 core
+usr:www/cgi-bin/radios_list f 0755 0:0 core
+usr:www/cgi-bin/apps d 0755 0:0  # the API's apps (the clock, moods)
+usr:www/cgi-bin/apps/moods f 0755 0:0 core
+usr:www/cgi-bin/apps/clock f 0755 0:0 core  # the time spoken through the speech server
+usr:www/cgi-bin/lapinlibre d 0755 0:0  # LapinLibre's own endpoints, for the web page
+usr:www/cgi-bin/lapinlibre/status f 0755 0:0 core
+usr:www/cgi-bin/lapinlibre/logs f 0755 0:0 core
+usr:www/cgi-bin/lapinlibre/ssh f 0755 0:0 core
+usr:www/cgi-bin/lapinlibre/tag_action f 0755 0:0 core
+usr:share/lapinlibre d 0755 0:0
+usr:share/lapinlibre/web.sh f 0644 0:0 core  # the web API's request checks, parameters and replies; outside the web root, so never run by httpd
+usr:share/lapinlibre/web-extra.sh f 0644 0:0 core  # the web API's less common helpers (encoded parameters, JSON escaping, URL checks), read by web.sh when needed
+usr:share/lapinlibre/web-info.sh f 0644 0:0 core  # the web API's status readers, read by web.sh when needed
+usr:share/lapinlibre/web-media.sh f 0644 0:0 core  # the web API's sounds, voices and stick lists, read by web.sh when needed
+usr:share/lapinlibre/web-hw.sh f 0644 0:0 core  # the web API's signal watches, ears and camera, read by web.sh when needed
+usr:share/lapinlibre/web-tags.sh f 0644 0:0 core  # the web API's URL actions and RFID tag store, read by web.sh when needed
+usr:sbin/mdnsd f 0755 0:0 target  # mDNS: <host name>.local, and SSH advertised
+usr:lib/libmdnsd.so.1 l libmdnsd.so.1.0.0
+usr:lib/libmdnsd.so.1.0.0 f 0755 0:0 target
+usr:etc/mdns.d d 0755 0:0
+usr:etc/mdns.d/ssh.service f 0644 0:0 target:etc/mdns.d/ssh.service
+usr:etc/dbus-1/system.d/karotz.conf f 0644 0:0 core
+usr:etc/conf/karotz.conf f 0644 0:0 core  # the factory settings (the platform's servers), which the controller and the scenarios start from
+usr:etc/conf/voice.conf f 0644 0:0 core  # the factory speech servers, as karotz.conf
+usr:etc/conf/linphone.conf f 0644 0:0 core  # k2k-daemon's SIP and audio settings (linphone's factory configuration)
+usr:etc/conf/rfid_conf.xml f 0644 0:0 core  # rfid-daemon's settings: read tags, never write them
+usr:etc/mpd/mpd.conf f 0644 0:0 core  # mpd's settings: the USB stick's music, multimedia-daemon's and external clients' passwords
+usr:karotz/res/lang/en-US f 0644 0:0 core  # the controller's sounds and sentences per language; en-US is every language's fallback
+usr:karotz/res/lang/en-GB f 0644 0:0 core
+usr:karotz/res/lang/fr-FR f 0644 0:0 core
+usr:karotz/res/lang/de-DE f 0644 0:0 core
+usr:karotz/res/lang/es-ES f 0644 0:0 core
+usr:karotz/sounds/wakeup.mp3 f 0644 0:0 generated  # the controller's and webcam-daemon's effects (image.py EFFECTS)
+usr:karotz/sounds/notify.mp3 f 0644 0:0 generated
+usr:karotz/sounds/acknowledge.mp3 f 0644 0:0 generated
+usr:karotz/sounds/shutter.mp3 f 0644 0:0 generated
+usr:karotz/sounds/en_tag_unknown.mp3 f 0644 0:0 core  # the controller's spoken sounds (image/tools/speech_sounds.py): an unknown tag, speech not understood, no speech recognition server
+usr:karotz/sounds/en_speech_not_understood.mp3 f 0644 0:0 core
+usr:karotz/sounds/speech_server_timeout_en-GB.mp3 f 0644 0:0 core
+usr:karotz/sounds/fr_tag_unknown.mp3 f 0644 0:0 core
+usr:karotz/sounds/fr_speech_not_understood.mp3 f 0644 0:0 core
+usr:karotz/sounds/speech_server_timeout_fr-FR.mp3 f 0644 0:0 core
+usr:karotz/sounds/de_tag_unknown.mp3 f 0644 0:0 core
+usr:karotz/sounds/de_speech_not_understood.mp3 f 0644 0:0 core
+usr:karotz/sounds/es_tag_unknown.mp3 f 0644 0:0 core
+usr:karotz/sounds/es_speech_not_understood.mp3 f 0644 0:0 core
+usr:karotz/.ssh d 0700 0:0
+usr:karotz/.ssh/authorized_keys l /usr/etc/conf/authorized_keys  # the install writes the key from lapinlibre.txt into /usr/etc/conf, which installs keep
+usr:karotz/sounds d 0755 0:0
+usr:etc/timezone.list f 0644 0:0 generated  # every zone of the pinned tzdata, with its POSIX TZ (image/tools/tzlist.py)
+usr:karotz/sounds/boot-ready.wav f 0644 0:0 generated  # the ready chime, made by the build
+usr:karotz/sounds/button-long.wav f 0644 0:0 generated
+usr:karotz/sounds/button-click.wav f 0644 0:0 generated
+usr:karotz/sounds/button-double.wav f 0644 0:0 generated
+usr:karotz/sounds/button-triple.wav f 0644 0:0 generated

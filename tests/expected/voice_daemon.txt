@@ -1,0 +1,137 @@
+== registered: True
+== introspection
+method com.mindscape.karotz.KarotzInterface.asr_start_file(in:s,in:s,in:i,out:b)
+method com.mindscape.karotz.KarotzInterface.asr_start_string(in:s,in:s,in:s,in:i,out:b)
+method com.mindscape.karotz.KarotzInterface.asr_stop(in:s,in:i,out:b)
+method com.mindscape.karotz.KarotzInterface.tts_speak(in:s,in:s,in:s,in:i,out:b)
+method com.mindscape.karotz.KarotzInterface.tts_stop(in:s,in:i,out:b)
+signal com.mindscape.karotz.KarotzInterface.asr_event(out:s,out:s,out:s,out:i)
+signal com.mindscape.karotz.KarotzInterface.registered()
+signal com.mindscape.karotz.KarotzInterface.tts_event(out:s,out:i)
+== phase 1: no servers reachable
+tts_stop('string:nothing', 'int32:0'): boolean true
+asr_stop('string:nothing', 'int32:0'): boolean true
+tts_speak('string:bad-lang', 'string:bonjour', 'string:', 'int32:0'): boolean false
+tts_speak('string:bad-lang', 'string:bonjour', 'string:f', 'int32:0'): boolean false
+tts_speak('string:bad-lang', 'string:bonjour', 'string:it', 'int32:0'): boolean false
+tts_speak('string:bad-lang', 'string:bonjour', 'string:xx', 'int32:0'): boolean false
+tts_speak('string:bad-lang', 'string:bonjour', 'string:1', 'int32:0'): boolean false
+tts_speak('string:bad-lang', 'string:bonjour', 'string:fé', 'int32:0'): boolean false
+tts_stop('string:bad-lang', 'int32:0'): boolean true
+asr_start_string('string:asr-a', 'string:oui | non', 'string:fr-FR', 'int32:0'): boolean false
+asr_start_file('string:asr-b', 'string:/nonexistent.grxml', 'int32:1'): boolean false
+asr_stop('string:asr-b', 'int32:0'): boolean true
+== phase 2: fake servers
+fake servers ready: True
+-- asr sessions
+[ok] asr_start_string('string:s-ok', 'string:bonjour lapin | au revoir', 'string:fr-FR', 'int32:0'): boolean true
+  server: asr: connection (mode ok)
+  server: asr: grammar '#ABNF 1.0 UTF-8;\r\nlanguage fr-FR;\r\nmode voice;\r\ntag-format <semantics/1.0>;\r\nroot $App;\r\npublic $App = bonjour lapin | au revoir;\r\n'
+  server: asr: audio chunk of 1024 bytes
+  server: asr: answered
+  server: asr: closed by the daemon
+[ok-empty] asr_start_string('string:s-ok-empty', 'string:', 'string:', 'int32:0'): boolean true
+  server: asr: connection (mode ok-empty)
+  server: asr: grammar '#ABNF 1.0 UTF-8;\r\nlanguage ;\r\nmode voice;\r\ntag-format <semantics/1.0>;\r\nroot $App;\r\npublic $App = ;\r\n'
+  server: asr: audio chunk of 1024 bytes
+  server: asr: answered
+  server: asr: closed by the daemon
+[nomatch-words] asr_start_string('string:s-nmw', 'string:http://example.com/g.grxml', 'string:en', 'int32:0'): boolean true
+  server: asr: connection (mode nomatch-words)
+  server: asr: grammar 'http://example.com/g.grxml'
+  server: asr: audio chunk of 1024 bytes
+  server: asr: answered
+  server: asr: closed by the daemon
+[nomatch] asr_start_string('string:s-nm', 'string:xhttp: not quite', 'string:de-DE', 'int32:0'): boolean true
+  server: asr: connection (mode nomatch)
+  server: asr: grammar 'xhttp: not quite'
+  server: asr: audio chunk of 1024 bytes
+  server: asr: answered
+  server: asr: closed by the daemon
+[timeout] asr_start_string('string:s-to', 'string:0123456789http', 'string:es', 'int32:0'): boolean true
+  server: asr: connection (mode timeout)
+  server: asr: grammar '#ABNF 1.0 UTF-8;\r\nlanguage es;\r\nmode voice;\r\ntag-format <semantics/1.0>;\r\nroot $App;\r\npublic $App = 0123456789http;\r\n'
+  server: asr: audio chunk of 1024 bytes
+  server: asr: answered
+  server: asr: closed by the daemon
+[no-code] asr_start_file('string:s-nc', 'string:/tmp/karotz-voice-grammar-<pid>.abnf', 'int32:0'): boolean true
+  server: asr: connection (mode no-code)
+  server: asr: grammar '#ABNF 1.0 UTF-8;\nroot $x;\n$x = word | word | word | word | word | word | word | word | word | word | word | word | word | word | word | word | word | word | word | word | word | word | word | word | word | word | word | word | word | word | word | word | word | word | word | word | word | word | word | word | end;\n'
+  server: asr: audio chunk of 1024 bytes
+  server: asr: answered
+  server: asr: closed by the daemon
+[no-response] asr_start_string('string:s-nr', 'string:a', 'string:en-US', 'int32:0'): boolean true
+  server: asr: connection (mode no-response)
+  server: asr: grammar '#ABNF 1.0 UTF-8;\r\nlanguage en-US;\r\nmode voice;\r\ntag-format <semantics/1.0>;\r\nroot $App;\r\npublic $App = a;\r\n'
+  server: asr: audio chunk of 1024 bytes
+  server: asr: answered
+  server: asr: closed by the daemon
+[garbage] asr_start_string('string:s-gb', 'string:b', 'string:en-US', 'int32:0'): boolean true
+  server: asr: connection (mode garbage)
+  server: asr: grammar '#ABNF 1.0 UTF-8;\r\nlanguage en-US;\r\nmode voice;\r\ntag-format <semantics/1.0>;\r\nroot $App;\r\npublic $App = b;\r\n'
+  server: asr: audio chunk of 1024 bytes
+  server: asr: answered
+  server: asr: closed by the daemon
+[close] asr_start_string('string:s-cl', 'string:c', 'string:en-US', 'int32:0'): boolean true
+  server: asr: connection (mode close)
+  server: asr: grammar '#ABNF 1.0 UTF-8;\r\nlanguage en-US;\r\nmode voice;\r\ntag-format <semantics/1.0>;\r\nroot $App;\r\npublic $App = c;\r\n'
+  server: asr: audio chunk of 1024 bytes
+  server: asr: hanging up
+-- a grammar file that can't be read
+asr_start_file('string:s-nofile', 'string:/nonexistent/grammar.abnf', 'int32:0'): boolean false
+  server: asr: connection (mode hold)
+  server: asr: closed by the daemon
+-- a session held open: busy, then stopped
+asr_start_string('string:s-hold', 'string:yes | no', 'string:en', 'int32:0'): boolean true
+asr_start_string('string:s-busy', 'string:other', 'string:en', 'int32:0'): boolean false
+asr_start_file('string:s-busy2', 'string:/tmp/karotz-voice-grammar-<pid>.abnf', 'int32:0'): boolean false
+asr_stop('string:whatever', 'int32:0'): boolean true
+asr_stop('string:again', 'int32:0'): boolean true
+  server: asr: connection (mode hold)
+  server: asr: grammar '#ABNF 1.0 UTF-8;\r\nlanguage en;\r\nmode voice;\r\ntag-format <semantics/1.0>;\r\nroot $App;\r\npublic $App = yes | no;\r\n'
+  server: asr: audio chunk of 1024 bytes
+  server: asr: closed by the daemon
+-- /dev/audio missing
+asr_start_string('string:s-noaudio', 'string:x', 'string:fr', 'int32:0'): boolean false
+  server: asr: connection (mode hold)
+  server: asr: closed by the daemon
+-- one more session
+asr_start_string('string:s-last', 'string:fin', 'string:fr', 'int32:0'): boolean true
+  server: asr: connection (mode ok)
+  server: asr: grammar '#ABNF 1.0 UTF-8;\r\nlanguage fr;\r\nmode voice;\r\ntag-format <semantics/1.0>;\r\nroot $App;\r\npublic $App = fin;\r\n'
+  server: asr: audio chunk of 1024 bytes
+  server: asr: answered
+  server: asr: closed by the daemon
+-- tts (the daemon aborts here under qemu)
+tts_speak('string:t-fr', 'string:Bonjour, je suis "Karotz" & toi ?', 'string:FRA', 'int32:0'): boolean true
+  server: tts: POST /tts/fr HTTP/1.1
+  server: tts:   Accept: */*
+  server: tts:   Content-Length: 84
+  server: tts:   Content-Type: application/x-www-form-urlencoded
+  server: tts:   Host: 192.0.2.65
+  server: tts:   body '<s><break time="200ms" />Bonjour, je suis "Karotz" & toi ?<break time="150ms" /></s>'
+== signals
+com.mindscape.karotz.KarotzInterface.registered()
+com.mindscape.karotz.KarotzInterface.asr_event(string "asr-a", string "<error_server_timeout>", string "cancel", int32 2)
+com.mindscape.karotz.KarotzInterface.asr_event(string "asr-b", string "<error_server_timeout>", string "cancel", int32 2)
+com.mindscape.karotz.KarotzInterface.asr_event(string "s-ok", string "bonjour lapin", string "<hello/>", int32 87)
+com.mindscape.karotz.KarotzInterface.asr_event(string "s-ok-empty", string "", string "", int32 0)
+com.mindscape.karotz.KarotzInterface.asr_event(string "s-nmw", string "<nomatch>", string "something else", int32 2)
+com.mindscape.karotz.KarotzInterface.asr_event(string "s-nm", string "<nomatch>", string "", int32 2)
+com.mindscape.karotz.KarotzInterface.asr_event(string "s-to", string "<nomatch>", string "", int32 2)
+com.mindscape.karotz.KarotzInterface.asr_event(string "s-nc", string "<nomatch>", string "connection lost", int32 2)
+com.mindscape.karotz.KarotzInterface.asr_event(string "s-gb", string "<nomatch>", string "connection lost", int32 2)
+com.mindscape.karotz.KarotzInterface.asr_event(string "s-cl", string "<nomatch>", string "connection lost", int32 2)
+com.mindscape.karotz.KarotzInterface.asr_event(string "s-nofile", string "<error_server_timeout>", string "cancel", int32 2)
+com.mindscape.karotz.KarotzInterface.asr_event(string "s-noaudio", string "<error_server_timeout>", string "cancel", int32 2)
+com.mindscape.karotz.KarotzInterface.asr_event(string "s-last", string "bonjour lapin", string "<hello/>", int32 87)
+com.mindscape.karotz.KarotzInterface.tts_event(string "t-fr", int32 2)
+== device I/O
+open /dev/audio
+ioctl /dev/audio 0x5000
+ioctl /dev/audio 0xc0045005
+ioctl /dev/audio 0xc0045003
+ioctl /dev/audio 0xc0045002
+read /dev/audio 2048
+system madplay -a 1.5 -
+== daemon still running: True

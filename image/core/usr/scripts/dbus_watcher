@@ -1,0 +1,177 @@
+#!/bin/sh
+# SPDX-License-Identifier: MIT
+# The head button's watcher, kept running by immortaldog (/etc/init.d/S40lapinlibre). It follows
+# button-daemon's signals on the system bus and, for each gesture, plays the core's short tone and
+# runs the add-ons' hooks. It does nothing else: the controller acts on the button itself.
+#
+# Tones (/usr/karotz/sounds): click, dclick, tclick and lclick_start have one each, played by
+# karotz-player directly, only while /etc/conf/playsounds exists (checked at each gesture), at most
+# 5 s each and one at a time: a new tone ends the one still playing. A missing file or a player
+# that fails (the audio device busy) skips the tone.
+# Hooks (/etc/button.d): every executable regular file directly in it, in name order, except names
+# starting with . or ending in ~. For each gesture they run one after another in a background
+# runner, with $1 the gesture (the signal's name) and $2 its click count (1, 2, 3, n for mclick, 0
+# for the long press), the same in BUTTON_GESTURE and BUTTON_CLICKS, standard input /dev/null, at
+# most 10 s each, their output to syslog. At most 4 runners at once: a gesture that finds 4 still
+# running gets no hooks.
+# It stays in the foreground. When its monitor ends (the bus went away) it exits 1, so immortaldog
+# starts it again on the new bus; SIGTERM ends the monitor and the tone, and it exits 0 (running
+# hooks keep their own time limits).
+PATH=/bin:/sbin:/usr/bin:/usr/sbin
+export PATH
+LC_ALL=C
+export LC_ALL
+TAG=dbus_watcher
+HOOKS=/etc/button.d
+PLAYSOUNDS=/etc/conf/playsounds
+SOUNDS=/usr/karotz/sounds
+PLAYER=/usr/bin/karotz-player
+FIFO=/var/run/karotz/dbus_watcher.fifo.$$
+TONE_TIME=5
+HOOK_TIME=10
+RUNNERS_MAX=4
+BUTTON_PATH=/com/mindscape/karotz/Button
+BUTTON_INTERFACE=com.mindscape.karotz.KarotzInterface
+# Only the button's signals: never the whole bus.
+RULE="type='signal',path='$BUTTON_PATH',interface='$BUTTON_INTERFACE'"
+
+exec < /dev/null > /dev/null 2>&1
+
+log() { # log PRIORITY MESSAGE
+    logger -t $TAG -p "user.$1" "$2"
+}
+
+# Whether process $1 runs; a finished child the shell has not reaped yet counts as ended.
+running() {
+    state=
+    [ -n "$1" ] && { read -r _ _ state _ < "/proc/$1/stat"; } 2> /dev/null
+    [ -n "$state" ] && [ "$state" != Z ]
+}
+
+# The tone's own process: SIGTERM ends the player with it.
+play() { # play FILE
+    trap 'kill "$player" 2> /dev/null; exit 0' TERM
+    timeout $TONE_TIME $PLAYER "$1" > /dev/null 2>&1 &
+    player=$!
+    wait "$player" || log debug "tone $1 not played (status $?)"
+    exit 0
+}
+
+TONE=
+end_tone() {
+    running "$TONE" && kill "$TONE" 2> /dev/null
+    TONE=
+}
+
+tone() { # tone FILE
+    end_tone
+    [ -e $PLAYSOUNDS ] || return 0
+    if [ ! -f "$SOUNDS/$1" ]; then
+        log warning "no tone $SOUNDS/$1: skipped"
+        return 0
+    fi
+    play "$SOUNDS/$1" 3<&- &
+    TONE=$!
+}
+
+# One gesture's hooks, one after another; a failing or hanging hook never stops the next.
+run_hooks() { # run_hooks GESTURE CLICKS
+    for hook in "$HOOKS"/*; do
+        case ${hook##*/} in *~) continue ;; esac
+        [ -f "$hook" ] && [ -x "$hook" ] || continue
+        BUTTON_GESTURE=$1 BUTTON_CLICKS=$2 timeout $HOOK_TIME "$hook" "$1" "$2" < /dev/null 2>&1 ||
+            echo "hook $hook ($1 $2) ended with status $?"
+    done
+}
+
+RUNNERS=
+hooks() { # hooks GESTURE CLICKS
+    [ -d $HOOKS ] || return 0
+    jobs > /dev/null 2>&1 # reaps the finished children
+    live=
+    count=0
+    for pid in $RUNNERS; do
+        if running "$pid"; then
+            live="$live $pid"
+            count=$((count + 1))
+        fi
+    done
+    RUNNERS=$live
+    if [ $count -ge $RUNNERS_MAX ]; then
+        log warning "$count hook runners still running: no hooks for $1 $2"
+        return 0
+    fi
+    run_hooks "$1" "$2" 3<&- 2>&1 | logger -t $TAG -p user.info &
+    RUNNERS="$RUNNERS $!"
+}
+
+gesture() { # gesture NAME CLICKS
+    case $1 in
+    click) tone button-click.wav ;;
+    dclick) tone button-double.wav ;;
+    tclick) tone button-triple.wav ;;
+    lclick_start) tone button-long.wav ;;
+    esac
+    hooks "$1" "$2"
+    log debug "gesture $1 $2"
+}
+
+MON=
+stop() {
+    trap '' TERM INT HUP
+    [ -n "$MON" ] && kill "$MON" 2> /dev/null
+    rm -f "$FIFO"
+    end_tone
+    log info "stopped"
+    exit 0
+}
+trap stop TERM INT HUP
+
+rm -f "$FIFO"
+if ! mkfifo -m 600 "$FIFO"; then
+    log err "can't make $FIFO"
+    exit 1
+fi
+dbus-monitor --system "$RULE" > "$FIFO" 2> /dev/null &
+MON=$!
+exec 3< "$FIFO"
+rm -f "$FIFO"
+log info "started: dbus-monitor --system $RULE"
+
+# dbus-monitor prints a header line per message ("signal ... path=P; interface=I; member=M") and
+# one indented line per argument (mclick's "   int32 N").
+pending=
+while IFS= read -r line <&3; do
+    case $line in
+    " "*)
+        if [ -n "$pending" ]; then
+            pending=
+            case $line in
+            *"int32 "*)
+                n=${line##*int32 }
+                case $n in '' | *[!0-9]*) ;; *) gesture mclick "$n" ;; esac
+                ;;
+            esac
+        fi
+        ;;
+    "signal "*" path=$BUTTON_PATH; interface=$BUTTON_INTERFACE; member="*)
+        pending=
+        case ${line##*"; member="} in
+        click) gesture click 1 ;;
+        dclick) gesture dclick 2 ;;
+        tclick) gesture tclick 3 ;;
+        lclick_start) gesture lclick_start 0 ;;
+        lclick_stop) gesture lclick_stop 0 ;;
+        mclick) pending=mclick ;;
+        esac
+        ;;
+    *)
+        pending=
+        ;;
+    esac
+done
+exec 3<&-
+end_tone
+wait "$MON"
+log err "the monitor ended (status $?): exiting"
+exit 1

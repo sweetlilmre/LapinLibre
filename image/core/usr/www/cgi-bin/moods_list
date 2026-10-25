@@ -1,0 +1,10 @@
+#!/bin/sh
+# SPDX-License-Identifier: MIT
+# moods_list (read-only): the moods apps/moods plays: the MP3 files of the stick's moods folder,
+# by name (numbers first, in their order), each with its label from moods/moods.txt ("id:label"
+# lines) or else its name. Empty without a stick.
+. /usr/share/lapinlibre/web.sh
+web_begin read
+items=""
+usb_mounted && items=$(labelled_json "$WEB_MOODS" "$WEB_MOODS/moods.txt" text)
+reply_json "{\"moods\":[$items],\"return\":\"0\"}"

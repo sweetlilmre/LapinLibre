@@ -1,0 +1,8 @@
+Lib/plat-linux3/regen: the platform directory for MACHDEP=linux3, so the build
+doesn't run the cross-built python to make it.
+--- a/Lib/plat-linux3/regen
++++ b/Lib/plat-linux3/regen
+@@ -0,0 +1,3 @@
++#! /bin/sh
++set -v
++python$EXE ../../Tools/scripts/h2py.py -i '(u_long)' /usr/include/netinet/in.h

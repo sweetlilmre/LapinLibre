@@ -1,0 +1,8 @@
+#!/bin/sh
+# SPDX-License-Identifier: MIT
+# tools_log (read-only): the newest 200 lines of the system log, as plain text.
+. /usr/share/lapinlibre/web.sh
+web_begin read
+reply_text_begin
+[ "$WEB_HEAD" = 1 ] || tail -n 200 /var/log/messages 2> /dev/null
+exit 0

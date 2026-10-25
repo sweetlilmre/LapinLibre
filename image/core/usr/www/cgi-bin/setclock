@@ -1,0 +1,10 @@
+#!/bin/sh
+# SPDX-License-Identifier: MIT
+# setclock: sets the clock once from the network's time servers (pool.ntp.org), as the start-up
+# does; at most 28 s.
+. /usr/share/lapinlibre/web.sh
+web_begin change
+timeout 28 busybox ntpd -q -p pool.ntp.org > /dev/null 2>&1 ||
+    web_fail "the clock couldn't be set: no time server answered"
+web_ok
+reply_json '{"return":"0"}'

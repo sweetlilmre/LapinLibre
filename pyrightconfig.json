@@ -1,0 +1,6 @@
+{
+  "pythonVersion": "3.11",
+  "pythonPlatform": "Linux",
+  "extraPaths": ["scripts", "image/tools", "tests"],
+  "exclude": ["dl", "work", "out"]
+}

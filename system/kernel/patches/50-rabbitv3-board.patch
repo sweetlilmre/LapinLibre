@@ -1,0 +1,51 @@
+# The RABBITV3 board: machine number 1912 (in 2.6.32 it is SYGDG2's, a board nothing in the tree uses; the bootloader passes 1912), its Kconfig entry and Makefile line, and two extra fields in the S3C24XX SPI platform data. Quirk: the controller driver reads neither field (in 2.6.28 nor here); the board registers its SPI device itself.
+--- a/arch/arm/mach-s3c2410/include/mach/spi.h
++++ b/arch/arm/mach-s3c2410/include/mach/spi.h
+@@ -18,6 +18,9 @@ struct s3c2410_spi_info {
+ 	unsigned int		 num_cs;	/* total chipselects */
+ 	int			 bus_num;       /* bus number to use. */
+ 
++	unsigned int		 board_size;	/* RABBITV3: devices to register */
++	struct spi_board_info	*board_info;
++
+ 	void (*gpio_setup)(struct s3c2410_spi_info *spi, int enable);
+ 	void (*set_cs)(struct s3c2410_spi_info *spi, int cs, int pol);
+ };
+--- a/arch/arm/mach-s3c2440/Kconfig
++++ b/arch/arm/mach-s3c2440/Kconfig
+@@ -108,5 +108,14 @@ config MACH_MINI2440
+ 	  Say Y here to select support for the MINI2440. Is a 10cm x 10cm board
+ 	  available via various sources. It can come with a 3.5" or 7" touch LCD.
+
++config MACH_RABBITV3
++	bool "RABBITV3 (Karotz)"
++	select CPU_S3C2440
++	select S3C_DEV_NAND
++	select S3C_DEV_USB_HOST
++	help
++	  Say Y here if you are using the Karotz (Nabaztag v3)
++	  board.
++
+ endmenu
+ 
+--- a/arch/arm/mach-s3c2440/Makefile
++++ b/arch/arm/mach-s3c2440/Makefile
+@@ -16,6 +16,7 @@ obj-$(CONFIG_S3C2440_DMA)	+= dma.o
+ 
+ # Machine support
+ 
++obj-$(CONFIG_MACH_RABBITV3)	+= mach-rabbitv3.o
+ obj-$(CONFIG_MACH_ANUBIS)	+= mach-anubis.o
+ obj-$(CONFIG_MACH_OSIRIS)	+= mach-osiris.o
+ obj-$(CONFIG_MACH_RX3715)	+= mach-rx3715.o
+--- a/arch/arm/tools/mach-types
++++ b/arch/arm/tools/mach-types
+@@ -1899,7 +1899,7 @@ rut100			MACH_RUT100		RUT100			1908
+ asusp535		MACH_ASUSP535		ASUSP535		1909
+ htcraphael		MACH_HTCRAPHAEL		HTCRAPHAEL		1910
+ sygdg1			MACH_SYGDG1		SYGDG1			1911
+-sygdg2			MACH_SYGDG2		SYGDG2			1912
++rabbitv3		MACH_RABBITV3		RABBITV3		1912
+ seoul			MACH_SEOUL		SEOUL			1913
+ salerno			MACH_SALERNO		SALERNO			1914
+ ucn_s3c64xx		MACH_UCN_S3C64XX	UCN_S3C64XX		1915

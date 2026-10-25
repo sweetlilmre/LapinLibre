@@ -1,0 +1,7 @@
+# SPDX-License-Identifier: GPL-2.0-or-later
+# uClibc-ng for the system build: the loader options the rabbit needs, where Buildroot's
+# default differs. The loader finds /usr/karotz/lib (libkarotz-common.so and the rest) through
+# /etc/ld.so.conf and the cache linuxrc makes with ldconfig; without cache support the loader
+# reads neither, and the Karotz daemons don't start.
+LDSO_CACHE_SUPPORT=y
+LDSO_BASE_FILENAME="ld.so"

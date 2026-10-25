@@ -1,0 +1,19 @@
+#!/bin/sh
+# SPDX-License-Identifier: MIT
+# rfid_rename: a learned tag's name and, optionally, its colour code, in the tag store.
+#   tag    the tag's id: 16 hexadecimal digits (required)
+#   name   its new name, 0 to 64 characters (empty or absent: no name)
+#   color  its colour code, 0 to 99 (absent or empty: unchanged)
+. /usr/share/lapinlibre/web.sh
+web_begin change
+param_tag
+TAG_NAME=""
+param_tag_name && TAG_NAME=$PV
+param_int color 0 99 ""
+TAG_COLOR=$PV
+TAG_SETCOLOR=0
+[ -n "$TAG_COLOR" ] && TAG_SETCOLOR=1
+TAG_ID=$TG
+tags_change rename || tag_change_failed $?
+web_ok
+reply_json '{"return":"0"}'

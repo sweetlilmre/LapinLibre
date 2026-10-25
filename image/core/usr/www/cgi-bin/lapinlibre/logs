@@ -1,0 +1,19 @@
+#!/bin/sh
+# SPDX-License-Identifier: MIT
+# lapinlibre/logs (read-only): the newest lines of a log, oldest first, as plain text.
+#   lines   1 to 1000 (200)
+#   source  system (syslog, with its rotated predecessor), kernel (the ring buffer) or mpd
+. /usr/share/lapinlibre/web.sh
+web_begin read
+param_int lines 1 1000 200
+lines=$PV
+param_choice source system system kernel mpd
+source=$PV
+reply_text_begin
+[ "$WEB_HEAD" = 1 ] && exit 0
+case $source in
+system) cat /var/log/messages.0 /var/log/messages 2> /dev/null | tail -n "$lines" ;;
+kernel) dmesg 2> /dev/null | tail -n "$lines" ;;
+mpd) tail -n "$lines" /var/log/mpd.log 2> /dev/null ;;
+esac
+exit 0

@@ -1,0 +1,7 @@
+#!/bin/sh
+# SPDX-License-Identifier: MIT
+# rfid_list (read-only): the learned tags: id, type and colour codes, the action's kind (cmd) and
+# argument (var), and the name. An action's own data is never shown.
+. /usr/share/lapinlibre/web.sh
+web_begin read
+reply_json "{\"tags\":[$(tags_json list)],\"return\":\"0\"}"

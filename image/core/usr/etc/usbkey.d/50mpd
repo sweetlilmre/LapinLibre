@@ -1,0 +1,11 @@
+#!/bin/sh
+# SPDX-License-Identifier: MIT
+# The core's stick hook for mpd (usbkey.sh runs /etc/usbkey.d/* with add, remove and removed):
+# asks mpd, when it runs, to rescan the music on the stick, with the password from mpd's settings.
+pw=$(sed -n 's/^password[[:space:]]*"\([^@"]*\)@.*/\1/p' /etc/mpd/mpd.conf 2> /dev/null | head -n 1)
+mpd() { { [ -n "$pw" ] && echo "password $pw"; echo "$1"; } | nc 127.0.0.1 6600 > /dev/null 2>&1; }
+case "$1" in
+add | removed) mpd update ;;
+remove) mpd stop ;;
+esac
+exit 0

@@ -1,0 +1,9 @@
+#!/bin/sh
+# SPDX-License-Identifier: MIT
+# clear_rfid: removes every learned tag, with its action, from the tag store.
+. /usr/share/lapinlibre/web.sh
+web_begin change
+TAG_ID=""
+tags_change clear || tag_change_failed $?
+web_ok
+reply_json '{"return":"0"}'

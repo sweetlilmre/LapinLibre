@@ -1,0 +1,29 @@
+#!/bin/sh
+# SPDX-License-Identifier: MIT
+# rfid_test_url: sends a URL request now, as the tag listener would send it for a tag, and answers
+# with the start of the response's body (its first 1024 bytes, as text) or with what went wrong.
+#   url, param, user, password  as for rfid_assign_url
+#   tag                         a tag's id (optional): with it, an empty password is that tag's
+#                               stored one, as for rfid_assign_url
+#   name                        accepted and ignored
+. /usr/share/lapinlibre/web.sh
+web_begin change
+ACT_KEEP_TAG=""
+param tag
+[ $? = 0 ] && [ -n "$PV" ] && valid_tag "$PV" && ACT_KEEP_TAG=$TG
+url_action_params
+url_host "$ACT_URL"
+host=$UH
+mkdir -p "$WEB_RUN" || web_fail "the request couldn't be sent"
+WEB_TEMP=$WEB_RUN/test_url.$$
+url_request "$ACT_URL" "$ACT_USER" "$ACT_PASSWORD" "$WEB_TEMP"
+s=$?
+if [ $s != 0 ]; then
+    # The log gets the host and curl's status only, never curl's words (they may quote the URL).
+    web_log "the request to $host failed (curl status $s)"
+    WEB_KIND=read
+    web_fail "the request to $host failed: $UR_ERROR"
+fi
+web_log "ok, $host answered HTTP $UR_CODE"
+json_str "$(head -c 1024 "$WEB_TEMP" 2> /dev/null | tr -d '\000' | iconv -c -f UTF-8 -t UTF-8 2> /dev/null)"
+reply_json "{\"return\":\"0\",\"msg\":$J}"

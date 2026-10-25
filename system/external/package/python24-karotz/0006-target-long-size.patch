@@ -1,0 +1,22 @@
+setup.py: build dl, imageop and rgbimg by the target's C long (SIZEOF_LONG from
+the build's configuration), not by the sys.maxint of the host python that runs setup.py
+--- a/setup.py
++++ b/setup.py
+@@ -441,7 +441,7 @@
+         exts.append( Extension('audioop', ['audioop.c']) )
+ 
+         # Disabled on 64-bit platforms
+-        if sys.maxint != 9223372036854775807L:
++        if sysconfig.parse_config_h(open(sysconfig.get_config_h_filename())).get('SIZEOF_LONG') == 4:
+             # Operations on images
+             exts.append( Extension('imageop', ['imageop.c']) )
+             # Read SGI RGB image files (but coded portably)
+@@ -839,7 +839,7 @@
+                                       ['cjkcodecs/_codecs_%s.c' % loc]))
+ 
+         # Dynamic loading module
+-        if sys.maxint == 0x7fffffff:
++        if sysconfig.parse_config_h(open(sysconfig.get_config_h_filename())).get('SIZEOF_LONG') == 4:
+             # This requires sizeof(int) == sizeof(long) == sizeof(char*)
+             dl_inc = find_file('dlfcn.h', [], inc_dirs)
+             if (dl_inc is not None) and (platform not in ['atheos', 'darwin']):

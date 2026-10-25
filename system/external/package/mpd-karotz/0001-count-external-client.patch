@@ -1,0 +1,116 @@
+The Karotz count_externalClient status field for mpd 0.15.12:
+the clients logged in with a password that gives exactly read, add and control (not the
+rabbit's admin one), reported in status after "state". libmpd's Karotz patch reads it.
+
+diff -urN -x decoder a/src/client.c b/src/client.c
+--- a/src/client.c	2010-07-21 02:42:12.000000000 +0200
++++ b/src/client.c	2026-10-17 09:59:09.212129239 +0200
+@@ -24,6 +24,7 @@
+ #include "listen.h"
+ #include "socket_util.h"
+ #include "permission.h"
++#include "player_control.h"
+ #include "event_pipe.h"
+ #include "idle.h"
+ #include "main.h"
+@@ -239,6 +240,9 @@
+ 	clients = g_list_remove(clients, client);
+ 	--num_clients;
+ 
++	if (client->permission == EXTERNAL_CLIENT_PERMISSION)
++		addPlayerCountExternalClient(-1);
++
+ 	client_set_expired(client);
+ 
+ 	g_timer_destroy(client->last_activity);
+diff -urN -x decoder a/src/command.c b/src/command.c
+--- a/src/command.c	2010-07-21 02:42:12.000000000 +0200
++++ b/src/command.c	2026-10-17 09:59:09.211580576 +0200
+@@ -478,7 +478,8 @@
+ 		      COMMAND_STATUS_PLAYLIST ": %li\n"
+ 		      COMMAND_STATUS_PLAYLIST_LENGTH ": %i\n"
+ 		      COMMAND_STATUS_CROSSFADE ": %i\n"
+-		      COMMAND_STATUS_STATE ": %s\n",
++		      COMMAND_STATUS_STATE ": %s\n"
++		      "count_externalClient: %u\n",
+ 		      volume_level_get(),
+ 		      getPlaylistRepeatStatus(&g_playlist),
+ 		      getPlaylistRandomStatus(&g_playlist),
+@@ -487,7 +488,8 @@
+ 		      getPlaylistVersion(&g_playlist),
+ 		      getPlaylistLength(&g_playlist),
+ 		      (int)(getPlayerCrossFade() + 0.5),
+-		      state);
++		      state,
++		      getPlayerCountExternalClient());
+ 
+ 	song = getPlaylistCurrentSong(&g_playlist);
+ 	if (song >= 0) {
+@@ -1351,7 +1353,11 @@
+ 		return COMMAND_RETURN_ERROR;
+ 	}
+ 
++	if (client_get_permission(client) == EXTERNAL_CLIENT_PERMISSION)
++		addPlayerCountExternalClient(-1);
+ 	client_set_permission(client, permission);
++	if (permission == EXTERNAL_CLIENT_PERMISSION)
++		addPlayerCountExternalClient(1);
+ 
+ 	return COMMAND_RETURN_OK;
+ }
+diff -urN -x decoder a/src/permission.h b/src/permission.h
+--- a/src/permission.h	2010-07-21 02:42:14.000000000 +0200
++++ b/src/permission.h	2026-10-17 09:59:09.211768694 +0200
+@@ -26,6 +26,9 @@
+ #define PERMISSION_CONTROL 4
+ #define PERMISSION_ADMIN   8
+ 
++/* Karotz: the permission an external client's password gives; counted in status */
++#define EXTERNAL_CLIENT_PERMISSION (PERMISSION_READ | PERMISSION_ADD | PERMISSION_CONTROL)
++
+ 
+ int getPermissionFromPassword(char *password, unsigned *permission);
+ 
+diff -urN -x decoder a/src/player_control.c b/src/player_control.c
+--- a/src/player_control.c	2010-07-21 02:42:14.000000000 +0200
++++ b/src/player_control.c	2026-10-17 09:59:09.210578286 +0200
+@@ -267,3 +267,15 @@
+ {
+ 	return pc.total_play_time;
+ }
++
++unsigned getPlayerCountExternalClient(void)
++{
++	return pc.count_externalClient;
++}
++
++void addPlayerCountExternalClient(int delta)
++{
++	pc.count_externalClient += delta;
++	if (pc.count_externalClient < 0)
++		pc.count_externalClient = 0;
++}
+diff -urN -x decoder a/src/player_control.h b/src/player_control.h
+--- a/src/player_control.h	2010-07-21 02:42:14.000000000 +0200
++++ b/src/player_control.h	2026-10-17 09:59:09.210459391 +0200
+@@ -83,6 +83,9 @@
+ 	float cross_fade_seconds;
+ 	uint16_t software_volume;
+ 	double total_play_time;
++	/** Karotz: clients holding exactly read+add+control (an "external" client's
++	    password, not the rabbit's admin one); reported in status */
++	int count_externalClient;
+ };
+ 
+ extern struct player_control pc;
+@@ -149,6 +152,10 @@
+ 
+ double getPlayerTotalPlayTime(void);
+ 
++unsigned getPlayerCountExternalClient(void);
++
++void addPlayerCountExternalClient(int delta);
++
+ static inline const struct audio_format *
+ player_get_audio_format(void)
+ {

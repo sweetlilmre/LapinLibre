@@ -1,0 +1,7 @@
+# SPDX-License-Identifier: GPL-2.0-or-later
+config BR2_PACKAGE_GLIB_COMPILE_SCHEMAS_KAROTZ
+	bool "glib-compile-schemas-karotz"
+	depends on BR2_PACKAGE_LIBGLIB2
+	help
+	  GLib's glib-compile-schemas on the target, which Buildroot's
+	  libglib2 package deletes with the other developer tools.

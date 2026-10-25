@@ -1,0 +1,366 @@
+--- a/arch/arm/boot/compressed/big-endian.S	2016-03-12 15:25:48.000000000 +0200
++++ b/arch/arm/boot/compressed/big-endian.S	2026-10-15 21:34:31.140738700 +0200
+@@ -5,7 +5,7 @@
+  *  Author: Nicolas Pitre
+  */
+ 
+-	.section ".start", #alloc, #execinstr
++	.section ".start", "ax"
+ 
+ 	mrc	p15, 0, r0, c1, c0, 0	@ read control reg
+ 	orr	r0, r0, #(1 << 7)	@ enable big endian mode
+--- a/arch/arm/boot/compressed/piggy.S	2016-03-12 15:25:48.000000000 +0200
++++ b/arch/arm/boot/compressed/piggy.S	2026-10-15 21:34:31.144126775 +0200
+@@ -1,4 +1,4 @@
+-	.section .piggydata,#alloc
++	.section .piggydata, "a"
+ 	.globl	input_data
+ input_data:
+ 	.incbin	"arch/arm/boot/compressed/piggy.gz"
+--- a/arch/arm/boot/compressed/head.S	2016-03-12 15:25:48.000000000 +0200
++++ b/arch/arm/boot/compressed/head.S	2026-10-15 21:34:31.147239372 +0200
+@@ -112,7 +112,7 @@
+ #endif
+ 		.endm
+ 
+-		.section ".start", #alloc, #execinstr
++		.section ".start", "ax"
+ /*
+  * sort out different calling conventions
+  */
+--- a/arch/arm/boot/bootp/init.S	2016-03-12 15:25:48.000000000 +0200
++++ b/arch/arm/boot/bootp/init.S	2026-10-15 21:34:31.150430485 +0200
+@@ -16,7 +16,7 @@
+  *  size immediately following the kernel, we could build this into
+  *  a binary blob, and concatenate the zImage using the cat command.
+  */
+-		.section .start,#alloc,#execinstr
++		.section .start, "ax"
+ 		.type	_start, #function
+ 		.globl	_start
+ 
+--- a/arch/arm/include/asm/uaccess.h	2016-03-12 15:25:48.000000000 +0200
++++ b/arch/arm/include/asm/uaccess.h	2026-10-15 21:36:42.124149147 +0200
+@@ -145,7 +145,7 @@
+ 
+ #define put_user(x,p)							\
+ 	({								\
+-		register const typeof(*(p)) __r2 asm("r2") = (x);	\
++		register typeof(*(p)) __r2 asm("r2") = (x);	\
+ 		register const typeof(*(p)) __user *__p asm("r0") = (p);\
+ 		register int __e asm("r0");				\
+ 		switch (sizeof(*(__p))) {				\
+--- a/arch/arm/mm/proc-xsc3.S	2016-03-12 15:25:48.000000000 +0200
++++ b/arch/arm/mm/proc-xsc3.S	2026-10-15 21:34:31.152985812 +0200
+@@ -457,7 +457,7 @@
+ 
+ 	.align
+ 
+-	.section ".proc.info.init", #alloc, #execinstr
++	.section ".proc.info.init", "ax"
+ 
+ 	.type	__xsc3_proc_info,#object
+ __xsc3_proc_info:
+--- a/arch/arm/mm/proc-arm6_7.S	2016-03-12 15:25:48.000000000 +0200
++++ b/arch/arm/mm/proc-arm6_7.S	2026-10-15 21:34:31.156901720 +0200
+@@ -335,7 +335,7 @@
+ 
+ 		.align
+ 
+-		.section ".proc.info.init", #alloc, #execinstr
++		.section ".proc.info.init", "ax"
+ 
+ 		.type	__arm6_proc_info, #object
+ __arm6_proc_info:
+--- a/arch/arm/mm/proc-xscale.S	2016-03-12 15:25:48.000000000 +0200
++++ b/arch/arm/mm/proc-xscale.S	2026-10-15 21:34:31.160147863 +0200
+@@ -605,7 +605,7 @@
+ 
+ 	.align
+ 
+-	.section ".proc.info.init", #alloc, #execinstr
++	.section ".proc.info.init", "ax"
+ 
+ 	.type	__80200_A0_A1_proc_info,#object
+ __80200_A0_A1_proc_info:
+--- a/arch/arm/mm/proc-arm9tdmi.S	2016-03-12 15:25:48.000000000 +0200
++++ b/arch/arm/mm/proc-arm9tdmi.S	2026-10-15 21:34:31.163747412 +0200
+@@ -98,7 +98,7 @@
+ 
+ 		.align
+ 
+-		.section ".proc.info.init", #alloc, #execinstr
++		.section ".proc.info.init", "ax"
+ 
+ 		.type	__arm9tdmi_proc_info, #object
+ __arm9tdmi_proc_info:
+--- a/arch/arm/mm/proc-v6.S	2016-03-12 15:25:48.000000000 +0200
++++ b/arch/arm/mm/proc-v6.S	2026-10-15 21:34:31.167258164 +0200
+@@ -214,7 +214,7 @@
+ 	.size	cpu_elf_name, . - cpu_elf_name
+ 	.align
+ 
+-	.section ".proc.info.init", #alloc, #execinstr
++	.section ".proc.info.init", "ax"
+ 
+ 	/*
+ 	 * Match any ARMv6 processor core.
+--- a/arch/arm/mm/proc-fa526.S	2016-03-12 15:25:48.000000000 +0200
++++ b/arch/arm/mm/proc-fa526.S	2026-10-15 21:34:31.170333040 +0200
+@@ -220,7 +220,7 @@
+ 
+ 	.align
+ 
+-	.section ".proc.info.init", #alloc, #execinstr
++	.section ".proc.info.init", "ax"
+ 
+ 	.type	__fa526_proc_info,#object
+ __fa526_proc_info:
+--- a/arch/arm/mm/proc-arm922.S	2016-03-12 15:25:48.000000000 +0200
++++ b/arch/arm/mm/proc-arm922.S	2026-10-15 21:34:31.173281024 +0200
+@@ -428,7 +428,7 @@
+ 
+ 	.align
+ 
+-	.section ".proc.info.init", #alloc, #execinstr
++	.section ".proc.info.init", "ax"
+ 
+ 	.type	__arm922_proc_info,#object
+ __arm922_proc_info:
+--- a/arch/arm/mm/proc-arm940.S	2016-03-12 15:25:48.000000000 +0200
++++ b/arch/arm/mm/proc-arm940.S	2026-10-15 21:34:31.176504862 +0200
+@@ -351,7 +351,7 @@
+ 
+ 	.align
+ 
+-	.section ".proc.info.init", #alloc, #execinstr
++	.section ".proc.info.init", "ax"
+ 
+ 	.type	__arm940_proc_info,#object
+ __arm940_proc_info:
+--- a/arch/arm/mm/proc-arm925.S	2016-03-12 15:25:48.000000000 +0200
++++ b/arch/arm/mm/proc-arm925.S	2026-10-15 21:34:31.179750895 +0200
+@@ -491,7 +491,7 @@
+ 
+ 	.align
+ 
+-	.section ".proc.info.init", #alloc, #execinstr
++	.section ".proc.info.init", "ax"
+ 
+ 	.type	__arm925_proc_info,#object
+ __arm925_proc_info:
+--- a/arch/arm/mm/proc-arm946.S	2016-03-12 15:25:48.000000000 +0200
++++ b/arch/arm/mm/proc-arm946.S	2026-10-15 21:34:31.182906453 +0200
+@@ -407,7 +407,7 @@
+ 
+ 	.align
+ 
+-	.section ".proc.info.init", #alloc, #execinstr
++	.section ".proc.info.init", "ax"
+ 	.type	__arm946_proc_info,#object
+ __arm946_proc_info:
+ 	.long	0x41009460
+--- a/arch/arm/mm/proc-arm1022.S	2016-03-12 15:25:48.000000000 +0200
++++ b/arch/arm/mm/proc-arm1022.S	2026-10-15 21:34:31.186517456 +0200
+@@ -442,7 +442,7 @@
+ 
+ 	.align
+ 
+-	.section ".proc.info.init", #alloc, #execinstr
++	.section ".proc.info.init", "ax"
+ 
+ 	.type	__arm1022_proc_info,#object
+ __arm1022_proc_info:
+--- a/arch/arm/mm/proc-arm7tdmi.S	2016-03-12 15:25:48.000000000 +0200
++++ b/arch/arm/mm/proc-arm7tdmi.S	2026-10-15 21:34:31.190029140 +0200
+@@ -128,7 +128,7 @@
+ 
+ 		.align
+ 
+-		.section ".proc.info.init", #alloc, #execinstr
++		.section ".proc.info.init", "ax"
+ 
+ 		.type	__arm7tdmi_proc_info, #object
+ __arm7tdmi_proc_info:
+--- a/arch/arm/mm/proc-arm1026.S	2016-03-12 15:25:48.000000000 +0200
++++ b/arch/arm/mm/proc-arm1026.S	2026-10-15 21:34:31.192908234 +0200
+@@ -438,7 +438,7 @@
+ 
+ 	.align
+ 
+-	.section ".proc.info.init", #alloc, #execinstr
++	.section ".proc.info.init", "ax"
+ 
+ 	.type	__arm1026_proc_info,#object
+ __arm1026_proc_info:
+--- a/arch/arm/mm/proc-feroceon.S	2016-03-12 15:25:48.000000000 +0200
++++ b/arch/arm/mm/proc-feroceon.S	2026-10-15 21:34:31.196244938 +0200
+@@ -543,7 +543,7 @@
+ 
+ 	.align
+ 
+-	.section ".proc.info.init", #alloc, #execinstr
++	.section ".proc.info.init", "ax"
+ 
+ #ifdef CONFIG_CPU_FEROCEON_OLD_ID
+ 	.type	__feroceon_old_id_proc_info,#object
+--- a/arch/arm/mm/proc-arm1020.S	2016-03-12 15:25:48.000000000 +0200
++++ b/arch/arm/mm/proc-arm1020.S	2026-10-15 21:34:31.199382337 +0200
+@@ -496,7 +496,7 @@
+ 
+ 	.align
+ 
+-	.section ".proc.info.init", #alloc, #execinstr
++	.section ".proc.info.init", "ax"
+ 
+ 	.type	__arm1020_proc_info,#object
+ __arm1020_proc_info:
+--- a/arch/arm/mm/proc-sa110.S	2016-03-12 15:25:48.000000000 +0200
++++ b/arch/arm/mm/proc-sa110.S	2026-10-15 21:34:31.202772431 +0200
+@@ -228,7 +228,7 @@
+ 
+ 	.align
+ 
+-	.section ".proc.info.init", #alloc, #execinstr
++	.section ".proc.info.init", "ax"
+ 
+ 	.type	__sa110_proc_info,#object
+ __sa110_proc_info:
+--- a/arch/arm/mm/proc-mohawk.S	2016-03-12 15:25:48.000000000 +0200
++++ b/arch/arm/mm/proc-mohawk.S	2026-10-15 21:34:31.205702781 +0200
+@@ -388,7 +388,7 @@
+ 
+ 	.align
+ 
+-	.section ".proc.info.init", #alloc, #execinstr
++	.section ".proc.info.init", "ax"
+ 
+ 	.type	__88sv331x_proc_info,#object
+ __88sv331x_proc_info:
+--- a/arch/arm/mm/proc-arm740.S	2016-03-12 15:25:48.000000000 +0200
++++ b/arch/arm/mm/proc-arm740.S	2026-10-15 21:34:31.208917151 +0200
+@@ -155,7 +155,7 @@
+ 
+ 	.align
+ 
+-	.section ".proc.info.init", #alloc, #execinstr
++	.section ".proc.info.init", "ax"
+ 	.type	__arm740_proc_info,#object
+ __arm740_proc_info:
+ 	.long	0x41807400
+--- a/arch/arm/mm/proc-arm720.S	2016-03-12 15:25:48.000000000 +0200
++++ b/arch/arm/mm/proc-arm720.S	2026-10-15 21:34:31.211678407 +0200
+@@ -217,7 +217,7 @@
+  * See <asm/procinfo.h> for a definition of this structure.
+  */
+ 	
+-		.section ".proc.info.init", #alloc, #execinstr
++		.section ".proc.info.init", "ax"
+ 
+ 		.type	__arm710_proc_info, #object
+ __arm710_proc_info:
+--- a/arch/arm/mm/proc-sa1100.S	2016-03-12 15:25:48.000000000 +0200
++++ b/arch/arm/mm/proc-sa1100.S	2026-10-15 21:34:31.214648096 +0200
+@@ -248,7 +248,7 @@
+ 
+ 	.align
+ 
+-	.section ".proc.info.init", #alloc, #execinstr
++	.section ".proc.info.init", "ax"
+ 
+ 	.type	__sa1100_proc_info,#object
+ __sa1100_proc_info:
+--- a/arch/arm/mm/proc-v7.S	2016-03-12 15:25:48.000000000 +0200
++++ b/arch/arm/mm/proc-v7.S	2026-10-15 21:34:31.217469027 +0200
+@@ -319,7 +319,7 @@
+ 	.size	cpu_elf_name, . - cpu_elf_name
+ 	.align
+ 
+-	.section ".proc.info.init", #alloc, #execinstr
++	.section ".proc.info.init", "ax"
+ 
+ 	/*
+ 	 * Match any ARMv7 processor core.
+--- a/arch/arm/mm/proc-arm926.S	2016-03-12 15:25:48.000000000 +0200
++++ b/arch/arm/mm/proc-arm926.S	2026-10-15 21:34:31.220446967 +0200
+@@ -444,7 +444,7 @@
+ 
+ 	.align
+ 
+-	.section ".proc.info.init", #alloc, #execinstr
++	.section ".proc.info.init", "ax"
+ 
+ 	.type	__arm926_proc_info,#object
+ __arm926_proc_info:
+--- a/arch/arm/mm/proc-arm920.S	2016-03-12 15:25:48.000000000 +0200
++++ b/arch/arm/mm/proc-arm920.S	2026-10-15 21:34:31.223862849 +0200
+@@ -424,7 +424,7 @@
+ 
+ 	.align
+ 
+-	.section ".proc.info.init", #alloc, #execinstr
++	.section ".proc.info.init", "ax"
+ 
+ 	.type	__arm920_proc_info,#object
+ __arm920_proc_info:
+--- a/arch/arm/mm/proc-arm1020e.S	2016-03-12 15:25:48.000000000 +0200
++++ b/arch/arm/mm/proc-arm1020e.S	2026-10-15 21:34:31.227057000 +0200
+@@ -459,7 +459,7 @@
+ 
+ 	.align
+ 
+-	.section ".proc.info.init", #alloc, #execinstr
++	.section ".proc.info.init", "ax"
+ 
+ 	.type	__arm1020e_proc_info,#object
+ __arm1020e_proc_info:
+--- a/include/linux/compiler-gcc.h	2016-03-12 15:25:48.000000000 +0200
++++ b/include/linux/compiler-gcc.h	2026-10-15 21:33:21.024235281 +0200
+@@ -83,4 +83,8 @@
+ #define __gcc_header(x) #x
+ #define _gcc_header(x) __gcc_header(linux/compiler-gcc##x.h)
+ #define gcc_header(x) _gcc_header(x)
++#if __GNUC__ >= 5
++#include <linux/compiler-gcc5.h>
++#else
+ #include gcc_header(__GNUC__)
++#endif
+--- a/kernel/timeconst.pl	2016-03-12 15:25:48.000000000 +0200
++++ b/kernel/timeconst.pl	2026-10-15 21:35:07.163441490 +0200
+@@ -370,7 +370,7 @@
+ 	}
+ 
+ 	@val = @{$canned_values{$hz}};
+-	if (!defined(@val)) {
++	if (!@val) {
+ 		@val = compute_values($hz);
+ 	}
+ 	output($hz, @val);
+--- a/Makefile	2016-03-12 15:25:48.000000000 +0200
++++ b/Makefile	2026-10-15 21:33:55.454169966 +0200
+@@ -341,7 +341,7 @@
+ 
+ KBUILD_CPPFLAGS := -D__KERNEL__
+ 
+-KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
++KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs -std=gnu89 \
+ 		   -fno-strict-aliasing -fno-common \
+ 		   -Werror-implicit-function-declaration \
+ 		   -Wno-format-security \
+--- /dev/null	2026-10-13 23:24:43.076822185 +0200
++++ b/include/linux/compiler-gcc5.h	2026-10-15 21:33:21.020101225 +0200
+@@ -0,0 +1,14 @@
++#ifndef __LINUX_COMPILER_H
++#error "Please don't include <linux/compiler-gcc5.h> directly, include <linux/compiler.h> instead."
++#endif
++
++/* GCC 5 and later: compiler-gcc4.h's definitions without its 4.x version checks. */
++#define __used			__attribute__((__used__))
++#define __must_check		__attribute__((warn_unused_result))
++#define __compiler_offsetof(a,b) __builtin_offsetof(a,b)
++#define __always_inline		inline __attribute__((always_inline))
++
++/* A trick to suppress uninitialized variable warning without generating any code. */
++#define uninitialized_var(x) x = x
++
++#define __cold			__attribute__((__cold__))

@@ -1,0 +1,77 @@
+== registered: True
+== introspection
+method com.mindscape.karotz.KarotzInterface.close(in:s,out:b)
+method com.mindscape.karotz.KarotzInterface.open(in:s,in:i,out:b)
+method com.mindscape.karotz.KarotzInterface.ping(out:b)
+method com.mindscape.karotz.KarotzInterface.readlinemode(in:s,in:s,out:b)
+method com.mindscape.karotz.KarotzInterface.write(in:s,in:s,in:s,out:b)
+signal com.mindscape.karotz.KarotzInterface.readline(out:s,out:s)
+signal com.mindscape.karotz.KarotzInterface.registered()
+== no ports open
+ping(): boolean true
+write('string:/dev/ttyUSB0', 'string:hello', 'string:ascii'): boolean false
+readlinemode('string:/dev/ttyUSB0', 'string:hex'): boolean false
+close('string:/dev/ttyUSB0',): boolean false
+close('string:',): boolean true
+== opening ports that can't be set up
+open('string:/dev/ttyUSB0', 'int32:9600'): boolean false
+open('string:/dev/ttyUSB0', 'int32:4800'): boolean false
+open('string:/dev/ttyUSB0', 'int32:115200'): boolean false
+open('string:/dev/ttyUSB0', 'int32:230400'): boolean false
+open('string:/dev/ttyUSB0', 'int32:0'): boolean false
+open('string:/dev/ttyUSB0', 'int32:-1'): boolean false
+open('string:/dev/nonexistent', 'int32:9600'): boolean false
+open('string:', 'int32:9600'): boolean false
+write('string:/dev/ttyUSB0', 'string:41', 'string:hex'): boolean false
+== a pseudo terminal
+open('string:/tmp/karotz-serial-pty-<pid>', 'int32:115200'): boolean true
+open('string:/tmp/karotz-serial-pty-<pid>', 'int32:230400'): boolean false
+open('string:/tmp/karotz-serial-pty-<pid>', 'int32:460800'): boolean false
+write('string:/tmp/karotz-serial-pty-<pid>', 'string:x', 'string:ascii'): boolean true
+open('string:/tmp/karotz-serial-pty-<pid>', 'int32:9600'): boolean true
+write('string:/tmp/karotz-serial-pty-<pid>', 'string:hello world\r\n', 'string:ascii'): boolean true
+pty got b'hello world\r\n'
+write('string:/tmp/karotz-serial-pty-<pid>', 'string:48656c6C6f0A', 'string:hex'): boolean true
+pty got b'Hello\n'
+write('string:/tmp/karotz-serial-pty-<pid>', 'string:4G1z7', 'string:h'): boolean true
+pty got b'@\x10'
+write('string:/tmp/karotz-serial-pty-<pid>', 'string:3132', 'string:'): boolean true
+pty got b'12'
+write('string:/tmp/karotz-serial-pty-<pid>', 'string:', 'string:ascii'): boolean true
+pty got b''
+write('string:/tmp/karotz-serial-pty-<pid>', 'string:abc', 'string:a'): boolean true
+pty got b'abc'
+readlinemode('string:/tmp/karotz-serial-pty-<pid>', 'string:hex'): boolean true
+readlinemode('string:/tmp/karotz-serial-pty-<pid>', 'string:'): boolean true
+readlinemode('string:/tmp/karotz-serial-pty-<pid>', 'string:ascii'): boolean true
+readlinemode('string:/tmp/karotz-serial-pty-<pid>', 'string:hex'): boolean true
+open('string:/tmp/karotz-serial-pty-<pid>', 'int32:57600'): boolean true
+open('string:/tmp/karotz-serial-pty-<pid>', 'int32:4800'): boolean true
+write('string:/tmp/karotz-serial-pty-<pid>', 'string:still here', 'string:ascii'): boolean true
+pty got b'still here'
+close('string:/tmp/karotz-serial-pty-<pid>',): boolean true
+write('string:/tmp/karotz-serial-pty-<pid>', 'string:gone', 'string:ascii'): boolean false
+readlinemode('string:/tmp/karotz-serial-pty-<pid>', 'string:ascii'): boolean false
+close('string:/tmp/karotz-serial-pty-<pid>',): boolean false
+open('string:/tmp/karotz-serial-pty-<pid>', 'int32:19200'): boolean true
+close('string:',): boolean true
+write('string:/tmp/karotz-serial-pty-<pid>', 'string:gone', 'string:ascii'): boolean false
+ping(): boolean true
+== signals
+com.mindscape.karotz.KarotzInterface.registered()
+com.mindscape.karotz.KarotzInterface.readline(string "/tmp/karotz-serial-pty-<pid>", string "hello")
+com.mindscape.karotz.KarotzInterface.readline(string "/tmp/karotz-serial-pty-<pid>", string "two")
+com.mindscape.karotz.KarotzInterface.readline(string "/tmp/karotz-serial-pty-<pid>", string "lines")
+com.mindscape.karotz.KarotzInterface.readline(string "/tmp/karotz-serial-pty-<pid>", string "")
+com.mindscape.karotz.KarotzInterface.readline(string "/tmp/karotz-serial-pty-<pid>", string "split line)
+com.mindscape.karotz.KarotzInterface.readline(string "/tmp/karotz-serial-pty-<pid>", string "00017F80FF417A")
+com.mindscape.karotz.KarotzInterface.readline(string "/tmp/karotz-serial-pty-<pid>", string "39")
+com.mindscape.karotz.KarotzInterface.readline(string "/tmp/karotz-serial-pty-<pid>", string "back to text")
+com.mindscape.karotz.KarotzInterface.readline(string "/tmp/karotz-serial-pty-<pid>", string "after reopen")
+com.mindscape.karotz.KarotzInterface.readline(string "/tmp/karotz-serial-pty-<pid>", string "once more")
+== device I/O
+open /dev/ttyUSB0
+ioctl /dev/ttyUSB0 0x540b
+ioctl /dev/ttyUSB0 0x5401
+ioctl /dev/ttyUSB0 0x540b
+== daemon still running: True

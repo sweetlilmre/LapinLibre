@@ -1,0 +1,79 @@
+# UDA134x codec: extended registers written through the DATA000 (volume) register, every register write logged, and the extended registers' start-up values (mixer mode Analog2, AGC on) written at probe.
+--- a/sound/soc/codecs/uda134x.c
++++ b/sound/soc/codecs/uda134x.c
+@@ -87,6 +87,30 @@
+ }
+ 
+ /*
++ * RABBITV3: extended register access through the DATA000
++ * (volume) register. After a write of UDA134X_EXT_ESCAPE, the next three
++ * writes give an extended register number, then its value's low and high
++ * nibbles; the third is written to that register instead.
++ */
++#define UDA134X_EXT_ESCAPE	0x3f
++
++/* ext_count: the write after the escape it is, and the value's high nibble. */
++#define UDA134X_EXT_REGISTER	1
++#define UDA134X_EXT_LOW		2
++#define UDA134X_EXT_HIGH	3
++#define UDA134X_EXT_HIGH_SHIFT	4
++
++/* The start-up values: EA010 mixer mode Analog2 (uda134x_mixmode[2], bits
++ * 0-1, mic sensitivity 0), and EA100 with only the AGC switch (bit 4) on. */
++#define UDA134X_EA010_MIX_ANALOG2	2
++#define UDA134X_EA100_AGC		(1 << 4)
++
++u8 ext_value;
++u8 ext_register;
++u8 last_value;
++char ext_count;
++
++/*
+  * Write to the uda134x registers
+  *
+  */
+@@ -98,7 +122,32 @@
+ 	u8 data = value;
+ 	struct uda134x_platform_data *pd = codec->control_data;
+ 
+-	pr_debug("%s reg: %02X, value:%02X\n", __func__, reg, value);
++	if (reg == UDA134X_DATA000) {
++		int extended = 0;
++
++		if (last_value == UDA134X_EXT_ESCAPE) {
++			switch (++ext_count) {
++			case UDA134X_EXT_REGISTER:
++				ext_register = value;
++				break;
++			case UDA134X_EXT_LOW:
++				ext_value = value;
++				break;
++			case UDA134X_EXT_HIGH:
++				ext_count = 0;
++				ext_value |= value << UDA134X_EXT_HIGH_SHIFT;
++				extended = 1;
++				break;
++			}
++		}
++		last_value = value;
++		if (extended) {
++			reg = ext_register;
++			value = ext_value;
++		}
++	}
++
++	printk("%s reg: %02X, value:%02X\n", __func__, reg, value);
+ 
+ 	if (reg >= UDA134X_REGS_NUM) {
+ 		printk(KERN_ERR "%s unkown register: reg: %d",
+@@ -565,6 +614,10 @@
+ 
+ 	uda134x_reset(codec);
+ 
++	/* RABBITV3: extended registers' start-up values. */
++	uda134x_write(codec, UDA134X_EA010, UDA134X_EA010_MIX_ANALOG2);
++	uda134x_write(codec, UDA134X_EA100, UDA134X_EA100_AGC);
++
+ 	/* register pcms */
+ 	ret = snd_soc_new_pcms(socdev, SNDRV_DEFAULT_IDX1, SNDRV_DEFAULT_STR1);
+ 	if (ret < 0) {

@@ -1,0 +1,23 @@
+#!/bin/sh
+# SPDX-License-Identifier: MIT
+# ears_random: both ears to random positions (0 to 16), after recalibrating them unless
+# noreset=1; the answer names the positions chosen.
+#   noreset  1: move without recalibrating first (0)
+. /usr/share/lapinlibre/web.sh
+web_begin change
+param_flag noreset 0
+noreset=$PV
+ears_disabled && web_fail "the API's ear moves are disabled (ears_mode)"
+
+web_hardware
+random_byte
+left=$((RB % 17))
+random_byte
+right=$((RB % 17))
+if [ "$noreset" = 0 ]; then
+    ears_reset_wait || dbus_failed Ears $? "ears-daemon refused to reset the ears"
+fi
+ears_move "$left" "$right" || dbus_failed Ears $? "ears-daemon refused to move the ears"
+web_unlock
+web_ok
+reply_json "{\"left\":\"$left\",\"right\":\"$right\",\"return\":\"0\"}"

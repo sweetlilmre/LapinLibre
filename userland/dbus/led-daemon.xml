@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SPDX-License-Identifier: MIT -->
+<!-- Signal arguments are not listed: the generated server glue records only each signal's name, and the arguments are those the daemon's g_signal_new() declares. -->
+<node>
+  <interface name="com.mindscape.karotz.KarotzInterface">
+    <method name="light">
+      <arg name="id" type="s" direction="in"/>
+      <arg name="color" type="s" direction="in"/>
+      <arg name="result" type="b" direction="out"/>
+    </method>
+    <method name="fade">
+      <arg name="id" type="s" direction="in"/>
+      <arg name="color" type="s" direction="in"/>
+      <arg name="period" type="i" direction="in"/>
+      <arg name="result" type="b" direction="out"/>
+    </method>
+    <method name="pulse">
+      <arg name="id" type="s" direction="in"/>
+      <arg name="color1" type="s" direction="in"/>
+      <arg name="color2" type="s" direction="in"/>
+      <arg name="period" type="i" direction="in"/>
+      <arg name="length" type="i" direction="in"/>
+      <arg name="result" type="b" direction="out"/>
+    </method>
+    <signal name="event"/>
+    <signal name="registered"/>
+  </interface>
+</node>

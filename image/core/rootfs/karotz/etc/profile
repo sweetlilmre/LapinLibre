@@ -1,0 +1,6 @@
+# SPDX-License-Identifier: MIT
+# The environment of linuxrc, init's scripts and login shells. No TZ: uClibc reads /etc/TZ itself,
+# so a change the controller makes there reaches every program.
+PATH=/bin:/sbin:/usr/bin:/usr/sbin:/karotz/bin:/usr/karotz/bin
+LANG=C
+export PATH LANG

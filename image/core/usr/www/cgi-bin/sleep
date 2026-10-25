@@ -1,0 +1,25 @@
+#!/bin/sh
+# SPDX-License-Identifier: MIT
+# sleep: puts the rabbit to sleep as the API knows it: playback and speech stop, the ears are
+# recalibrated and go down (unless the API's ear moves are off), the LED goes off, and the API's
+# sleep flag is set in RAM with the time (a reboot wakes the rabbit). The controller isn't asked
+# to sleep.
+. /usr/share/lapinlibre/web.sh
+web_begin change
+read_controller
+read_api_state
+[ "$SLEEP" = 1 ] && web_fail "the rabbit is already asleep"
+
+web_lock
+new_id
+dbus_call Multimedia stop "string:$WEB_ID" int32:0 || web_log "the playback couldn't be stopped"
+rm -f "$WEB_RUN/playback"
+dbus_call Voice tts_stop "string:$WEB_ID" int32:0 || web_log "the speech couldn't be stopped"
+if [ "$EARS_DISABLED" = 0 ]; then
+    ears_reset_wait && ears_move $WEB_EARS_ASLEEP $WEB_EARS_ASLEEP || web_log "the ears couldn't be put down"
+fi
+led_set 000000 0 || web_log "the LED couldn't be turned off"
+state_write sleep "$(date +%s)" || web_fail "the sleep state couldn't be kept"
+web_unlock
+web_ok
+reply_json '{"return":"0"}'

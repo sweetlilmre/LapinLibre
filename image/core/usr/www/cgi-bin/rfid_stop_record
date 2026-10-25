@@ -1,0 +1,23 @@
+#!/bin/sh
+# SPDX-License-Identifier: MIT
+# rfid_stop_record: ends tag learning; the LED goes back to the API's LED state (off while the
+# rabbit sleeps) and a tone plays (not while it sleeps). While an application owns the rabbit,
+# learning ends and the LED and sound are left to it.
+. /usr/share/lapinlibre/web.sh
+web_begin change
+rm -f "$WEB_RUN/learning" || web_fail "tag learning couldn't be stopped"
+read_controller
+case $CONTROLLER_STATE in
+21 | 22)
+    web_ok
+    reply_json '{"return":"0"}'
+    ;;
+esac
+read_api_state
+web_lock
+new_id
+led_restore || web_log "the LED couldn't be set"
+tone "$WEB_TONE_LEARN_STOP"
+web_unlock
+web_ok
+reply_json '{"return":"0"}'

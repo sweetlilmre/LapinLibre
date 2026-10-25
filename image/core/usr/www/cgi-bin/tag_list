@@ -1,0 +1,6 @@
+#!/bin/sh
+# SPDX-License-Identifier: MIT
+# tag_list (read-only): always an error that points to rfid_list, which lists the tags.
+. /usr/share/lapinlibre/web.sh
+web_begin read
+web_fail "tag_list lists nothing: use rfid_list (or rfid_list_ext)"

@@ -1,0 +1,8 @@
+# SPDX-License-Identifier: GPL-2.0-or-later
+config BR2_PACKAGE_SIMPLEJSON_KAROTZ
+	bool "simplejson-karotz"
+	depends on BR2_PACKAGE_PYTHON24_KAROTZ
+	help
+	  simplejson 2.0.7's modules, in Python 2.4's library.
+
+	  https://pypi.org/project/simplejson/

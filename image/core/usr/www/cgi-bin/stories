@@ -1,0 +1,25 @@
+#!/bin/sh
+# SPDX-License-Identifier: MIT
+# stories: plays a story, one of the MP3 files of the stick's stories folder (stories_list lists
+# them). The answer comes once the playback has started.
+#   id  the story's name (required)
+. /usr/share/lapinlibre/web.sh
+web_begin change
+param id
+[ $? = 2 ] && web_fail "parameter id must be a story's name"
+id=$PV
+[ -n "$id" ] || web_fail "parameter id is required: a story's name, as stories_list gives it"
+valid_id "$id" || web_fail "parameter id must be a story's name (letters, digits, _ and -)"
+
+web_hardware
+usb_mounted || web_fail "no stories: no USB stick is in the rabbit"
+[ -f "$WEB_STORIES/$id.mp3" ] || web_fail "no story is called $id"
+dbus_call Multimedia stop "string:$WEB_ID" int32:1
+r=$?
+[ $r -ge 2 ] && dbus_failed Multimedia $r ""
+dbus_do Multimedia "multimedia-daemon couldn't play it (it may be busy with music)" \
+    play "string:$WEB_ID" "string:$WEB_STORIES/$id.mp3" int32:1
+state_write playback playing
+web_unlock
+web_ok
+reply_json '{"return":"0"}'

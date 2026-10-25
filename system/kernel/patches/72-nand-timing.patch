@@ -1,0 +1,20 @@
+# The S3C2410 NAND timings are fixed at 20/50/20 ns, whatever the platform data says; the calculations they replace are kept as comments.
+--- a/drivers/mtd/nand/s3c2410.c
++++ b/drivers/mtd/nand/s3c2410.c
+@@ -184,9 +184,13 @@
+ 	clkrate /= 1000;	/* turn clock into kHz for ease of use */
+ 
+ 	if (plat != NULL) {
+-		tacls = s3c_nand_calc_rate(plat->tacls, clkrate, tacls_max);
+-		twrph0 = s3c_nand_calc_rate(plat->twrph0, clkrate, 8);
+-		twrph1 = s3c_nand_calc_rate(plat->twrph1, clkrate, 8);
++		/* RABBITV3: fixed timings */
++		//tacls = s3c_nand_calc_rate(plat->tacls, clkrate, tacls_max);
++		//twrph0 = s3c_nand_calc_rate(plat->twrph0, clkrate, 8);
++		//twrph1 = s3c_nand_calc_rate(plat->twrph1, clkrate, 8);
++		tacls = s3c_nand_calc_rate(20, clkrate, tacls_max);
++		twrph0 = s3c_nand_calc_rate(50, clkrate, 8);
++		twrph1 = s3c_nand_calc_rate(20, clkrate, 8);
+ 	} else {
+ 		/* default timings */
+ 		tacls = tacls_max;

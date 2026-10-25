@@ -1,0 +1,44 @@
+#!/bin/sh
+# SPDX-License-Identifier: MIT
+# radios_list (read-only): the radio stations of the stick's radios.txt, one per line as
+# "name|url" (blank lines, # comments and lines whose URL isn't a valid http(s) URL left out),
+# numbered from 1 in the file's order; at most WEB_RADIOS_MAX. sound?url= plays one. Empty without
+# a stick.
+. /usr/share/lapinlibre/web.sh
+web_begin read
+items=""
+if usb_mounted && [ -f "$WEB_RADIOS" ]; then
+    # The URL rule (WEB_URL_AWK) lives with the tags.
+    web_need tags
+    items=$(list_text "$WEB_RADIOS" | WEB_RADIOS_MAX=$WEB_RADIOS_MAX awk "$WEB_URL_AWK"'BEGIN {
+            ctl = "[" sprintf("%c", 1) "-" sprintf("%c", 31) sprintf("%c", 127) "]"
+            max = ENVIRON["WEB_RADIOS_MAX"] + 0
+        }
+        {
+            sub(/\r$/, "")
+            if ($0 ~ /^[ \t]*(#|$)/) next
+            p = index($0, "|")
+            if (!p) next
+            name = substr($0, 1, p - 1)
+            url = substr($0, p + 1)
+            gsub(ctl, " ", name)
+            sub(/^ +/, "", name); sub(/ +$/, "", name)
+            sub(/^[ \t]+/, "", url); sub(/[ \t]+$/, "", url)
+            if (length(name) > 200) name = substr(name, 1, 200)
+            if (!goodurl(url)) next
+            if (++n > max) exit
+            printf "%s\t%s\n", url, name
+        }' | iconv -c -f UTF-8 -t UTF-8 2> /dev/null | {
+        n=0
+        sep=""
+        while IFS= read -r line; do
+            n=$((n + 1))
+            json_str "${line%%"$TAB"*}"
+            url=$J
+            json_str "${line#*"$TAB"}"
+            printf '%s{"id":%s,"name":%s,"url":%s}' "$sep" "$n" "$J" "$url"
+            sep=,
+        done
+    })
+fi
+reply_json "{\"streams\":[$items],\"return\":\"0\"}"

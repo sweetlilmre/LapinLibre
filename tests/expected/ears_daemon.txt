@@ -1,0 +1,393 @@
+== registered: True
+reset(string:idL, string:L) -> boolean true
+reset(string:idR, string:R) -> boolean true
+reset(string:idB, string:B) -> boolean true
+reset(string:idE, string:) -> boolean true
+move(string:m1, int32:5, int32:100, int32:-3, int32:120) -> boolean true
+move_step(string:m2, int32:4, int32:100, int32:20, int32:120) -> boolean true
+move_left(string:m3, int32:16, int32:200) -> boolean true
+move_right(string:m4, int32:9, int32:200) -> boolean true
+move_left_step(string:m5, int32:-7, int32:50) -> boolean true
+move_right_step(string:m6, int32:-40, int32:50) -> boolean true
+move_right(string:m7, int32:1, int32:10) -> boolean true
+reset(string:c1, string:L) -> boolean true
+move_left(string:c2, int32:3, int32:30) -> boolean true
+reset(string:c3, string:R) -> boolean true
+move(string:c4, int32:3, int32:30, int32:4, int32:40) -> boolean true
+reset(string:c5, string:B) -> boolean true
+move_right_step(string:c6, int32:2, int32:20) -> boolean true
+reset(string:c7, string:B) -> boolean true
+reset(string:c8, string:L) -> boolean true
+reset(string:c9, string:R) -> boolean true
+reset(string:c10, string:L) -> boolean true
+move_left(string:bad, string:x, int32:1) -> Error org.freedesktop.DBus.Error.UnknownMethod
+== introspection
+method com.mindscape.karotz.KarotzInterface.move(in:s,in:i,in:i,in:i,in:i,out:b)
+method com.mindscape.karotz.KarotzInterface.move_left(in:s,in:i,in:i,out:b)
+method com.mindscape.karotz.KarotzInterface.move_left_step(in:s,in:i,in:i,out:b)
+method com.mindscape.karotz.KarotzInterface.move_right(in:s,in:i,in:i,out:b)
+method com.mindscape.karotz.KarotzInterface.move_right_step(in:s,in:i,in:i,out:b)
+method com.mindscape.karotz.KarotzInterface.move_step(in:s,in:i,in:i,in:i,in:i,out:b)
+method com.mindscape.karotz.KarotzInterface.reset(in:s,in:s,out:b)
+signal com.mindscape.karotz.KarotzInterface.event(out:s,out:i)
+signal com.mindscape.karotz.KarotzInterface.move_left_blocked()
+signal com.mindscape.karotz.KarotzInterface.move_left_start()
+signal com.mindscape.karotz.KarotzInterface.move_left_stop(out:i,out:i)
+signal com.mindscape.karotz.KarotzInterface.move_right_blocked()
+signal com.mindscape.karotz.KarotzInterface.move_right_start()
+signal com.mindscape.karotz.KarotzInterface.move_right_stop(out:i,out:i)
+signal com.mindscape.karotz.KarotzInterface.registered()
+signal com.mindscape.karotz.KarotzInterface.reset_finished(out:s,out:i,out:i)
+== signals
+com.mindscape.karotz.KarotzInterface.registered()
+com.mindscape.karotz.KarotzInterface.reset_finished(string "", int32 0, int32 0)
+com.mindscape.karotz.KarotzInterface.reset_finished(string "idL", int32 0, int32 0)
+com.mindscape.karotz.KarotzInterface.reset_finished(string "idR", int32 0, int32 0)
+com.mindscape.karotz.KarotzInterface.reset_finished(string "idB", int32 0, int32 0)
+com.mindscape.karotz.KarotzInterface.reset_finished(string "idE", int32 0, int32 0)
+com.mindscape.karotz.KarotzInterface.event(string "m1", int32 4)
+com.mindscape.karotz.KarotzInterface.event(string "m2", int32 4)
+com.mindscape.karotz.KarotzInterface.event(string "m3", int32 4)
+com.mindscape.karotz.KarotzInterface.event(string "m4", int32 4)
+com.mindscape.karotz.KarotzInterface.event(string "m5", int32 4)
+com.mindscape.karotz.KarotzInterface.event(string "m6", int32 4)
+com.mindscape.karotz.KarotzInterface.event(string "m7", int32 4)
+com.mindscape.karotz.KarotzInterface.event(string "c1", int32 5)
+com.mindscape.karotz.KarotzInterface.event(string "c2", int32 4)
+com.mindscape.karotz.KarotzInterface.event(string "c3", int32 5)
+com.mindscape.karotz.KarotzInterface.event(string "c4", int32 4)
+com.mindscape.karotz.KarotzInterface.event(string "c5", int32 5)
+com.mindscape.karotz.KarotzInterface.event(string "c6", int32 4)
+com.mindscape.karotz.KarotzInterface.event(string "c7", int32 5)
+com.mindscape.karotz.KarotzInterface.reset_finished(string "c9", int32 0, int32 0)
+com.mindscape.karotz.KarotzInterface.event(string "c8", int32 5)
+com.mindscape.karotz.KarotzInterface.reset_finished(string "c10", int32 0, int32 0)
+== device I/O
+open /dev/rabbit_ears
+read /dev/rabbit_ears 1
+ioctl /dev/rabbit_ears 0x40084502
+ioctl /dev/rabbit_ears 0x40084501
+read /dev/rabbit_ears 32
+ioctl /dev/rabbit_ears 0x80084503
+ioctl /dev/rabbit_ears 0x40084501
+ioctl /dev/rabbit_ears 0x40084502
+ioctl /dev/rabbit_ears 0x80044504
+ioctl /dev/rabbit_ears 0x80084503
+ioctl /dev/rabbit_ears 0x80044504
+read /dev/rabbit_ears 1
+ioctl /dev/rabbit_ears 0x40084502
+ioctl /dev/rabbit_ears 0x80084503
+ioctl /dev/rabbit_ears 0x80044504
+read /dev/rabbit_ears 1
+ioctl /dev/rabbit_ears 0x80044504
+ioctl /dev/rabbit_ears 0x80084503
+ioctl /dev/rabbit_ears 0x80044504
+ioctl /dev/rabbit_ears 0x40044504
+ioctl /dev/rabbit_ears 0x80044504
+read /dev/rabbit_ears 1
+ioctl /dev/rabbit_ears 0x80044504
+ioctl /dev/rabbit_ears 0x80084503
+ioctl /dev/rabbit_ears 0x80044504
+read /dev/rabbit_ears 1
+ioctl /dev/rabbit_ears 0x40084501
+ioctl /dev/rabbit_ears 0x80084503
+ioctl /dev/rabbit_ears 0x80044504
+read /dev/rabbit_ears 1
+ioctl /dev/rabbit_ears 0x80044504
+ioctl /dev/rabbit_ears 0x80084503
+ioctl /dev/rabbit_ears 0x80044504
+ioctl /dev/rabbit_ears 0x40044504
+ioctl /dev/rabbit_ears 0x80044504
+read /dev/rabbit_ears 1
+ioctl /dev/rabbit_ears 0x80044504
+ioctl /dev/rabbit_ears 0x80084503
+ioctl /dev/rabbit_ears 0x80044504
+read /dev/rabbit_ears 1
+ioctl /dev/rabbit_ears 0x40084502
+read /dev/rabbit_ears 32
+ioctl /dev/rabbit_ears 0x80084503
+ioctl /dev/rabbit_ears 0x40084502
+ioctl /dev/rabbit_ears 0x80044504
+ioctl /dev/rabbit_ears 0x80084503
+ioctl /dev/rabbit_ears 0x80044504
+read /dev/rabbit_ears 1
+ioctl /dev/rabbit_ears 0x40084502
+ioctl /dev/rabbit_ears 0x80084503
+ioctl /dev/rabbit_ears 0x80044504
+read /dev/rabbit_ears 1
+ioctl /dev/rabbit_ears 0x80044504
+ioctl /dev/rabbit_ears 0x80084503
+ioctl /dev/rabbit_ears 0x80044504
+ioctl /dev/rabbit_ears 0x40044504
+ioctl /dev/rabbit_ears 0x80044504
+read /dev/rabbit_ears 1
+ioctl /dev/rabbit_ears 0x80044504
+ioctl /dev/rabbit_ears 0x80084503
+ioctl /dev/rabbit_ears 0x80044504
+read /dev/rabbit_ears 1
+ioctl /dev/rabbit_ears 0x40084501
+read /dev/rabbit_ears 32
+ioctl /dev/rabbit_ears 0x80084503
+ioctl /dev/rabbit_ears 0x40084501
+ioctl /dev/rabbit_ears 0x80044504
+ioctl /dev/rabbit_ears 0x80084503
+ioctl /dev/rabbit_ears 0x80044504
+read /dev/rabbit_ears 1
+ioctl /dev/rabbit_ears 0x40084501
+ioctl /dev/rabbit_ears 0x80084503
+ioctl /dev/rabbit_ears 0x80044504
+read /dev/rabbit_ears 1
+ioctl /dev/rabbit_ears 0x80044504
+ioctl /dev/rabbit_ears 0x80084503
+ioctl /dev/rabbit_ears 0x80044504
+ioctl /dev/rabbit_ears 0x40044504
+ioctl /dev/rabbit_ears 0x80044504
+read /dev/rabbit_ears 1
+ioctl /dev/rabbit_ears 0x80044504
+ioctl /dev/rabbit_ears 0x80084503
+ioctl /dev/rabbit_ears 0x80044504
+read /dev/rabbit_ears 1
+ioctl /dev/rabbit_ears 0x40084502
+ioctl /dev/rabbit_ears 0x40084501
+read /dev/rabbit_ears 32
+ioctl /dev/rabbit_ears 0x80084503
+ioctl /dev/rabbit_ears 0x40084501
+ioctl /dev/rabbit_ears 0x40084502
+ioctl /dev/rabbit_ears 0x80044504
+ioctl /dev/rabbit_ears 0x80084503
+ioctl /dev/rabbit_ears 0x80044504
+read /dev/rabbit_ears 1
+ioctl /dev/rabbit_ears 0x40084502
+ioctl /dev/rabbit_ears 0x80084503
+ioctl /dev/rabbit_ears 0x80044504
+read /dev/rabbit_ears 1
+ioctl /dev/rabbit_ears 0x80044504
+ioctl /dev/rabbit_ears 0x80084503
+ioctl /dev/rabbit_ears 0x80044504
+ioctl /dev/rabbit_ears 0x40044504
+ioctl /dev/rabbit_ears 0x80044504
+read /dev/rabbit_ears 1
+ioctl /dev/rabbit_ears 0x80044504
+ioctl /dev/rabbit_ears 0x80084503
+ioctl /dev/rabbit_ears 0x80044504
+read /dev/rabbit_ears 1
+ioctl /dev/rabbit_ears 0x40084501
+ioctl /dev/rabbit_ears 0x80084503
+ioctl /dev/rabbit_ears 0x80044504
+read /dev/rabbit_ears 1
+ioctl /dev/rabbit_ears 0x80044504
+ioctl /dev/rabbit_ears 0x80084503
+ioctl /dev/rabbit_ears 0x80044504
+ioctl /dev/rabbit_ears 0x40044504
+ioctl /dev/rabbit_ears 0x80044504
+read /dev/rabbit_ears 1
+ioctl /dev/rabbit_ears 0x80044504
+ioctl /dev/rabbit_ears 0x80084503
+ioctl /dev/rabbit_ears 0x80044504
+read /dev/rabbit_ears 1
+ioctl /dev/rabbit_ears 0x40084502
+ioctl /dev/rabbit_ears 0x40084501
+read /dev/rabbit_ears 32
+ioctl /dev/rabbit_ears 0x80084503
+ioctl /dev/rabbit_ears 0x40084501
+ioctl /dev/rabbit_ears 0x40084502
+ioctl /dev/rabbit_ears 0x80044504
+ioctl /dev/rabbit_ears 0x80084503
+ioctl /dev/rabbit_ears 0x80044504
+read /dev/rabbit_ears 1
+ioctl /dev/rabbit_ears 0x40084502
+ioctl /dev/rabbit_ears 0x80084503
+ioctl /dev/rabbit_ears 0x80044504
+read /dev/rabbit_ears 1
+ioctl /dev/rabbit_ears 0x80044504
+ioctl /dev/rabbit_ears 0x80084503
+ioctl /dev/rabbit_ears 0x80044504
+ioctl /dev/rabbit_ears 0x40044504
+ioctl /dev/rabbit_ears 0x80044504
+read /dev/rabbit_ears 1
+ioctl /dev/rabbit_ears 0x80044504
+ioctl /dev/rabbit_ears 0x80084503
+ioctl /dev/rabbit_ears 0x80044504
+read /dev/rabbit_ears 1
+ioctl /dev/rabbit_ears 0x40084501
+ioctl /dev/rabbit_ears 0x80084503
+ioctl /dev/rabbit_ears 0x80044504
+read /dev/rabbit_ears 1
+ioctl /dev/rabbit_ears 0x80044504
+ioctl /dev/rabbit_ears 0x80084503
+ioctl /dev/rabbit_ears 0x80044504
+ioctl /dev/rabbit_ears 0x40044504
+ioctl /dev/rabbit_ears 0x80044504
+read /dev/rabbit_ears 1
+ioctl /dev/rabbit_ears 0x80044504
+ioctl /dev/rabbit_ears 0x80084503
+ioctl /dev/rabbit_ears 0x40084501
+ioctl /dev/rabbit_ears 0x40084502
+ioctl /dev/rabbit_ears 0x80084503
+ioctl /dev/rabbit_ears 0x80044504
+read /dev/rabbit_ears 1
+ioctl /dev/rabbit_ears 0x80044504
+ioctl /dev/rabbit_ears 0x80084503
+ioctl /dev/rabbit_ears 0x40084501
+ioctl /dev/rabbit_ears 0x80084503
+ioctl /dev/rabbit_ears 0x80044504
+read /dev/rabbit_ears 1
+ioctl /dev/rabbit_ears 0x80044504
+ioctl /dev/rabbit_ears 0x80084503
+ioctl /dev/rabbit_ears 0x40084502
+ioctl /dev/rabbit_ears 0x80084503
+ioctl /dev/rabbit_ears 0x80044504
+read /dev/rabbit_ears 1
+ioctl /dev/rabbit_ears 0x80044504
+ioctl /dev/rabbit_ears 0x80084503
+ioctl /dev/rabbit_ears 0x40084501
+ioctl /dev/rabbit_ears 0x80084503
+ioctl /dev/rabbit_ears 0x80044504
+read /dev/rabbit_ears 1
+ioctl /dev/rabbit_ears 0x80044504
+ioctl /dev/rabbit_ears 0x80084503
+ioctl /dev/rabbit_ears 0x80044504
+read /dev/rabbit_ears 1
+ioctl /dev/rabbit_ears 0x40084502
+read /dev/rabbit_ears 32
+ioctl /dev/rabbit_ears 0x80084503
+ioctl /dev/rabbit_ears 0x40084502
+ioctl /dev/rabbit_ears 0x80044504
+ioctl /dev/rabbit_ears 0x80084503
+ioctl /dev/rabbit_ears 0x80044504
+read /dev/rabbit_ears 1
+ioctl /dev/rabbit_ears 0x80044504
+ioctl /dev/rabbit_ears 0x80084503
+ioctl /dev/rabbit_ears 0x80044504
+ioctl /dev/rabbit_ears 0x40084502
+read /dev/rabbit_ears 1
+ioctl /dev/rabbit_ears 0x80044504
+ioctl /dev/rabbit_ears 0x80084503
+ioctl /dev/rabbit_ears 0x40084502
+ioctl /dev/rabbit_ears 0x80084503
+ioctl /dev/rabbit_ears 0x80044504
+read /dev/rabbit_ears 1
+ioctl /dev/rabbit_ears 0x80044504
+ioctl /dev/rabbit_ears 0x80084503
+ioctl /dev/rabbit_ears 0x80044504
+read /dev/rabbit_ears 1
+ioctl /dev/rabbit_ears 0x40084501
+read /dev/rabbit_ears 32
+ioctl /dev/rabbit_ears 0x80084503
+ioctl /dev/rabbit_ears 0x40084501
+ioctl /dev/rabbit_ears 0x80044504
+ioctl /dev/rabbit_ears 0x80084503
+ioctl /dev/rabbit_ears 0x80044504
+read /dev/rabbit_ears 1
+ioctl /dev/rabbit_ears 0x80044504
+ioctl /dev/rabbit_ears 0x80084503
+ioctl /dev/rabbit_ears 0x80044504
+ioctl /dev/rabbit_ears 0x40084501
+read /dev/rabbit_ears 1
+ioctl /dev/rabbit_ears 0x80044504
+ioctl /dev/rabbit_ears 0x80084503
+ioctl /dev/rabbit_ears 0x40084501
+ioctl /dev/rabbit_ears 0x40084502
+ioctl /dev/rabbit_ears 0x80084503
+ioctl /dev/rabbit_ears 0x80044504
+read /dev/rabbit_ears 1
+ioctl /dev/rabbit_ears 0x80044504
+ioctl /dev/rabbit_ears 0x80084503
+ioctl /dev/rabbit_ears 0x80044504
+read /dev/rabbit_ears 1
+ioctl /dev/rabbit_ears 0x40084502
+ioctl /dev/rabbit_ears 0x40084501
+read /dev/rabbit_ears 32
+ioctl /dev/rabbit_ears 0x80084503
+ioctl /dev/rabbit_ears 0x40084501
+ioctl /dev/rabbit_ears 0x40084502
+ioctl /dev/rabbit_ears 0x80044504
+ioctl /dev/rabbit_ears 0x80084503
+ioctl /dev/rabbit_ears 0x80044504
+read /dev/rabbit_ears 1
+ioctl /dev/rabbit_ears 0x80044504
+ioctl /dev/rabbit_ears 0x80084503
+ioctl /dev/rabbit_ears 0x80044504
+ioctl /dev/rabbit_ears 0x40084502
+ioctl /dev/rabbit_ears 0x40084501
+read /dev/rabbit_ears 1
+ioctl /dev/rabbit_ears 0x80044504
+ioctl /dev/rabbit_ears 0x80084503
+ioctl /dev/rabbit_ears 0x40084501
+ioctl /dev/rabbit_ears 0x80084503
+ioctl /dev/rabbit_ears 0x80044504
+read /dev/rabbit_ears 1
+ioctl /dev/rabbit_ears 0x80044504
+ioctl /dev/rabbit_ears 0x80084503
+ioctl /dev/rabbit_ears 0x80044504
+read /dev/rabbit_ears 1
+ioctl /dev/rabbit_ears 0x40084502
+ioctl /dev/rabbit_ears 0x40084501
+read /dev/rabbit_ears 32
+ioctl /dev/rabbit_ears 0x80084503
+ioctl /dev/rabbit_ears 0x40084501
+ioctl /dev/rabbit_ears 0x40084502
+ioctl /dev/rabbit_ears 0x80044504
+ioctl /dev/rabbit_ears 0x80084503
+ioctl /dev/rabbit_ears 0x80044504
+read /dev/rabbit_ears 1
+ioctl /dev/rabbit_ears 0x80044504
+ioctl /dev/rabbit_ears 0x80084503
+ioctl /dev/rabbit_ears 0x80044504
+ioctl /dev/rabbit_ears 0x40084502
+ioctl /dev/rabbit_ears 0x40084501
+read /dev/rabbit_ears 1
+ioctl /dev/rabbit_ears 0x40084502
+read /dev/rabbit_ears 32
+ioctl /dev/rabbit_ears 0x80084503
+ioctl /dev/rabbit_ears 0x40084502
+ioctl /dev/rabbit_ears 0x80044504
+ioctl /dev/rabbit_ears 0x80084503
+ioctl /dev/rabbit_ears 0x80044504
+read /dev/rabbit_ears 1
+ioctl /dev/rabbit_ears 0x40084501
+read /dev/rabbit_ears 32
+ioctl /dev/rabbit_ears 0x80084503
+ioctl /dev/rabbit_ears 0x40084501
+ioctl /dev/rabbit_ears 0x80044504
+ioctl /dev/rabbit_ears 0x80084503
+ioctl /dev/rabbit_ears 0x80044504
+read /dev/rabbit_ears 1
+ioctl /dev/rabbit_ears 0x40084501
+ioctl /dev/rabbit_ears 0x80084503
+ioctl /dev/rabbit_ears 0x80044504
+read /dev/rabbit_ears 1
+ioctl /dev/rabbit_ears 0x80044504
+ioctl /dev/rabbit_ears 0x80084503
+ioctl /dev/rabbit_ears 0x80044504
+ioctl /dev/rabbit_ears 0x40044504
+ioctl /dev/rabbit_ears 0x80044504
+read /dev/rabbit_ears 1
+ioctl /dev/rabbit_ears 0x80044504
+ioctl /dev/rabbit_ears 0x80084503
+ioctl /dev/rabbit_ears 0x80044504
+ioctl /dev/rabbit_ears 0x40084502
+read /dev/rabbit_ears 1
+ioctl /dev/rabbit_ears 0x40084502
+read /dev/rabbit_ears 32
+ioctl /dev/rabbit_ears 0x80084503
+ioctl /dev/rabbit_ears 0x40084502
+ioctl /dev/rabbit_ears 0x80044504
+ioctl /dev/rabbit_ears 0x80084503
+ioctl /dev/rabbit_ears 0x80044504
+read /dev/rabbit_ears 1
+ioctl /dev/rabbit_ears 0x40084502
+ioctl /dev/rabbit_ears 0x80084503
+ioctl /dev/rabbit_ears 0x80044504
+read /dev/rabbit_ears 1
+ioctl /dev/rabbit_ears 0x80044504
+ioctl /dev/rabbit_ears 0x80084503
+ioctl /dev/rabbit_ears 0x80044504
+ioctl /dev/rabbit_ears 0x40044504
+ioctl /dev/rabbit_ears 0x80044504
+read /dev/rabbit_ears 1
+ioctl /dev/rabbit_ears 0x80044504
+ioctl /dev/rabbit_ears 0x80084503
+ioctl /dev/rabbit_ears 0x80044504
+== SET_POS calls: 22
+== daemon still running: True

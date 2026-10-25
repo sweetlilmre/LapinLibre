@@ -1,0 +1,12 @@
+# The rt2x00 USB register-access timeout is doubled, for the Wi-Fi dongle on the Karotz's internal USB port.
+--- a/drivers/net/wireless/rt2x00/rt2x00usb.h
++++ b/drivers/net/wireless/rt2x00/rt2x00usb.h
+@@ -50,7 +50,7 @@
+  */
+ #define REGISTER_BUSY_COUNT		5
+ #define REGISTER_BUSY_DELAY		100
+-#define REGISTER_TIMEOUT		500
++#define REGISTER_TIMEOUT		1000	/* RABBITV3: was 500 */
+ #define REGISTER_TIMEOUT_FIRMWARE	1000
+ 
+ /**

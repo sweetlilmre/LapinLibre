@@ -1,0 +1,26 @@
+# SPDX-License-Identifier: MIT
+# The check gate on every push to a branch and every pull request: the repository's file rules
+# (scripts/check-repo.py) and the packing tools' tests (tests/image/test_fstree.py). Neither needs
+# a build.
+name: check
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+
+      - name: Repository file rules
+        run: python3 -I -B scripts/check-repo.py
+
+      - name: Packing tools tests
+        run: python3 -I -B tests/image/test_fstree.py

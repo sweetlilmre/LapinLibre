@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: MIT
+# Signal marshallers shared by the daemons, compiled with
+# glib-genmarshal --prefix=karotz_smarshal.
+VOID:INT,INT
+VOID:STRING,INT
+VOID:STRING,INT,INT
+VOID:STRING,STRING
+VOID:STRING,STRING,INT
+VOID:STRING,STRING,STRING,INT
+VOID:STRING,STRING,INT,INT,INT,INT

@@ -1,0 +1,6 @@
+# SPDX-License-Identifier: MIT
+# What linuxrc's `mount -a` mounts (the rest is mounted by linuxrc itself).
+devpts  /dev/pts      devpts  mode=0620  0 0
+tmpfs   /dev/shm      tmpfs   defaults   0 0
+# Quirk: no consumer of usbfs is known; kept.
+usbfs   /proc/bus/usb usbfs   defaults   0 0

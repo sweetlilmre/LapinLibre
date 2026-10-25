@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: GPL-2.0-or-later
+config BR2_PACKAGE_LIBEXOSIP2_KAROTZ
+	bool "libexosip2-karotz"
+	depends on BR2_TOOLCHAIN_HAS_THREADS
+	select BR2_PACKAGE_LIBOSIP2_KAROTZ
+	help
+	  libeXosip2 3.5.0 (libeXosip2.so.6), for linphone
+	  3.4.1.
+
+	  https://savannah.nongnu.org/projects/exosip

@@ -1,0 +1,10 @@
+#!/bin/sh
+# SPDX-License-Identifier: MIT
+# clear_snapshots: deletes every stored snapshot and thumbnail.
+. /usr/share/lapinlibre/web.sh
+web_begin change
+web_lock
+rm -f "$WEB_SNAPSHOTS/"snapshot_*.jpg "$WEB_SNAPSHOTS/"snapshot_*.thumb.gif
+web_unlock
+web_ok
+reply_json '{"return":"0"}'

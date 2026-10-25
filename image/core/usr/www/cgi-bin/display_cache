@@ -1,0 +1,7 @@
+#!/bin/sh
+# SPDX-License-Identifier: MIT
+# display_cache (read-only): the speech cache's size. There is no speech cache, so it is always
+# empty.
+. /usr/share/lapinlibre/web.sh
+web_begin read
+reply_json '{"count":"0","return":"0"}'

@@ -1,0 +1,13 @@
+#!/bin/sh
+# SPDX-License-Identifier: MIT
+# get_version (read-only): the installed build's version and the root file system's version.
+. /usr/share/lapinlibre/web.sh
+web_begin read
+read_build
+first_line /karotz/etc/rootfs_version
+jo_begin
+jo_str version "$VERSION"
+jo_str rootfs_version "${FL:-Unknown}"
+jo_str patch_version N/A
+jo_str return 0
+reply_json "{$JO}"

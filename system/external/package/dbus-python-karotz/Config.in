@@ -1,0 +1,9 @@
+# SPDX-License-Identifier: GPL-2.0-or-later
+config BR2_PACKAGE_DBUS_PYTHON_KAROTZ
+	bool "dbus-python-karotz"
+	depends on BR2_PACKAGE_PYTHON24_KAROTZ
+	select BR2_PACKAGE_DBUS_GLIB
+	help
+	  dbus-python 0.83.0, for Python 2.4.
+
+	  https://dbus.freedesktop.org/doc/dbus-python/

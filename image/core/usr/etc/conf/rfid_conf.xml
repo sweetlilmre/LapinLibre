@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: MIT -->
+<!-- rfid-daemon's settings. writeInTag="true" makes it write block 7 (the product codes given by
+     a <block7 app_code="" type_code="" pict_code="" color_code=""/> element, decimal) into each new
+     tag before reading it; the rabbit only reads tags. -->
+<configure writeInTag="false"/>

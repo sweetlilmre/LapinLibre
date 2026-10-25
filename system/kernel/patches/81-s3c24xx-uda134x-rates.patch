@@ -1,0 +1,21 @@
+# S3C24XX UDA134X machine driver: ENFORCE_RATES is defined, but the rate constraint stays disabled.
+--- a/sound/soc/s3c24xx/s3c24xx_uda134x.c
++++ b/sound/soc/s3c24xx/s3c24xx_uda134x.c
+@@ -29,7 +29,7 @@
+ #include "../codecs/uda134x.h"
+ 
+ 
+-/* #define ENFORCE_RATES 1 */
++#define ENFORCE_RATES 1	/* RABBITV3: defined, but the constraint below is disabled */
+ /*
+   Unfortunately the S3C24XX in master mode has a limited capacity of
+   generating the clock for the codec. If you define this only rates
+@@ -103,7 +103,7 @@
+ 	clk_users += 1;
+ 	mutex_unlock(&clk_lock);
+ 	if (!ret) {
+-#ifdef ENFORCE_RATES
++#if 0	/* RABBITV3 (ENFORCE_RATES) */
+ 		ret = snd_pcm_hw_constraint_list(runtime, 0,
+ 						 SNDRV_PCM_HW_PARAM_RATE,
+ 						 &hw_constraints_rates);

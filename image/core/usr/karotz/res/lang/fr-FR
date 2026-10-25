@@ -1,0 +1,8 @@
+# SPDX-License-Identifier: MIT
+# The controller's sounds and sentences in French; a key missing here is taken from en-US.
+[lang]
+# Played when a tag is shown that no application is set up for.
+tag_unknown=/usr/karotz/sounds/fr_tag_unknown.mp3
+# Played when speech recognition understood nothing, or named no application.
+speech_no_match=/usr/karotz/sounds/fr_speech_not_understood.mp3
+speech_not_understood=/usr/karotz/sounds/fr_speech_not_understood.mp3

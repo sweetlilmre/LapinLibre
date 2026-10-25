@@ -1,0 +1,17 @@
+== registered: True
+== introspection
+method com.mindscape.karotz.KarotzInterface.takeSnapshot(in:s,in:s,in:i,out:b)
+signal com.mindscape.karotz.KarotzInterface.event(out:s,out:i)
+signal com.mindscape.karotz.KarotzInterface.registered()
+== takeSnapshot
+takeSnapshot('interactive:correlation', 'http://127.0.0.1:9/x', 0) -> boolean false
+takeSnapshot('interactive:correlation', 'file', 1) -> boolean false
+takeSnapshot('noseparator', 'http://127.0.0.1:9/upload', -1) -> boolean false
+takeSnapshot('', '', 0) -> boolean false
+takeSnapshot('a:b:c', 'file', 7) -> boolean false
+== signals
+com.mindscape.karotz.KarotzInterface.registered()
+== device I/O
+open /dev/camera
+ioctl /dev/camera 0xc004f900
+== daemon still running: True

@@ -1,0 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Undefined symbols the image accepts (image/tools/system.py, step 3):
+# "file name: symbol symbol ...: reason". Every other undefined dynamic symbol of every ELF in the
+# image must be defined by the libraries it resolves to.
+#

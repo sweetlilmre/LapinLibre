@@ -1,0 +1,67 @@
+#!/bin/sh
+# SPDX-License-Identifier: MIT
+# rfid_assign_karotz: gives a learned tag one of the API's own endpoints as its action (replacing
+# any other): the tag listener then runs that endpoint on the rabbit, with the query given here,
+# each time the tag is laid on the nose. Only the endpoints of WEB_TAG_ENDPOINTS (speech, sound,
+# sound control, LED, ears, ears reset, random ears, sleep, wake-up, snapshot, clock, moods,
+# stories); the query must pass the
+# endpoint's own checks now. Kept as data in the tag store: the endpoint's name and its query.
+#   tag   the tag's id: 16 hexadecimal digits (required)
+#   url   base64 of the endpoint's URL, /cgi-bin/<endpoint>?<query>, either alone or after
+#         http:// and this rabbit's address (127.0.0.1, localhost, its name, <name>.local or its
+#         IP address, any port) (required)
+#   name  the tag's name (absent: unchanged)
+. /usr/share/lapinlibre/web.sh
+web_begin change
+param_tag
+param_base64 url || web_fail "parameter url is required: base64 of /cgi-bin/<endpoint>?<query>"
+target=$PV
+case $target in
+http://* | https://*)
+    valid_url "$target" || web_fail "parameter url must be base64 of an URL of this rabbit's API"
+    url_host "$target"
+    lower "$UH"
+    host=$LO
+    read_address
+    lower "$HOSTNAME_"
+    name=$LO
+    case $host in
+    127.0.0.1 | localhost) ;;
+    *)
+        if [ -z "$host" ] || { [ "$host" != "$name" ] && [ "$host" != "$name.local" ] && [ "$host" != "$IP" ]; }; then
+            web_fail "parameter url must name this rabbit (127.0.0.1, localhost, its name or its address)"
+        fi
+        ;;
+    esac
+    path=${target#*://}
+    case $path in */*) path=/${path#*/} ;; *) path="" ;; esac
+    ;;
+/*) path=$target ;;
+*) path="" ;;
+esac
+case $path in
+/cgi-bin/?*) ;;
+*) web_fail "parameter url must be base64 of /cgi-bin/<endpoint>?<query>" ;;
+esac
+path=${path%%#*}
+endpoint=${path#/cgi-bin/}
+endpoint=${endpoint%%\?*}
+query=""
+case $path in *\?*) query=${path#*\?} ;; esac
+case " $WEB_TAG_ENDPOINTS " in
+*" $endpoint "*) ;;
+*) web_fail "a tag can't run that endpoint: only $WEB_TAG_ENDPOINTS" ;;
+esac
+valid_query "$query" || web_fail "the endpoint's query must be URL characters only, at most 1024 bytes"
+api_run "$endpoint" "$query" check || web_fail "$endpoint refused the query: $AR_MSG"
+
+TAG_SETNAME=0
+TAG_NAME=""
+if param_tag_name; then
+    TAG_NAME=$PV
+    TAG_SETNAME=1
+fi
+TAG_ID=$TG TAG_CMD=5 TAG_A1=$endpoint TAG_A2=$query TAG_A3=""
+tags_change assign || tag_change_failed $?
+web_log "ok, $endpoint"
+reply_json '{"return":"0"}'

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SPDX-License-Identifier: MIT -->
+<descriptor>
+  <version>3</version>
+  <name>Device test</name>
+  <accesses>
+    <access>led</access>
+    <access>ears</access>
+    <access>tts</access>
+    <access>multimedia</access>
+    <access>webcam</access>
+    <access>button</access>
+    <access>rfid</access>
+    <access>http</access>
+    <access>asr</access>
+    <access>message</access>
+    <access>contact</access>
+    <access>twitter</access>
+    <access>facebook</access>
+  </accesses>
+</descriptor>

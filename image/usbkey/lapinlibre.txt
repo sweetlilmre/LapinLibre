@@ -1,0 +1,47 @@
+# SPDX-License-Identifier: MIT
+# LapinLibre's install settings. Fill in the values after the "=" signs, save the file on the
+# USB key, then put the key in the rabbit and switch it on. The install applies them.
+#
+# A value left empty keeps what the rabbit already has (from an earlier install), so for an
+# update you can leave everything empty. A first install needs the Wi-Fi network.
+
+# --- Wi-Fi (WPA or WPA2 with a password) ---
+WIFI_SSID=
+WIFI_PASSWORD=
+
+# --- A fixed address (leave IP empty to get one from the router by DHCP) ---
+IP=
+NETMASK=255.255.255.0
+GATEWAY=
+DNS=
+
+# --- SSH: your public key, all of it on one line (for example "ssh-ed25519 AAAA... you@pc").
+# The rabbit takes SSH logins with this key only; there is no password login. Empty: no new key.
+SSH_PUBKEY=
+
+# --- The web page's password: with one, the rabbit's web page and its API (http://<name>.local/)
+# ask for the user name admin and this password. 8 to 64 characters, without spaces, " \ or :.
+# Empty (or no line): no password, and the page is open to your local network without a login;
+# any earlier password is removed.
+WEB_PASSWORD=
+
+# --- Telnet: yes gives anyone on your network a root shell with no password. For testing only.
+# yes or no; empty keeps the rabbit's setting (no, unless an earlier install said yes).
+TELNET=
+
+# --- The app server (LapinLibre's tools/app-server) on your network: its address, for example
+# 192.168.1.10. It serves the rabbit's applications, speech and speech recognition. Empty keeps
+# the rabbit's servers.
+SERVER=
+# Only if speech or speech recognition run elsewhere: a URL like http://192.168.1.10:8081, and
+# host:port like 192.168.1.10:8443. Empty: SERVER's.
+TTS_SERVER=
+ASR_SERVER=
+
+# --- The rabbit's language, for example en-US, en-GB, fr-FR, de-DE or es-ES. Empty keeps it.
+LANGUAGE=
+
+# --- The rabbit's name on your network: it answers to <name>.local (for example
+# ssh karotz@lapinlibre.local). Lower-case letters, digits and dashes; give each rabbit its own.
+# Empty keeps the rabbit's (lapinlibre unless an earlier install set one).
+HOSTNAME=

@@ -1,0 +1,68 @@
+# RABBITV3 additions to the S3C24XX platform devices, on 2.6.32 (which already names the ADC s3c24xx-adc and has the PWM timers as s3c_device_timer[], so those parts of the 2.6.28 patch are gone): the ADC exported, and two quirks kept from 2.6.28: the IIS device named s3c2410-i2s, and a touchscreen device with its platform-data setter, which nothing registers.
+--- a/arch/arm/plat-s3c/include/plat/devs.h
++++ b/arch/arm/plat-s3c/include/plat/devs.h
+@@ -36,6 +36,7 @@ extern struct platform_device s3c_device_i2c0;
+ extern struct platform_device s3c_device_i2c1;
+ extern struct platform_device s3c_device_rtc;
+ extern struct platform_device s3c_device_adc;
++extern struct platform_device s3c_device_ts;	/* RABBITV3 */
+ extern struct platform_device s3c_device_sdi;
+ extern struct platform_device s3c_device_iis;
+ extern struct platform_device s3c_device_hwmon;
+--- a/arch/arm/plat-s3c24xx/devs.c
++++ b/arch/arm/plat-s3c24xx/devs.c
+@@ -25,6 +25,7 @@
+ #include <asm/mach/map.h>
+ #include <asm/mach/irq.h>
+ #include <mach/fb.h>
++#include <mach/ts.h>
+ #include <mach/hardware.h>
+ #include <mach/dma.h>
+ #include <mach/irqs.h>
+@@ -259,7 +260,8 @@ static struct resource s3c_iis_resource[] = {
+ static u64 s3c_device_iis_dmamask = 0xffffffffUL;
+ 
+ struct platform_device s3c_device_iis = {
+-	.name		  = "s3c2410-iis",
++	/* RABBITV3 quirk: renamed from "s3c2410-iis"; nothing binds either name. */
++	.name		  = "s3c2410-i2s",
+ 	.id		  = -1,
+ 	.num_resources	  = ARRAY_SIZE(s3c_iis_resource),
+ 	.resource	  = s3c_iis_resource,
+@@ -328,6 +330,8 @@ struct platform_device s3c_device_adc = {
+ 	.resource	  = s3c_adc_resource,
+ };
+ 
++EXPORT_SYMBOL(s3c_device_adc);	/* RABBITV3 */
++
+ /* HWMON */
+ 
+ struct platform_device s3c_device_hwmon = {
+@@ -336,6 +340,27 @@ struct platform_device s3c_device_hwmon = {
+ 	.dev.parent	= &s3c_device_adc.dev,
+ };
+ 
++/* Touchscreen
++ *
++ * RABBITV3 quirk: the device and its platform-data setter, though the board
++ * registers no touchscreen and the tree has no driver for it. */
++
++struct platform_device s3c_device_ts = {
++	.name		  = "s3c2410-ts",
++	.id		  = -1,
++};
++
++EXPORT_SYMBOL(s3c_device_ts);
++
++static struct s3c2410_ts_mach_info s3c2410ts_info;
++
++void __init s3c24xx_ts_set_platdata(struct s3c2410_ts_mach_info *hard_s3c2410ts_info)
++{
++	memcpy(&s3c2410ts_info, hard_s3c2410ts_info, sizeof(struct s3c2410_ts_mach_info));
++	s3c_device_ts.dev.platform_data = &s3c2410ts_info;
++}
++EXPORT_SYMBOL(s3c24xx_ts_set_platdata);
++
+ /* SDI */
+ 
+ static struct resource s3c_sdi_resource[] = {

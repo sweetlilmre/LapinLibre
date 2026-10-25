@@ -1,0 +1,661 @@
+# SPDX-License-Identifier: MIT
+# LapinLibre's build configuration: versions, pinned downloads and limits.
+# Every download is checked against its sha256 (or git commit) before use.
+
+[key.md5]
+# Files the key carries from the repo exactly as they are, by MD5: image/usbkey/autorun.sig is
+# Violet's clearsigned file. The factory system runs a stick's autorun only when
+# `gpg --verify autorun.sig` passes, and nobody can sign a new one.
+"autorun.sig" = "03076decb9e153b552d13196f5971ca4"
+# Karotz's keyring in the core's root filesystem ("part:path", from image/core; image.py's
+# check_pinned).
+"rootfs:karotz/etc/gpg/pubring.gpg" = "f9242e4ba243279123b1cd0a02528a31"
+"rootfs:karotz/etc/gpg/trustdb.gpg" = "add402e275ef6ba90f99da7ad56391cc"
+
+[limits]
+# The rabbit's flash and RAM disk: /proc/mtd gives mtd1 "Kernel" 0x300000 and
+# mtd2 "ramdisk" 0x500000; the bootloader loads mtd2 as a gzipped initrd
+# (initrd=0x31800000,0x00500000) into ram0, 10240 sectors (5 MiB). So the
+# gzipped root filesystem must fit mtd2 and the unpacked cramfs ram0.
+kernel_bytes = 3145728
+rootfs_gz_bytes = 5242880
+rootfs_bytes = 5242880
+
+[kernel]
+# The machine name the kernel reports (MACHINE_START in the board file).
+machine = "RABBITV3 (KAROTZ)"
+localversion = "-sweetlilmre"
+build_user = "sweetlilmre"
+build_host = "sweetlilmre-builder"
+# The fixed path the tree is built at (inside the build's namespace), so the
+# source path the kernel embeds is the same for every build.
+build_path = "/build/karotz-kernel"
+
+[toolchain]
+# The cross toolchain the system build uses (system/toolchain/build.sh): GCC, binutils and
+# uClibc-ng for the ARM920T, built by Buildroot from system/toolchain/buildroot.config and packed
+# as an SDK. name is its release: the tag it is published under and its file, name + ".tar.gz".
+# Raise the last number when the toolchain changes. With a [download.toolchain] pin the build
+# fetches the published toolchain; without one, or with LAPIN_TOOLCHAIN=build, it builds it.
+name = "toolchain-gcc14.3.0-uclibc-ng1.0.57-1"
+
+# ---------------------------------------------------------------------------
+# Downloads. group: which stage needs it (fetch.py --group GROUP).
+
+# V8 2.5.9.23, the last release of 2.5.8's branch: the system build's libv8.so
+# (system/v8/build.sh) and the headers the system build's karotzVM builds against.
+
+# The published cross toolchain ([toolchain]; system/toolchain/build.sh), built by the toolchain
+# workflow (.github/workflows/toolchain.yml).
+
+[download.toolchain]
+group = "toolchain"
+urls = ["https://github.com/sweetlilmre/LapinLibre/releases/download/toolchain-gcc14.3.0-uclibc-ng1.0.57-1/toolchain-gcc14.3.0-uclibc-ng1.0.57-1.tar.gz"]
+file = "toolchain-gcc14.3.0-uclibc-ng1.0.57-1.tar.gz"
+sha256 = "afa4c1f076773f8715431fe61854e46796bf8c8c3eee25b32f8cb55e957a5f6b"
+
+[download.v8-branch-src]
+group = "v8"
+urls = ["https://github.com/v8/v8/archive/refs/tags/2.5.9.23.tar.gz"]
+file = "v8-2.5.9.23.tar.gz"
+sha256 = "be8f6786dd5122a05320cae85303c683228e70aafb8af13711b7a485a56d20ae"
+
+# Buildroot 2026.02.3, the system build itself (system/build.sh), and Linux 2.6.32.71: where Buildroot looks
+# for its custom kernel headers, and the kernel the system build makes (system/kernel/build.sh).
+
+[download.buildroot-2026]
+group = "system-source"
+urls = ["https://buildroot.org/downloads/buildroot-2026.02.3.tar.xz"]
+file = "buildroot-2026.02.3.tar.xz"
+sha256 = "5a59e7501b0b4ec52c41f4bfa79412320e0b37eae5f719605a258e8d0c6fc7fb"
+
+[download.linux-2-6-32]
+group = "system-source"
+urls = ["https://cdn.kernel.org/pub/linux/kernel/v2.6/longterm/v2.6.32/linux-2.6.32.71.tar.xz"]
+file = "br2026/linux/linux-2.6.32.71.tar.xz"
+sha256 = "60a5ffe0206a0ea8997c29ccc595aa7dae55f6cb20c7d92aab88029ca4fef598"
+
+# The kernel's YAFFS2 and the gzip that compresses its zImage (system/kernel/build.sh).
+
+[download.yaffs2]
+group = "kernel"
+git = "https://github.com/Aleph-One-Ltd/yaffs2.git"
+commit = "3e5718ec7f0df7b76837d10583419b745cb27474"
+
+[download.gzip]
+group = "kernel"
+urls = ["https://ftp.gnu.org/gnu/gzip/gzip-1.3.12.tar.gz"]
+sha256 = "3f565be05f7f3d1aff117c030eb7c738300510b7d098cedea796ca8e4cd587af"
+
+# The image's /usr/etc/timezone.list, generated from IANA's time-zone database and compiled with its
+# own zic (image/tools/tzlist.py). Both tarballs' signatures were checked against the tz
+# maintainer's key (7E3792A9D8ACF7D633BC1588ED97E90E62AA7E34) when they were pinned.
+
+[download.tzdata]
+group = "image"
+urls = ["https://data.iana.org/time-zones/releases/tzdata2026e.tar.gz"]
+sha256 = "b26882805f26aac59d5b222978e6580484b834ccdc98be89df2f05a6dc53a652"
+
+[download.tzcode]
+group = "image"
+urls = ["https://data.iana.org/time-zones/releases/tzcode2026e.tar.gz"]
+sha256 = "cc3d27ca2a0d8399504551b920970d80af83bfb9c216e8082a15491921935d54"
+
+# The rabbit's Wi-Fi firmware (rt73usb) and its licence, from linux-firmware's 20260916 tag:
+# /lib/firmware/rt73.bin in the core image.
+[download.rt73-firmware]
+group = "image"
+urls = ["https://git.kernel.org/pub/scm/linux/kernel/git/firmware/linux-firmware.git/plain/rt73.bin?h=20260916"]
+file = "rt73.bin"
+sha256 = "a57745fa55b7700ff410bc69f3630c889e46d771ac17f6c48bda1c02908116bc"
+
+[download.rt73-licence]
+group = "image"
+urls = ["https://git.kernel.org/pub/scm/linux/kernel/git/firmware/linux-firmware.git/plain/LICENSES/LICENCE.ralink-firmware.txt?h=20260916"]
+file = "LICENCE.ralink-firmware.txt"
+sha256 = "d7bec70668ddd4aae8fb4aa32870e54b49fcdb0b9b007aa9f54b53a1ac7461bd"
+
+# The system build's Buildroot downloads (system/pin-downloads.py).
+
+[download.br-bash-bash-5-2-37-tar-gz]
+group = "system"
+urls = ["https://sources.buildroot.net/bash/bash-5.2.37.tar.gz", "https://ftpmirror.gnu.org/bash/bash-5.2.37.tar.gz"]
+file = "br2026/bash/bash-5.2.37.tar.gz"
+sha256 = "9599b22ecd1d5787ad7d3b7bf0c59f312b3396d1e281175dd1f8a4014da621ff"
+
+[download.br-busybox-busybox-1-37-0-tar-bz2]
+group = "system"
+urls = ["https://sources.buildroot.net/busybox/busybox-1.37.0.tar.bz2", "https://www.busybox.net/downloads/busybox-1.37.0.tar.bz2"]
+file = "br2026/busybox/busybox-1.37.0.tar.bz2"
+sha256 = "3311dff32e746499f4df0d5df04d7eb396382d7e108bb9250e7b519b837043a4"
+
+[download.br-dbus-dbus-1-14-10-tar-xz]
+group = "system"
+urls = ["https://sources.buildroot.net/dbus/dbus-1.14.10.tar.xz", "https://dbus.freedesktop.org/releases/dbus/dbus-1.14.10.tar.xz"]
+file = "br2026/dbus/dbus-1.14.10.tar.xz"
+sha256 = "ba1f21d2bd9d339da2d4aa8780c09df32fea87998b73da24f49ab9df1e36a50f"
+
+[download.br-dbus-glib-dbus-glib-0-114-tar-gz]
+group = "system"
+urls = ["https://sources.buildroot.net/dbus-glib/dbus-glib-0.114.tar.gz", "http://dbus.freedesktop.org/releases/dbus-glib/dbus-glib-0.114.tar.gz"]
+file = "br2026/dbus-glib/dbus-glib-0.114.tar.gz"
+sha256 = "c09c5c085b2a0e391b8ee7d783a1d63fe444e96717cc1814d61b5e8fc2827a7c"
+
+[download.br-dropbear-dropbear-2026-91-tar-bz2]
+group = "system"
+urls = ["https://sources.buildroot.net/dropbear/dropbear-2026.91.tar.bz2", "https://matt.ucc.asn.au/dropbear/releases/dropbear-2026.91.tar.bz2"]
+file = "br2026/dropbear/dropbear-2026.91.tar.bz2"
+sha256 = "defa924475abf6bc1e74abc00173e46bfdc804bd47caafa14f5a4ef0cc76da34"
+
+[download.br-e2fsprogs-e2fsprogs-1-47-3-tar-xz]
+group = "system"
+urls = ["https://sources.buildroot.net/e2fsprogs/e2fsprogs-1.47.3.tar.xz", "https://cdn.kernel.org/pub/linux/kernel/people/tytso/e2fsprogs/v1.47.3/e2fsprogs-1.47.3.tar.xz"]
+file = "br2026/e2fsprogs/e2fsprogs-1.47.3.tar.xz"
+sha256 = "857e6ef800feaa2bb4578fbc810214be5d3c88b072ea53c5384733a965737329"
+
+[download.br-expat-expat-2-8-1-tar-xz]
+group = "system"
+urls = ["https://sources.buildroot.net/expat/expat-2.8.1.tar.xz", "https://github.com/libexpat/libexpat/releases/download/R_2_8_1/expat-2.8.1.tar.xz"]
+file = "br2026/expat/expat-2.8.1.tar.xz"
+sha256 = "10b195ee78160a908388180a8fe3603d4e9a12f4755fbf5f3816b23a9d750da0"
+
+[download.br-ffmpeg-ffmpeg-6-1-5-tar-xz]
+group = "system"
+urls = ["https://sources.buildroot.net/ffmpeg/ffmpeg-6.1.5.tar.xz", "https://ffmpeg.org/releases/ffmpeg-6.1.5.tar.xz"]
+file = "br2026/ffmpeg/ffmpeg-6.1.5.tar.xz"
+sha256 = "05fbe9db1f5452a3605bb1d9bf91da9d4bb08162891692e4f172b58c49109412"
+
+[download.br-flac-flac-1-5-0-tar-xz]
+group = "system"
+urls = ["https://sources.buildroot.net/flac/flac-1.5.0.tar.xz", "https://ftp.osuosl.org/pub/xiph/releases/flac/flac-1.5.0.tar.xz"]
+file = "br2026/flac/flac-1.5.0.tar.xz"
+sha256 = "f2c1c76592a82ffff8413ba3c4a1299b6c7ab06c734dee03fd88630485c2b920"
+
+[download.br-gcc-final-gcc-14-3-0-tar-xz]
+group = "system"
+urls = ["https://sources.buildroot.net/gcc/gcc-14.3.0.tar.xz", "https://ftpmirror.gnu.org/gcc/gcc-14.3.0/gcc-14.3.0.tar.xz"]
+file = "br2026/gcc/gcc-14.3.0.tar.xz"
+sha256 = "e0dc77297625631ac8e50fa92fffefe899a4eb702592da5c32ef04e2293aca3a"
+
+[download.br-gettext-gnu-gettext-0-22-4-tar-xz]
+group = "system"
+urls = ["https://sources.buildroot.net/gettext-gnu/gettext-0.22.4.tar.xz", "https://ftpmirror.gnu.org/gettext/gettext-0.22.4.tar.xz"]
+file = "br2026/gettext-gnu/gettext-0.22.4.tar.xz"
+sha256 = "29217f1816ee2e777fa9a01f9956a14139c0c23cc1b20368f06b2888e8a34116"
+
+[download.br-host-acl-acl-2-3-2-tar-xz]
+group = "system"
+urls = ["https://sources.buildroot.net/acl/acl-2.3.2.tar.xz", "https://download.savannah.nongnu.org/releases/acl/acl-2.3.2.tar.xz"]
+file = "br2026/acl/acl-2.3.2.tar.xz"
+sha256 = "97203a72cae99ab89a067fe2210c1cbf052bc492b479eca7d226d9830883b0bd"
+
+[download.br-host-attr-attr-2-5-2-tar-xz]
+group = "system"
+urls = ["https://sources.buildroot.net/attr/attr-2.5.2.tar.xz", "http://download.savannah.gnu.org/releases/attr/attr-2.5.2.tar.xz"]
+file = "br2026/attr/attr-2.5.2.tar.xz"
+sha256 = "f2e97b0ab7ce293681ab701915766190d607a1dba7fae8a718138150b700a70b"
+
+[download.br-host-autoconf-autoconf-2-72-tar-xz]
+group = "system"
+urls = ["https://sources.buildroot.net/autoconf/autoconf-2.72.tar.xz", "https://ftpmirror.gnu.org/autoconf/autoconf-2.72.tar.xz"]
+file = "br2026/autoconf/autoconf-2.72.tar.xz"
+sha256 = "ba885c1319578d6c94d46e9b0dceb4014caafe2490e437a0dbca3f270a223f5a"
+
+[download.br-host-autoconf-archive-autoconf-archive-2023-02-20-tar-xz]
+group = "system"
+urls = ["https://sources.buildroot.net/autoconf-archive/autoconf-archive-2023.02.20.tar.xz", "https://ftpmirror.gnu.org/autoconf-archive/autoconf-archive-2023.02.20.tar.xz"]
+file = "br2026/autoconf-archive/autoconf-archive-2023.02.20.tar.xz"
+sha256 = "71d4048479ae28f1f5794619c3d72df9c01df49b1c628ef85fde37596dc31a33"
+
+[download.br-host-automake-automake-1-16-5-tar-xz]
+group = "system"
+urls = ["https://sources.buildroot.net/automake/automake-1.16.5.tar.xz", "https://ftpmirror.gnu.org/automake/automake-1.16.5.tar.xz"]
+file = "br2026/automake/automake-1.16.5.tar.xz"
+sha256 = "f01d58cd6d9d77fbdca9eb4bbd5ead1988228fdb73d6f7a201f5f8d6b118b469"
+
+[download.br-host-binutils-binutils-2-44-tar-xz]
+group = "system"
+urls = ["https://sources.buildroot.net/binutils/binutils-2.44.tar.xz", "https://ftpmirror.gnu.org/binutils/binutils-2.44.tar.xz"]
+file = "br2026/binutils/binutils-2.44.tar.xz"
+sha256 = "ce2017e059d63e67ddb9240e9d4ec49c2893605035cd60e92ad53177f4377237"
+
+[download.br-host-bison-bison-3-8-2-tar-xz]
+group = "system"
+urls = ["https://sources.buildroot.net/bison/bison-3.8.2.tar.xz", "https://ftpmirror.gnu.org/bison/bison-3.8.2.tar.xz"]
+file = "br2026/bison/bison-3.8.2.tar.xz"
+sha256 = "9bba0214ccf7f1079c5d59210045227bcf619519840ebfa80cd3849cff5a5bf2"
+
+[download.br-host-fakeroot-fakeroot-1-37-1-2-orig-tar-gz]
+group = "system"
+urls = ["https://sources.buildroot.net/fakeroot/fakeroot_1.37.1.2.orig.tar.gz", "https://snapshot.debian.org/archive/debian/20250513T025019Z/pool/main/f/fakeroot/fakeroot_1.37.1.2.orig.tar.gz"]
+file = "br2026/fakeroot/fakeroot_1.37.1.2.orig.tar.gz"
+sha256 = "959496928c8a676ec8377f665ff6a19a707bfad693325f9cc4a4126642f53224"
+
+[download.br-host-flex-flex-2-6-4-tar-gz]
+group = "system"
+urls = ["https://sources.buildroot.net/flex/flex-2.6.4.tar.gz", "https://github.com/westes/flex/files/981163/flex-2.6.4.tar.gz"]
+file = "br2026/flex/flex-2.6.4.tar.gz"
+sha256 = "e87aae032bf07c26f85ac0ed3250998c37621d95f8bd748b31f15b33c45ee995"
+
+[download.br-host-gmp-gmp-6-3-0-tar-xz]
+group = "system"
+urls = ["https://sources.buildroot.net/gmp/gmp-6.3.0.tar.xz", "https://ftpmirror.gnu.org/gmp/gmp-6.3.0.tar.xz"]
+file = "br2026/gmp/gmp-6.3.0.tar.xz"
+sha256 = "a3c2b80201b89e68616f4ad30bc66aee4927c3ce50e33929ca819d5c43538898"
+
+[download.br-host-libffi-libffi-3-4-8-tar-gz]
+group = "system"
+urls = ["https://sources.buildroot.net/libffi/libffi-3.4.8.tar.gz", "https://github.com/libffi/libffi/releases/download/v3.4.8/libffi-3.4.8.tar.gz"]
+file = "br2026/libffi/libffi-3.4.8.tar.gz"
+sha256 = "bc9842a18898bfacb0ed1252c4febcc7e78fa139fd27fdc7a3e30d9d9356119b"
+
+[download.br-host-libglib2-glib-2-86-5-tar-xz]
+group = "system"
+urls = ["https://sources.buildroot.net/libglib2/glib-2.86.5.tar.xz", "https://download.gnome.org/sources/glib/2.86/glib-2.86.5.tar.xz"]
+file = "br2026/libglib2/glib-2.86.5.tar.xz"
+sha256 = "ce85a947bb8b3c0204dbeff79aec39bcb46371c6fafb64ba5b8726c71e038d5f"
+
+[download.br-host-libtool-libtool-2-4-6-tar-xz]
+group = "system"
+urls = ["https://sources.buildroot.net/libtool/libtool-2.4.6.tar.xz", "https://ftpmirror.gnu.org/libtool/libtool-2.4.6.tar.xz"]
+file = "br2026/libtool/libtool-2.4.6.tar.xz"
+sha256 = "7c87a8c2c8c0fc9cd5019e402bed4292462d00a718a7cd5f11218153bf28b26f"
+
+[download.br-host-libxcrypt-libxcrypt-4-5-2-tar-xz]
+group = "system"
+urls = ["https://sources.buildroot.net/libxcrypt/libxcrypt-4.5.2.tar.xz", "https://github.com/besser82/libxcrypt/releases/download/v4.5.2/libxcrypt-4.5.2.tar.xz"]
+file = "br2026/libxcrypt/libxcrypt-4.5.2.tar.xz"
+sha256 = "71513a31c01a428bccd5367a32fd95f115d6dac50fb5b60c779d5c7942aec071"
+
+[download.br-host-libxml2-libxml2-2-15-3-tar-xz]
+group = "system"
+urls = ["https://sources.buildroot.net/libxml2/libxml2-2.15.3.tar.xz", "https://download.gnome.org/sources/libxml2/2.15/libxml2-2.15.3.tar.xz"]
+file = "br2026/libxml2/libxml2-2.15.3.tar.xz"
+sha256 = "78262a6e7ac170d6528ebfe2efccdf220191a5af6a6cd61ea4a9a9a5042c7a07"
+
+[download.br-host-libzlib-zlib-1-3-2-tar-xz]
+group = "system"
+urls = ["https://sources.buildroot.net/libzlib/zlib-1.3.2.tar.xz", "https://www.zlib.net/zlib-1.3.2.tar.xz"]
+file = "br2026/libzlib/zlib-1.3.2.tar.xz"
+sha256 = "d7a0654783a4da529d1bb793b7ad9c3318020af77667bcae35f95d0e42a792f3"
+
+[download.br-host-m4-m4-1-4-21-tar-xz]
+group = "system"
+urls = ["https://sources.buildroot.net/m4/m4-1.4.21.tar.xz", "https://ftpmirror.gnu.org/m4/m4-1.4.21.tar.xz"]
+file = "br2026/m4/m4-1.4.21.tar.xz"
+sha256 = "f25c6ab51548a73a75558742fb031e0625d6485fe5f9155949d6486a2408ab66"
+
+[download.br-host-meson-meson-1-10-1-tar-gz]
+group = "system"
+urls = ["https://sources.buildroot.net/meson/meson-1.10.1.tar.gz", "https://github.com/mesonbuild/meson/releases/download/1.10.1/meson-1.10.1.tar.gz"]
+file = "br2026/meson/meson-1.10.1.tar.gz"
+sha256 = "c42296f12db316a4515b9375a5df330f2e751ccdd4f608430d41d7d6210e4317"
+
+[download.br-host-mpc-mpc-1-3-1-tar-gz]
+group = "system"
+urls = ["https://sources.buildroot.net/mpc/mpc-1.3.1.tar.gz", "https://ftpmirror.gnu.org/mpc/mpc-1.3.1.tar.gz"]
+file = "br2026/mpc/mpc-1.3.1.tar.gz"
+sha256 = "ab642492f5cf882b74aa0cb730cd410a81edcdbec895183ce930e706c1c759b8"
+
+[download.br-host-mpfr-mpfr-4-1-1-tar-xz]
+group = "system"
+urls = ["https://sources.buildroot.net/mpfr/mpfr-4.1.1.tar.xz", "http://www.mpfr.org/mpfr-4.1.1/mpfr-4.1.1.tar.xz"]
+file = "br2026/mpfr/mpfr-4.1.1.tar.xz"
+sha256 = "ffd195bd567dbaffc3b98b23fd00aad0537680c9896171e44fe3ff79e28ac33d"
+
+[download.br-host-ncurses-ncurses-6-6-20251231-tar-gz]
+group = "system"
+urls = ["https://sources.buildroot.net/ncurses/ncurses-6.6-20251231.tar.gz", "https://github.com/ThomasDickey/ncurses-snapshots/archive/v6_6_20251231/ncurses-6.6-20251231.tar.gz"]
+file = "br2026/ncurses/ncurses-6.6-20251231.tar.gz"
+sha256 = "9796dfb0e790bac2a994a86df83adddc1a96021cbc02c44c4f2ea886069bd91d"
+
+[download.br-host-ninja-ninja-1-13-2-tar-gz]
+group = "system"
+urls = ["https://sources.buildroot.net/ninja/ninja-1.13.2.tar.gz", "https://github.com/ninja-build/ninja/archive/v1.13.2/ninja-1.13.2.tar.gz"]
+file = "br2026/ninja/ninja-1.13.2.tar.gz"
+sha256 = "974d6b2f4eeefa25625d34da3cb36bdcebe7fbce40f4c16ac0835fd1c0cbae17"
+
+[download.br-host-patchelf-patchelf-0-13-tar-bz2]
+group = "system"
+urls = ["https://sources.buildroot.net/patchelf/patchelf-0.13.tar.bz2", "https://github.com/NixOS/patchelf/releases/download/0.13/patchelf-0.13.tar.bz2"]
+file = "br2026/patchelf/patchelf-0.13.tar.bz2"
+sha256 = "4c7ed4bcfc1a114d6286e4a0d3c1a90db147a4c3adda1814ee0eee0f9ee917ed"
+
+[download.br-host-pcre2-pcre2-10-47-tar-bz2]
+group = "system"
+urls = ["https://sources.buildroot.net/pcre2/pcre2-10.47.tar.bz2", "https://github.com/PCRE2Project/pcre2/releases/download/pcre2-10.47/pcre2-10.47.tar.bz2"]
+file = "br2026/pcre2/pcre2-10.47.tar.bz2"
+sha256 = "47fe8c99461250d42f89e6e8fdaeba9da057855d06eb7fc08d9ca03fd08d7bc7"
+
+[download.br-host-pkgconf-pkgconf-2-3-0-tar-xz]
+group = "system"
+urls = ["https://sources.buildroot.net/pkgconf/pkgconf-2.3.0.tar.xz", "https://distfiles.ariadne.space/pkgconf/pkgconf-2.3.0.tar.xz"]
+file = "br2026/pkgconf/pkgconf-2.3.0.tar.xz"
+sha256 = "3a9080ac51d03615e7c1910a0a2a8df08424892b5f13b0628a204d3fcce0ea8b"
+
+[download.br-host-python-flit-core-flit-core-3-12-0-tar-gz]
+group = "system"
+urls = ["https://sources.buildroot.net/python-flit-core/flit_core-3.12.0.tar.gz", "https://files.pythonhosted.org/packages/69/59/b6fc2188dfc7ea4f936cd12b49d707f66a1cb7a1d2c16172963534db741b/flit_core-3.12.0.tar.gz"]
+file = "br2026/python-flit-core/flit_core-3.12.0.tar.gz"
+sha256 = "18f63100d6f94385c6ed57a72073443e1a71a4acb4339491615d0f16d6ff01b2"
+
+[download.br-host-python-installer-installer-0-7-0-tar-gz]
+group = "system"
+urls = ["https://sources.buildroot.net/python-installer/installer-0.7.0.tar.gz", "https://files.pythonhosted.org/packages/05/18/ceeb4e3ab3aa54495775775b38ae42b10a92f42ce42dfa44da684289b8c8/installer-0.7.0.tar.gz"]
+file = "br2026/python-installer/installer-0.7.0.tar.gz"
+sha256 = "a26d3e3116289bb08216e0d0f7d925fcef0b0194eedfa0c944bcaaa106c4b631"
+
+[download.br-host-python-packaging-packaging-25-0-tar-gz]
+group = "system"
+urls = ["https://sources.buildroot.net/python-packaging/packaging-25.0.tar.gz", "https://files.pythonhosted.org/packages/a1/d4/1fc4078c65507b51b96ca8f8c3ba19e6a61c8253c72794544580a7b6c24d/packaging-25.0.tar.gz"]
+file = "br2026/python-packaging/packaging-25.0.tar.gz"
+sha256 = "d443872c98d677bf60f6a1f2f8c1cb748e8fe762d2bf9d3148b5599295b0fc4f"
+
+[download.br-host-python-pypa-build-build-1-3-0-tar-gz]
+group = "system"
+urls = ["https://sources.buildroot.net/python-pypa-build/build-1.3.0.tar.gz", "https://files.pythonhosted.org/packages/25/1c/23e33405a7c9eac261dff640926b8b5adaed6a6eb3e1767d441ed611d0c0/build-1.3.0.tar.gz"]
+file = "br2026/python-pypa-build/build-1.3.0.tar.gz"
+sha256 = "698edd0ea270bde950f53aed21f3a0135672206f3911e0176261a31e0e07b397"
+
+[download.br-host-python-pyproject-hooks-pyproject-hooks-1-2-0-tar-gz]
+group = "system"
+urls = ["https://sources.buildroot.net/python-pyproject-hooks/pyproject_hooks-1.2.0.tar.gz", "https://files.pythonhosted.org/packages/e7/82/28175b2414effca1cdac8dc99f76d660e7a4fb0ceefa4b4ab8f5f6742925/pyproject_hooks-1.2.0.tar.gz"]
+file = "br2026/python-pyproject-hooks/pyproject_hooks-1.2.0.tar.gz"
+sha256 = "1e859bd5c40fae9448642dd871adf459e5e2084186e8d2c2a79a824c970da1f8"
+
+[download.br-host-python-setuptools-setuptools-80-9-0-tar-gz]
+group = "system"
+urls = ["https://sources.buildroot.net/python-setuptools/setuptools-80.9.0.tar.gz", "https://files.pythonhosted.org/packages/18/5d/3bf57dcd21979b887f014ea83c24ae194cfcd12b9e0fda66b957c69d1fca/setuptools-80.9.0.tar.gz"]
+file = "br2026/python-setuptools/setuptools-80.9.0.tar.gz"
+sha256 = "f36b47402ecde768dbfafc46e8e4207b4360c654f1f3bb84475f0a28628fb19c"
+
+[download.br-host-python-wheel-wheel-0-46-3-tar-gz]
+group = "system"
+urls = ["https://sources.buildroot.net/python-wheel/wheel-0.46.3.tar.gz", "https://files.pythonhosted.org/packages/89/24/a2eb353a6edac9a0303977c4cb048134959dd2a51b48a269dfc9dde00c8a/wheel-0.46.3.tar.gz"]
+file = "br2026/python-wheel/wheel-0.46.3.tar.gz"
+sha256 = "e3e79874b07d776c40bd6033f8ddf76a7dad46a7b8aa1b2787a83083519a1803"
+
+[download.br-host-python3-python-3-14-5-tar-xz]
+group = "system"
+urls = ["https://sources.buildroot.net/python3/Python-3.14.5.tar.xz", "https://python.org/ftp/python/3.14.5/Python-3.14.5.tar.xz"]
+file = "br2026/python3/Python-3.14.5.tar.xz"
+sha256 = "7e32597b99e5d9a39abed35de4693fa169df3e5850d4c334337ffd6a19a36db6"
+
+[download.br-host-util-linux-util-linux-2-41-4-tar-xz]
+group = "system"
+urls = ["https://sources.buildroot.net/util-linux/util-linux-2.41.4.tar.xz", "https://cdn.kernel.org/pub/linux/utils/util-linux/v2.41/util-linux-2.41.4.tar.xz"]
+file = "br2026/util-linux/util-linux-2.41.4.tar.xz"
+sha256 = "a8c213cc06048862602a42b2d299b340001f6d05c4407b549f3e03521df83688"
+
+[download.br-iw-iw-6-17-tar-xz]
+group = "system"
+urls = ["https://sources.buildroot.net/iw/iw-6.17.tar.xz", "https://cdn.kernel.org/pub/software/network/iw/iw-6.17.tar.xz"]
+file = "br2026/iw/iw-6.17.tar.xz"
+sha256 = "7d182e498289ab39b257da6780d562e415377107f50358ee5b55b8cfe40b1e33"
+
+[download.br-jpeg-turbo-libjpeg-turbo-3-1-2-tar-gz]
+group = "system"
+urls = ["https://sources.buildroot.net/jpeg-turbo/libjpeg-turbo-3.1.2.tar.gz", "https://github.com/libjpeg-turbo/libjpeg-turbo/releases/download/3.1.2/libjpeg-turbo-3.1.2.tar.gz"]
+file = "br2026/jpeg-turbo/libjpeg-turbo-3.1.2.tar.gz"
+sha256 = "8f0012234b464ce50890c490f18194f913a7b1f4e6a03d6644179fa0f867d0cf"
+
+[download.br-libcurl-curl-8-20-0-tar-xz]
+group = "system"
+urls = ["https://sources.buildroot.net/libcurl/curl-8.20.0.tar.xz", "https://curl.se/download/curl-8.20.0.tar.xz"]
+file = "br2026/libcurl/curl-8.20.0.tar.xz"
+sha256 = "63fe2dc148ba0ceae89922ef838f7e5c946272c2e78b7c59fab4b79d3ce2b896"
+
+[download.br-libgcrypt-libgcrypt-1-12-0-tar-bz2]
+group = "system"
+urls = ["https://sources.buildroot.net/libgcrypt/libgcrypt-1.12.0.tar.bz2", "https://gnupg.org/ftp/gcrypt/libgcrypt/libgcrypt-1.12.0.tar.bz2"]
+file = "br2026/libgcrypt/libgcrypt-1.12.0.tar.bz2"
+sha256 = "0311454e678189bad62a7e9402a9dd793025efff6e7449898616e2fc75e0f4f5"
+
+[download.br-libgpg-error-libgpg-error-1-61-tar-bz2]
+group = "system"
+urls = ["https://sources.buildroot.net/libgpg-error/libgpg-error-1.61.tar.bz2", "https://www.gnupg.org/ftp/gcrypt/libgpg-error/libgpg-error-1.61.tar.bz2"]
+file = "br2026/libgpg-error/libgpg-error-1.61.tar.bz2"
+sha256 = "7a85413f2bc354f4f8aa832b718af122e48965e9e0eb9012ee659c13c6385c93"
+
+[download.br-libiconv-libiconv-1-18-tar-gz]
+group = "system"
+urls = ["https://sources.buildroot.net/libiconv/libiconv-1.18.tar.gz", "https://ftpmirror.gnu.org/libiconv/libiconv-1.18.tar.gz"]
+file = "br2026/libiconv/libiconv-1.18.tar.gz"
+sha256 = "3b08f5f4f9b4eb82f151a7040bfd6fe6c6fb922efe4b1659c66ea933276965e8"
+
+[download.br-libid3tag-0-16-3-tar-gz]
+group = "system"
+urls = ["https://sources.buildroot.net/libid3tag/0.16.3.tar.gz", "https://codeberg.org/tenacityteam/libid3tag/archive/0.16.3.tar.gz"]
+file = "br2026/libid3tag/0.16.3.tar.gz"
+sha256 = "0561009778513a95d91dac33cee8418d6622f710450a7cb56a74636d53b588cb"
+
+[download.br-liblockfile-liblockfile-1-17-orig-tar-gz]
+group = "system"
+urls = ["https://sources.buildroot.net/liblockfile/liblockfile_1.17.orig.tar.gz", "http://snapshot.debian.org/archive/debian/20210128T210947Z/pool/main/libl/liblockfile/liblockfile_1.17.orig.tar.gz"]
+file = "br2026/liblockfile/liblockfile_1.17.orig.tar.gz"
+sha256 = "6e937f3650afab4aac198f348b89b1ca42edceb17fb6bb0918f642143ccfd15e"
+
+[download.br-libmad-libmad-0-15-1b-orig-tar-gz]
+group = "system"
+urls = ["https://sources.buildroot.net/libmad/libmad_0.15.1b.orig.tar.gz", "http://snapshot.debian.org/archive/debian/20190310T213528Z/pool/main/libm/libmad/libmad_0.15.1b.orig.tar.gz"]
+file = "br2026/libmad/libmad_0.15.1b.orig.tar.gz"
+sha256 = "bbfac3ed6bfbc2823d3775ebb931087371e142bb0e9bb1bee51a76a6e0078690"
+
+[download.br-libmms-libmms-0-6-4-tar-gz]
+group = "system"
+urls = ["https://sources.buildroot.net/libmms/libmms-0.6.4.tar.gz", "http://downloads.sourceforge.net/project/libmms/libmms/0.6.4/libmms-0.6.4.tar.gz"]
+file = "br2026/libmms/libmms-0.6.4.tar.gz"
+sha256 = "3c05e05aebcbfcc044d9e8c2d4646cd8359be39a3f0ba8ce4e72a9094bee704f"
+
+[download.br-libnl-libnl-3-11-0-tar-gz]
+group = "system"
+urls = ["https://sources.buildroot.net/libnl/libnl-3.11.0.tar.gz", "https://github.com/thom311/libnl/releases/download/libnl3_11_0/libnl-3.11.0.tar.gz"]
+file = "br2026/libnl/libnl-3.11.0.tar.gz"
+sha256 = "2a56e1edefa3e68a7c00879496736fdbf62fc94ed3232c0baba127ecfa76874d"
+
+[download.br-libogg-libogg-1-3-6-tar-xz]
+group = "system"
+urls = ["https://sources.buildroot.net/libogg/libogg-1.3.6.tar.xz", "http://downloads.xiph.org/releases/ogg/libogg-1.3.6.tar.xz"]
+file = "br2026/libogg/libogg-1.3.6.tar.xz"
+sha256 = "5c8253428e181840cd20d41f3ca16557a9cc04bad4a3d04cce84808677fa1061"
+
+[download.br-libopenssl-openssl-3-6-2-tar-gz]
+group = "system"
+urls = ["https://sources.buildroot.net/libopenssl/openssl-3.6.2.tar.gz", "https://github.com/openssl/openssl/releases/download/openssl-3.6.2/openssl-3.6.2.tar.gz"]
+file = "br2026/libopenssl/openssl-3.6.2.tar.gz"
+sha256 = "aaf51a1fe064384f811daeaeb4ec4dce7340ec8bd893027eee676af31e83a04f"
+
+[download.br-libpng-libpng-1-6-58-tar-xz]
+group = "system"
+urls = ["https://sources.buildroot.net/libpng/libpng-1.6.58.tar.xz", "https://downloads.sourceforge.net/project/libpng/libpng16/1.6.58/libpng-1.6.58.tar.xz"]
+file = "br2026/libpng/libpng-1.6.58.tar.xz"
+sha256 = "28eb403f51f0f7405249132cecfe82ea5c0ef97f1b32c5a65828814ae0d34775"
+
+[download.br-libtheora-libtheora-1-2-0-tar-xz]
+group = "system"
+urls = ["https://sources.buildroot.net/libtheora/libtheora-1.2.0.tar.xz", "http://downloads.xiph.org/releases/theora/libtheora-1.2.0.tar.xz"]
+file = "br2026/libtheora/libtheora-1.2.0.tar.xz"
+sha256 = "ebdf77a8f5c0a8f7a9e42323844fa09502b34eb1d1fece7b5f54da41fe2122ec"
+
+[download.br-libvorbis-libvorbis-1-3-7-tar-xz]
+group = "system"
+urls = ["https://sources.buildroot.net/libvorbis/libvorbis-1.3.7.tar.xz", "https://downloads.xiph.org/releases/vorbis/libvorbis-1.3.7.tar.xz"]
+file = "br2026/libvorbis/libvorbis-1.3.7.tar.xz"
+sha256 = "b33cc4934322bcbf6efcbacf49e3ca01aadbea4114ec9589d1b1e9d20f72954b"
+
+[download.br-lockfile-progs-lockfile-progs-0-1-19-tar-gz]
+group = "system"
+urls = ["https://sources.buildroot.net/lockfile-progs/lockfile-progs_0.1.19.tar.gz", "http://snapshot.debian.org/archive/debian/20210903T205304Z/pool/main/l/lockfile-progs/lockfile-progs_0.1.19.tar.gz"]
+file = "br2026/lockfile-progs/lockfile-progs_0.1.19.tar.gz"
+sha256 = "2c5704b01c8f474f82921780e4592a927b2bf6a6d7616354a6c5d7cd5664857e"
+
+[download.br-madplay-madplay-0-15-2b-tar-gz]
+group = "system"
+urls = ["https://sources.buildroot.net/madplay/madplay-0.15.2b.tar.gz", "http://downloads.sourceforge.net/project/mad/madplay/0.15.2b/madplay-0.15.2b.tar.gz"]
+file = "br2026/madplay/madplay-0.15.2b.tar.gz"
+sha256 = "5a79c7516ff7560dffc6a14399a389432bc619c905b13d3b73da22fa65acede0"
+
+[download.br-mdnsd-mdnsd-0-12-tar-gz]
+group = "system"
+urls = ["https://sources.buildroot.net/mdnsd/mdnsd-0.12.tar.gz", "https://github.com/troglobit/mdnsd/releases/download/v0.12/mdnsd-0.12.tar.gz"]
+file = "br2026/mdnsd/mdnsd-0.12.tar.gz"
+sha256 = "1af8742ab82a0af88d99d0b15508358ad4305879ab039631bea889138f5c87e8"
+
+[download.br-mtd-mtd-utils-2-2-1-tar-bz2]
+group = "system"
+urls = ["https://sources.buildroot.net/mtd/mtd-utils-2.2.1.tar.bz2", "https://infraroot.at/pub/mtd/mtd-utils-2.2.1.tar.bz2"]
+file = "br2026/mtd/mtd-utils-2.2.1.tar.bz2"
+sha256 = "f7ae20b2eb79ee83441468f0b99d897024cd96ff853eea59106fb1952065c803"
+
+[download.br-netcat-netcat-0-7-1-tar-gz]
+group = "system"
+urls = ["https://sources.buildroot.net/netcat/netcat-0.7.1.tar.gz", "http://downloads.sourceforge.net/project/netcat/netcat/0.7.1/netcat-0.7.1.tar.gz"]
+file = "br2026/netcat/netcat-0.7.1.tar.gz"
+sha256 = "30719c9a4ffbcf15676b8f528233ccc54ee6cba96cb4590975f5fd60c68a066f"
+
+[download.br-readline-readline-8-3-tar-gz]
+group = "system"
+urls = ["https://sources.buildroot.net/readline/readline-8.3.tar.gz", "https://ftpmirror.gnu.org/readline/readline-8.3.tar.gz"]
+file = "br2026/readline/readline-8.3.tar.gz"
+sha256 = "fe5383204467828cd495ee8d1d3c037a7eba1389c22bc6a041f627976f9061cc"
+
+[download.br-speex-speex-1-2-1-tar-gz]
+group = "system"
+urls = ["https://sources.buildroot.net/speex/speex-1.2.1.tar.gz", "https://downloads.xiph.org/releases/speex/speex-1.2.1.tar.gz"]
+file = "br2026/speex/speex-1.2.1.tar.gz"
+sha256 = "4b44d4f2b38a370a2d98a78329fefc56a0cf93d1c1be70029217baae6628feea"
+
+[download.br-speexdsp-speexdsp-1-2-1-tar-gz]
+group = "system"
+urls = ["https://sources.buildroot.net/speexdsp/speexdsp-1.2.1.tar.gz", "https://downloads.xiph.org/releases/speex/speexdsp-1.2.1.tar.gz"]
+file = "br2026/speexdsp/speexdsp-1.2.1.tar.gz"
+sha256 = "8c777343e4a6399569c72abc38a95b24db56882c83dbdb6c6424a5f4aeb54d3d"
+
+[download.br-strace-strace-6-19-tar-xz]
+group = "system"
+urls = ["https://sources.buildroot.net/strace/strace-6.19.tar.xz", "https://github.com/strace/strace/releases/download/v6.19/strace-6.19.tar.xz"]
+file = "br2026/strace/strace-6.19.tar.xz"
+sha256 = "e076c851eec0972486ec842164fdc54547f9d17abd3d1449de8b120f5d299143"
+
+[download.br-uclibc-uclibc-ng-1-0-57-tar-xz]
+group = "system"
+urls = ["https://sources.buildroot.net/uclibc/uClibc-ng-1.0.57.tar.xz", "https://downloads.uclibc-ng.org/releases/1.0.57/uClibc-ng-1.0.57.tar.xz"]
+file = "br2026/uclibc/uClibc-ng-1.0.57.tar.xz"
+sha256 = "8bc734b584e23ff6ae3d0ebb4c0fb1d1d814c58c82822b93130d436afa7ace8b"
+
+[download.br-wireless-tools-wireless-tools-30-pre9-tar-gz]
+group = "system"
+urls = ["https://sources.buildroot.net/wireless_tools/wireless_tools.30.pre9.tar.gz", "https://hewlettpackard.github.io/wireless-tools/wireless_tools.30.pre9.tar.gz"]
+file = "br2026/wireless_tools/wireless_tools.30.pre9.tar.gz"
+sha256 = "abd9c5c98abf1fdd11892ac2f8a56737544fe101e1be27c6241a564948f34c63"
+
+[download.br-wpa-supplicant-wpa-supplicant-2-11-tar-gz]
+group = "system"
+urls = ["https://sources.buildroot.net/wpa_supplicant/wpa_supplicant-2.11.tar.gz", "http://w1.fi/releases/wpa_supplicant-2.11.tar.gz"]
+file = "br2026/wpa_supplicant/wpa_supplicant-2.11.tar.gz"
+sha256 = "912ea06f74e30a8e36fbb68064d6cdff218d8d591db0fc5d75dee6c81ac7fc0a"
+
+[download.br-crda-crda-4-15-tar-gz]
+group = "system"
+urls = ["https://sources.buildroot.net/crda/crda-4.15.tar.gz", "https://git.kernel.org/pub/scm/linux/kernel/git/mcgrof/crda.git/snapshot/crda-4.15.tar.gz"]
+file = "br2026/crda/crda-4.15.tar.gz"
+sha256 = "99eb58f774f6016c380def0d80fffd573d2be0ad5f117b678c1968ed5657af82"
+
+[download.br-gnupg-gnupg-1-4-23-tar-bz2]
+group = "system"
+urls = ["https://sources.buildroot.net/gnupg/gnupg-1.4.23.tar.bz2", "https://gnupg.org/ftp/gcrypt/gnupg/gnupg-1.4.23.tar.bz2"]
+file = "br2026/gnupg/gnupg-1.4.23.tar.bz2"
+sha256 = "c9462f17e651b6507848c08c430c791287cd75491f8b5a8b50c6ed46b12678ba"
+
+[download.br-host-python-pycryptodomex-pycryptodomex-3-23-0-tar-gz]
+group = "system"
+urls = ["https://sources.buildroot.net/python-pycryptodomex/pycryptodomex-3.23.0.tar.gz", "https://files.pythonhosted.org/packages/c9/85/e24bf90972a30b0fcd16c73009add1d7d7cd9140c2498a68252028899e41/pycryptodomex-3.23.0.tar.gz"]
+file = "br2026/python-pycryptodomex/pycryptodomex-3.23.0.tar.gz"
+sha256 = "71909758f010c82bc99b0abf4ea12012c98962fbf0583c2164f8b84533c2e4da"
+
+[download.br-wireless-regdb-wireless-regdb-2026-05-30-tar-xz]
+group = "system"
+urls = ["https://sources.buildroot.net/wireless-regdb/wireless-regdb-2026.05.30.tar.xz", "https://cdn.kernel.org/pub/software/network/wireless-regdb/wireless-regdb-2026.05.30.tar.xz"]
+file = "br2026/wireless-regdb/wireless-regdb-2026.05.30.tar.xz"
+sha256 = "8a27bfc081bafed8c24dd70fab0d96f098e5a0bfcd08d3da672595f225ab8993"
+
+[download.br-protobuf-karotz-protobuf-2-3-0-tar-bz2]
+group = "system"
+urls = ["https://storage.googleapis.com/google-code-archive-downloads/v2/code.google.com/protobuf/protobuf-2.3.0.tar.bz2"]
+file = "br2026/protobuf-karotz/protobuf-2.3.0.tar.bz2"
+sha256 = "760c7707c3fe9ce801916bbd3067d711a33aa550c01b32d1e1761119cf6280ac"
+
+# The system build's packages of its own: libmpd and the linphone stack, and
+# intltool for linphone (system/pin-downloads.py, URLs tidied).
+
+[download.br-host-intltool-intltool-0-51-0-tar-gz]
+group = "system"
+urls = ["https://sources.buildroot.net/intltool/intltool-0.51.0.tar.gz", "https://launchpad.net/intltool/trunk/0.51.0/+download/intltool-0.51.0.tar.gz"]
+file = "br2026/intltool/intltool-0.51.0.tar.gz"
+sha256 = "67c74d94196b153b774ab9f89b2fa6c6ba79352407037c8c14d5aeb334e959cd"
+
+[download.br-host-libxml-parser-perl-xml-parser-2-47-tar-gz]
+group = "system"
+urls = ["https://sources.buildroot.net/libxml-parser-perl/XML-Parser-2.47.tar.gz", "https://cpan.metacpan.org/authors/id/T/TO/TODDR/XML-Parser-2.47.tar.gz"]
+file = "br2026/libxml-parser-perl/XML-Parser-2.47.tar.gz"
+sha256 = "ad4aae643ec784f489b956abe952432871a622d4e2b5c619e8855accbfc4d1d8"
+
+[download.br-libexosip2-karotz-libexosip2-3-5-0-tar-gz]
+group = "system"
+urls = ["https://download-mirror.savannah.gnu.org/releases/exosip/libeXosip2-3.5.0.tar.gz"]
+file = "br2026/libexosip2-karotz/libeXosip2-3.5.0.tar.gz"
+sha256 = "46010e62a6f675df13e5be759d033b6bce1bd5882eebb4acd553f9dd3b461afc"
+
+[download.br-libmpd-karotz-libmpd-0-17-0-tar-gz]
+group = "system"
+urls = ["https://sources.buildroot.net/libmpd-0.17.0.tar.gz", "https://www.musicpd.org/download/libmpd/0.17.0/libmpd-0.17.0.tar.gz"]
+file = "br2026/libmpd-karotz/libmpd-0.17.0.tar.gz"
+sha256 = "f27b5931d47f59131e09bd9bd8835085e2f614ca1584bfbcaf00a2751756f170"
+
+[download.br-libosip2-karotz-libosip2-3-5-0-tar-gz]
+group = "system"
+urls = ["https://ftp.gnu.org/gnu/osip/libosip2-3.5.0.tar.gz", "https://download-mirror.savannah.gnu.org/releases/osip/libosip2-3.5.0.tar.gz"]
+file = "br2026/libosip2-karotz/libosip2-3.5.0.tar.gz"
+sha256 = "dd955daa24d9ce2de6709b8c13e7c04ebc3afa8ac094d6a15a02a075be719a91"
+
+[download.br-linphone-karotz-linphone-3-4-1-tar-gz]
+group = "system"
+urls = ["https://download-mirror.savannah.gnu.org/releases/linphone/3.4.x/sources/linphone-3.4.1.tar.gz"]
+file = "br2026/linphone-karotz/linphone-3.4.1.tar.gz"
+sha256 = "5fb650b0fdfc39ca70e0401611be33272f38fd771b331738aee8421d670b8f17"
+
+# Python 2.4.5, dbus-python 0.83.0 and simplejson 2.0.7 for the system build.
+
+[download.br-python24-karotz-python-2-4-5-tar-bz2]
+group = "system"
+urls = ["https://sources.buildroot.net/Python-2.4.5.tar.bz2", "https://www.python.org/ftp/python/2.4.5/Python-2.4.5.tar.bz2"]
+file = "br2026/python24-karotz/Python-2.4.5.tar.bz2"
+sha256 = "21b051c0c12f1eb610dba16e0830b029ec42b1d9e5bccacc0ed0b0d3b62ec28d"
+
+[download.br-dbus-python-karotz-dbus-python-0-83-0-tar-gz]
+group = "system"
+urls = ["https://sources.buildroot.net/dbus-python-0.83.0.tar.gz", "https://dbus.freedesktop.org/releases/dbus-python/dbus-python-0.83.0.tar.gz"]
+file = "br2026/dbus-python-karotz/dbus-python-0.83.0.tar.gz"
+sha256 = "89dd1d5aa5c2ba04677d1aa2616caa50274d8c08f3d6bc164e6f7b9930776191"
+
+[download.br-simplejson-karotz-simplejson-2-0-7-tar-gz]
+group = "system"
+urls = ["https://files.pythonhosted.org/packages/source/s/simplejson/simplejson-2.0.7.tar.gz"]
+file = "br2026/simplejson-karotz/simplejson-2.0.7.tar.gz"
+sha256 = "2b349ed73540f8ce68bdfa29e08e3dff9d885027bfa06d6a871a09fe381ddbbe"
+
+# mpd 0.15.12 for the system build.
+
+[download.br-mpd-karotz-mpd-0-15-12-tar-bz2]
+group = "system"
+urls = ["https://www.musicpd.org/download/mpd/0.15/mpd-0.15.12.tar.bz2"]
+file = "br2026/mpd-karotz/mpd-0.15.12.tar.bz2"
+sha256 = "0a9ff27d265b3ca2892bf56f2b01acffc657a81833e83dabbec9b7a4be80b3b3"
+
+# Tremor (fixed-point Ogg Vorbis) for the system build's mpd.
+
+[download.br-tremor-tremor-7c30a66346199f3f09017a09567c6c8a3a0eedc8-git4-tar-gz]
+group = "system"
+urls = ["https://sources.buildroot.net/tremor/tremor-7c30a66346199f3f09017a09567c6c8a3a0eedc8-git4.tar.gz"]
+file = "br2026/tremor/tremor-7c30a66346199f3f09017a09567c6c8a3a0eedc8-git4.tar.gz"
+sha256 = "4ff8e311a35218c3b411a617196b5c367f5e120fad394eb61400f9c2742e5d0a"

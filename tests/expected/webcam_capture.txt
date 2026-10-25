@@ -1,0 +1,16 @@
+== registered: True
+== takeSnapshot
+takeSnapshot('ia-file:corr-file', 'file', 0) -> boolean true
+takeSnapshot('ia-up:corr-up', 'http://127.0.0.1:9/upload', 0) -> boolean false
+takeSnapshot('noseparator', 'http://127.0.0.1:9/upload', 0) -> boolean false
+== /tmp/picture.jpg is a JPEG: True
+== signals
+com.mindscape.karotz.KarotzInterface.registered()
+com.mindscape.karotz.KarotzInterface.event(string "corr-file", int32 4)
+com.mindscape.karotz.KarotzInterface.event(string "corr-up", int32 4)
+com.mindscape.karotz.KarotzInterface.event(string "", int32 4)
+== device I/O
+open /dev/camera
+ioctl /dev/camera 0xc004f900
+read /dev/camera 614400
+== daemon still running: True

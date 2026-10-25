@@ -1,0 +1,32 @@
+{
+  "lang": "en-US",
+  "timezone": "Europe/Paris",
+  "playsounds": true,
+  "apps": {
+    "hello": {
+      "instances": [
+        {"name": "default"},
+        {"name": "tag", "rfid": "E0040100C0FFEE42", "params": {"greeting": "hi"}}
+      ]
+    },
+    "devicetest": {
+      "instances": [
+        {"name": "default", "params": {"server": "http://192.168.1.10:8080"}}
+      ]
+    }
+  },
+  "schedules": [
+    {"app": "hello", "instance": "default", "weekly": {"day": 1, "hour": 8, "minute": 0}}
+  ],
+  "wakeup": [
+    {"day": 1, "wake": [7, 0], "sleep": [22, 30]}
+  ],
+  "rabbit": {"firstname": "my", "lastname": "rabbit", "uuid": "rabbit"},
+  "contacts": [
+    {"firstname": "Ann", "lastname": "Lee", "uuid": "u-ann", "objects": [{"idDB": "o1", "name": "rabbit"}]}
+  ],
+  "messages": [
+    {"id": "m1", "from": {"firstname": "Ann", "uuid": "u-ann"}, "date": 1700000000, "status": "UNREAD",
+     "type": "TEXT", "content": "hello from Ann"}
+  ]
+}

@@ -1,0 +1,33 @@
+platform-linux.cc: uClibc defines __GLIBC__ but has no backtrace(), and its ARM sigcontext has arm_pc, arm_sp and arm_fp
+
+--- a/src/platform-linux.cc
++++ b/src/platform-linux.cc
+@@ -45,7 +45,7 @@
+ #include <sys/stat.h>   // open
+ #include <fcntl.h>      // open
+ #include <unistd.h>     // sysconf
+-#ifdef __GLIBC__
++#if defined(__GLIBC__) && !defined(__UCLIBC__)
+ #include <execinfo.h>   // backtrace, backtrace_symbols
+ #endif  // def __GLIBC__
+ #include <strings.h>    // index
+@@ -442,8 +442,8 @@
+ 
+ 
+ int OS::StackWalk(Vector<OS::StackFrame> frames) {
+-  // backtrace is a glibc extension.
+-#ifdef __GLIBC__
++  // backtrace is a glibc extension (uClibc defines __GLIBC__ without it).
++#if defined(__GLIBC__) && !defined(__UCLIBC__)
+   int frames_size = frames.length();
+   ScopedVector<void*> addresses(frames_size);
+ 
+@@ -790,7 +790,7 @@
+     sample->fp = reinterpret_cast<Address>(mcontext.gregs[REG_RBP]);
+ #elif V8_HOST_ARCH_ARM
+ // An undefined macro evaluates to 0, so this applies to Android's Bionic also.
+-#if (__GLIBC__ < 2 || (__GLIBC__ == 2 && __GLIBC_MINOR__ <= 3))
++#if (__GLIBC__ < 2 || (__GLIBC__ == 2 && __GLIBC_MINOR__ <= 3)) && !defined(__UCLIBC__)
+     sample->pc = reinterpret_cast<Address>(mcontext.gregs[R15]);
+     sample->sp = reinterpret_cast<Address>(mcontext.gregs[R13]);
+     sample->fp = reinterpret_cast<Address>(mcontext.gregs[R11]);

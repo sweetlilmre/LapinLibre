@@ -1,0 +1,190 @@
+libmpd: the Karotz changes
+
+- mpd_database_get_genres() and mpd_getNextGenre(), and the genre table for "list";
+- the server's "count_externalClient" status field: in mpd_Status, in the server state,
+  with a change flag (0x10000, unused upstream) and mpd_status_get_count_externalClient().
+
+--- a/src/libmpdclient.h
++++ b/src/libmpdclient.h
+@@ -204,6 +204,8 @@
+ 	int updatingDb;
+ 	/* error */
+ 	char * error;
++	/* Karotz: the server's count of external clients ("count_externalClient") */
++	int count_externalClient;
+ } mpd_Status;
+ 
+ void mpd_sendStatusCommand(mpd_Connection * connection);
+@@ -434,6 +436,7 @@
+ #define MPD_TABLE_ALBUM		MPD_TAG_ITEM_ALBUM
+ #define MPD_TABLE_TITLE		MPD_TAG_ITEM_TITLE
+ #define MPD_TABLE_FILENAME	MPD_TAG_ITEM_FILENAME
++#define MPD_TABLE_GENRE		MPD_TAG_ITEM_GENRE
+ 
+ void mpd_sendSearchCommand(mpd_Connection * connection, int table,
+ 		const char * str);
+@@ -449,6 +452,8 @@
+ char * mpd_getNextArtist(mpd_Connection * connection);
+ 
+ char * mpd_getNextAlbum(mpd_Connection * connection);
++
++char * mpd_getNextGenre(mpd_Connection * connection);
+ 
+ char * mpd_getNextTag(mpd_Connection *connection, int type);
+ 
+--- a/src/libmpdclient.c
++++ b/src/libmpdclient.c
+@@ -753,6 +753,7 @@
+ 	status->crossfade = -1;
+ 	status->error = NULL;
+ 	status->updatingDb = 0;
++	status->count_externalClient = 0;
+ 
+ 	if(connection->error) {
+ 		free(status);
+@@ -825,6 +826,9 @@
+ 				if (tok && (strchr(tok,0) > (tok+1)))
+ 					status->channels = atoi(tok+1);
+ 			}
++		}
++		else if(strcmp(re->name,"count_externalClient")==0) {
++			status->count_externalClient = atoi(re->value);
+ 		}
+ 
+ 		mpd_getNextReturnElement(connection);
+@@ -1345,6 +1349,10 @@
+ 	return mpd_getNextReturnElementNamed(connection,"Album");
+ }
+ 
++char * mpd_getNextGenre(mpd_Connection * connection) {
++	return mpd_getNextReturnElementNamed(connection,"Genre");
++}
++
+ void mpd_sendPlaylistInfoCommand(mpd_Connection * connection, int songPos) {
+ 	int len = strlen("playlistinfo")+2+INTLEN+3;
+ 	char *string = malloc(len);
+@@ -1435,6 +1443,7 @@
+ 	char *string;
+ 	if(table == MPD_TABLE_ARTIST) strcpy(st,"artist");
+ 	else if(table == MPD_TABLE_ALBUM) strcpy(st,"album");
++	else if(table == MPD_TABLE_GENRE) strcpy(st,"genre");
+ 	else {
+ 		connection->error = 1;
+ 		strcpy(connection->errorStr,"unknown table for list");
+--- a/src/libmpd-internal.h
++++ b/src/libmpd-internal.h
+@@ -51,6 +51,8 @@
+ 	int		        channels;
+     unsigned long   playlistLength;
+     char            error[512];
++    /* Karotz */
++    int             count_externalClient;
+ } MpdServerState;
+ 
+ 
+--- a/src/libmpd.h
++++ b/src/libmpd.h
+@@ -374,6 +374,8 @@
+ 	MPD_CST_BITRATE       = 0x4000,
+ 	/** the audio format of the playing song changed.*/
+ 	MPD_CST_AUDIOFORMAT   = 0x8000,
++	/** Karotz: the server's count of external clients changed */
++	MPD_CST_EXTERNAL_CLIENT = 0x10000,
+ 	/** the queue has changed */
+ 	MPD_CST_STORED_PLAYLIST		  = 0x20000,
+     /** server error */
+--- a/src/libmpd-status.h
++++ b/src/libmpd-status.h
+@@ -124,6 +124,9 @@
+  */
+ int 		mpd_status_get_channels			(MpdObj *mi);
+ 
++/* Karotz: the server's count of external clients */
++int mpd_status_get_count_externalClient(MpdObj *mi);
++
+ 
+ 
+ /**
+--- a/src/libmpd-status.c
++++ b/src/libmpd-status.c
+@@ -210,6 +210,13 @@
+ 	{
+ 		what_changed |= MPD_CST_AUDIOFORMAT;
+ 		mi->CurrentState.channels = mi->status->channels;
++	}
++
++	/* Karotz: the server's count of external clients */
++	if(mi->CurrentState.count_externalClient != mi->status->count_externalClient)
++	{
++		what_changed |= MPD_CST_EXTERNAL_CLIENT;
++		mi->CurrentState.count_externalClient = mi->status->count_externalClient;
+ 	}
+ 
+     if(mi->status->error)
+@@ -472,6 +479,12 @@
+ 	return mi->CurrentState.channels;
+ }
+ 
++/* Karotz: unlike the other getters, no checks. */
++int mpd_status_get_count_externalClient(MpdObj *mi)
++{
++	return mi->CurrentState.count_externalClient;
++}
++
+ unsigned int mpd_status_get_samplerate(MpdObj *mi)
+ {
+ 	if(mi == NULL)
+--- a/src/libmpd-database.h
++++ b/src/libmpd-database.h
+@@ -36,6 +36,8 @@
+  * @returns A #MpdData list.
+  */
+ MpdData *	mpd_database_get_albums		(MpdObj *mi, char *artist);
++/* Karotz: every genre in the database, as MPD_DATA_TYPE_TAG data */
++MpdData *	mpd_database_get_genres		(MpdObj *mi);
+ 
+ 
+ /**
+--- a/src/libmpd-database.c
++++ b/src/libmpd-database.c
+@@ -117,6 +117,40 @@
+ 		data = mpd_new_data_struct_append(data);
+ 		data->type = MPD_DATA_TYPE_TAG;
+ 		data->tag_type = MPD_TAG_ITEM_ALBUM;
++		data->tag = string;
++	}
++	mpd_finishCommand(mi->connection);
++
++	/* unlock */
++	mpd_unlock_conn(mi);
++	if(data == NULL)
++	{
++		return NULL;
++	}
++	return mpd_data_get_first(data);
++}
++
++MpdData * mpd_database_get_genres(MpdObj *mi)
++{
++	char *string = NULL;
++	MpdData *data = NULL;
++	if(!mpd_check_connected(mi))
++	{
++		debug_printf(DEBUG_WARNING,"not connected\n");
++		return NULL;
++	}
++	if(mpd_lock_conn(mi))
++	{
++		debug_printf(DEBUG_ERROR,"lock failed\n");
++		return NULL;
++	}
++
++	mpd_sendListCommand(mi->connection,MPD_TABLE_GENRE,NULL);
++	while (( string = mpd_getNextGenre(mi->connection)) != NULL)
++	{
++		data = mpd_new_data_struct_append(data);
++		data->type = MPD_DATA_TYPE_TAG;
++		data->tag_type = MPD_TAG_ITEM_GENRE;
+ 		data->tag = string;
+ 	}
+ 	mpd_finishCommand(mi->connection);
