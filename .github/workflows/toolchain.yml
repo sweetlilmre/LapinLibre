@@ -37,6 +37,13 @@ jobs:
       - name: Host prerequisites
         run: |
           sudo sysctl kernel.apparmor_restrict_unprivileged_userns=0
+          # The runner's first apt mirror (azure.archive.ubuntu.com) can trickle for many minutes without
+          # apt moving to the next one (https://github.com/actions/runner-images/issues/14823), so it is
+          # left out of the mirror list.
+          if [ -f /etc/apt/apt-mirrors.txt ]; then
+              sudo sed -i '/azure\.archive\.ubuntu\.com/d' /etc/apt/apt-mirrors.txt
+              cat /etc/apt/apt-mirrors.txt
+          fi
           bash scripts/host-prereqs.sh --install
 
       - name: Download cache
