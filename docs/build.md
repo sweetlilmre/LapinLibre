@@ -617,6 +617,7 @@ This section tells what the workflows in `.github/workflows` do. They use only G
 | `release` | A pushed tag `v*` | Builds the stages `check fetch toolchain system v8 kernel userland image` on `ubuntu-24.04` from the tagged commit, zips `out/usbkey`, and makes the release with the tag's name and the files `LapinLibre-VERSION.zip` and `LapinLibre-VERSION.zip.sha256`. |
 | `toolchain` | "Run workflow" on GitHub | Builds the toolchain from source (`LAPIN_TOOLCHAIN=build ./build.sh check fetch toolchain`) and makes the release `toolchain.name` with `NAME.tar.gz` and its SHA-256, not marked as the latest release. It stops if that release exists. See [Publish a new toolchain](#publish-a-new-toolchain). |
 | `release` | "Run workflow" on GitHub | The same build and zip from the chosen branch. The zip is kept with the run for 7 days. Nothing is published. |
+| `downloads` | A push to `main` that changes `config.toml`, and "Run workflow" on GitHub | Fetches every pinned download (`./build.sh fetch`) into the cache the `release` and `toolchain` workflows restore, saved under `main`. A cache belongs to the branch or tag of the run that saved it, and a run can only restore its own and `main`'s, so a cache saved by one release tag's run is never seen by the next tag's. With the key already cached it stops after the restore. |
 
 The `release` workflow:
 
@@ -624,8 +625,8 @@ The `release` workflow:
 - Puts the work location in the runner's temporary folder (`$RUNNER_TEMP/lapinlibre`).
 - Removes the runner's unused SDKs, to make space for the work location (about 13 GB with the downloads), and prints the free space of `/` and `/mnt` before and after. It lets unprivileged users make user namespaces.
 - If the build fails, keeps the stages' logs (`work/**/*.log`) with the run for 7 days.
-- Installs the packages with `scripts/host-prereqs.sh --install`.
-- Keeps `dl/` in the workflow cache, with a key from the hash of `config.toml`. The other stages start from nothing, so `system` takes most of the time.
+- Installs the packages with `scripts/host-prereqs.sh --install`, after removing `azure.archive.ubuntu.com` from the runner's mirror list (`/etc/apt/apt-mirrors.txt`). That mirror can trickle for many minutes without apt moving to the next one ([actions/runner-images#14823](https://github.com/actions/runner-images/issues/14823)).
+- Restores `dl/` from the workflow cache, with a key from the hash of `config.toml`; the `downloads` workflow fills it from `main`. The other stages start from nothing, so `system` takes most of the time.
 - Does not run the tests. Run them on the build host before you push the tag (see [Make a release](#make-a-release)).
 
 ### Test suites

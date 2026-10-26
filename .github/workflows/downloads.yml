@@ -1,0 +1,46 @@
+# SPDX-License-Identifier: MIT
+# Fill the download cache from main. A workflow cache belongs to the branch or tag of the run that
+# saved it, and a run can only restore its own and the default branch's, so a cache saved by a
+# release tag's run is never seen by the next tag's. This workflow fetches every pinned download
+# (./build.sh fetch) into the same path and key the release and toolchain workflows restore
+# (dl-<hash of config.toml>), saved under main. With the key already cached it restores it and
+# stops, so it costs seconds.
+name: downloads
+
+on:
+  push:
+    branches: [main]
+    paths: [config.toml]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: downloads
+
+jobs:
+  dl:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+
+      - name: Work location
+        run: echo "LAPINLIBRE_WORK=$RUNNER_TEMP/lapinlibre" >> "$GITHUB_ENV"
+
+      # An older cache (restore-keys) is a start: fetch adds what it lacks, and the whole is saved
+      # under this key at the end of the job. An exact hit skips the fetch and saves nothing.
+      - name: Download cache
+        id: dl
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
+        with:
+          path: ${{ env.LAPINLIBRE_WORK }}/dl
+          key: dl-${{ hashFiles('config.toml') }}
+          restore-keys: dl-
+
+      - name: Fetch
+        if: steps.dl.outputs.cache-hit != 'true'
+        run: |
+          ./build.sh fetch
+          du -sh "$LAPINLIBRE_WORK/dl"
