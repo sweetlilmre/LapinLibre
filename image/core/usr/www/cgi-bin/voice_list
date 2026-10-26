@@ -8,13 +8,15 @@ web_begin read
 read_tts_servers
 items=""
 n=1
-while [ $n -le 88 ]; do
-    voice_of $n
-    if has_tts_server "$VL"; then
-        lang_name "$VL"
-        json_str "$LN, $VG"
+# Each language in turn has two voice numbers: the odd one male, the even one female.
+for lang in $VOICE_LANGS; do
+    if has_tts_server "$lang"; then
+        lang_name "$lang"
+        json_str "$LN, male"
         items="$items${items:+,}{\"id\":\"$n\",\"lang\":$J}"
+        json_str "$LN, female"
+        items="$items,{\"id\":\"$((n + 1))\",\"lang\":$J}"
     fi
-    n=$((n + 1))
+    n=$((n + 2))
 done
 reply_json "{\"voices\":[$items],\"return\":\"0\"}"

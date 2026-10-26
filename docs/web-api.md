@@ -255,7 +255,7 @@ Every endpoint that changes something writes one line to the system log with the
 
 An endpoint that drives a daemon calls `web_hardware`:
 
-1. It asks the controller for its state (`com.mindscape.karotz.KarotzInterface.get_status` on `com.mindscape.karotz.Controller`). In state 21 or 22 (an application owns the rabbit), it refuses.
+1. It reads the controller's state. In state 21 or 22 (an application owns the rabbit), it refuses. The tag listener keeps the state in `/var/run/lapinlibre-web/controller` (see below), so the request doesn't wait for the controller, which answers no one while it waits for its app server. Without that file, the request asks the controller itself (`com.mindscape.karotz.KarotzInterface.get_status` on `com.mindscape.karotz.Controller`) and waits 1 s at most.
 2. It refuses while the rabbit sleeps, except for `snapshot`, `snapshot_view` and `rfid_start_record`. The rabbit sleeps when the API's sleep flag is set, or when the controller is in state 24 (asleep).
 3. It takes the API's lock, `/var/lock/lapinlibre-web.lock`, and waits 5 s at most.
 4. It makes a request id, `webapi:` and 16 hexadecimal digits, and gives it to each D-Bus call.
@@ -398,7 +398,7 @@ id  type  color  cmd  var  name  action1  action2  action3
 
 For `cmd` 3, the three action fields are the URL, the user and the password. For `cmd` 5, they are the endpoint and its query string. Lines that start with `#` are comments. Each change reads the store, applies the change and writes the full file again, under the lock `/var/lock/lapinlibre-tags.lock`. Each read checks every field again: a line with a bad or repeated id is skipped, and an action that fails its rules becomes "no action".
 
-The tag listener, `/usr/scripts/tag_listener`, does the tags' work. `immortaldog` keeps it running (`/usr/etc/init.d/S40lapinlibre`). It listens only for the `tag_in` signal of `rfid-daemon` (`/com/mindscape/karotz/Rfid`). For each tag on the nose:
+The tag listener, `/usr/scripts/tag_listener`, does the tags' work. `immortaldog` keeps it running (`/usr/etc/init.d/S40lapinlibre`). It listens only for the `tag_in` signal of `rfid-daemon` (`/com/mindscape/karotz/Rfid`), and for the controller's state: the controller's `karotz_status_changed` signal, and the bus's `NameOwnerChanged` for `com.mindscape.karotz.Controller`. It writes the state to `/var/run/lapinlibre-web/controller`: the number, or an empty line while the controller isn't on the bus. When it starts, and when the controller comes onto the bus, it removes the file and asks the controller in the background (6 s at most). The file goes when the listener stops. For each tag on the nose:
 
 - While learning is on, it adds a new tag to the store with the type and colour codes from `rfid-daemon`. The LED flashes green and `notify.mp3` plays. A known tag gets a yellow flash and `button-triple.wav`. Then the orange pulse comes back.
 - Outside learning, for a stored tag with an action, the LED flashes green (not while the rabbit sleeps or an application owns it). Then the listener does the action and sets the API's LED state again.

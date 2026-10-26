@@ -2,9 +2,9 @@
 # The web API's signal watches, the ears' reset and moves, and the camera (web.sh reads this file
 # the first time one of its functions is called).
 
-# signal_watch NAME MEMBER: starts watching the daemon's MEMBER signals (dbus-monitor, for at
-# most 15 s, into a file), and waits up to 2 s for the watch to be in place (dbus-monitor writes
-# its own first lines then).
+# signal_watch NAME MEMBER [nowait]: starts watching the daemon's MEMBER signals (dbus-monitor,
+# for at most 15 s, into a file), and waits up to 2 s for the watch to be in place (dbus-monitor
+# writes its own first lines then), unless "nowait": then the caller goes on at once.
 signal_watch() {
     signal_stop
     [ -d "$WEB_RUN" ] || mkdir -p "$WEB_RUN" || return 1
@@ -14,9 +14,10 @@ signal_watch() {
         "type='signal',sender='com.mindscape.karotz.$1',interface='com.mindscape.karotz.KarotzInterface',member='$2'" \
         < /dev/null > "$WEB_MONITOR_OUT" 2> /dev/null 9>&- &
     WEB_MONITOR=$!
+    [ "${3:-}" = nowait ] && return 0
     _i=0
-    while [ $_i -lt 10 ] && [ ! -s "$WEB_MONITOR_OUT" ]; do
-        usleep 200000
+    while [ $_i -lt 100 ] && [ ! -s "$WEB_MONITOR_OUT" ]; do
+        usleep 20000
         _i=$((_i + 1))
     done
 }
@@ -66,7 +67,9 @@ picture_ready() {
 # picture comes. Needs web_hardware first.
 take_picture() {
     rm -f "$WEB_PICTURE"
-    signal_watch Webcam event
+    # The event only counts when the call gets no answer, and it comes long after the watch is in
+    # place, so the call isn't held back for it.
+    signal_watch Webcam event nowait
     dbus_call Webcam takeSnapshot "string:$WEB_ID" string:file int32:1
     _r=$?
     case $_r in

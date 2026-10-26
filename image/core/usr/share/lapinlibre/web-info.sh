@@ -49,7 +49,7 @@ ini_get() {
 
 # disk_usage DIR: DU_FREE_KB, DU_USED_PERCENT (digits) and DU_FREE_HUMAN (df -h style) of the file
 # system holding DIR; all empty when df can't tell. /usr and the stick are asked once per
-# program.
+# program, both with one df while the stick is mounted.
 disk_usage() {
     DU_FREE_KB="" DU_USED_PERCENT="" DU_FREE_HUMAN=""
     case $1 in
@@ -61,13 +61,22 @@ disk_usage() {
     usr) [ -n "${DU_USR:-}" ] && { _du=$DU_USR; disk_usage_set; return; } ;;
     usb) [ -n "${DU_USB:-}" ] && { _du=$DU_USB; disk_usage_set; return; } ;;
     esac
-    _df=$(df -Pk "$1" 2> /dev/null)
-    _du=-
-    # The second line: file system, size, used, available, capacity, mount point.
-    case $_df in
-    *"$NL"*)
-        _l=${_df#*"$NL"}
-        _l=${_l%%"$NL"*}
+    if [ -n "$_dk" ] && usb_mounted; then
+        _df=$(df -Pk /usr /mnt/usbkey 2> /dev/null)
+        _dk=both
+    else
+        _df=$(df -Pk "$1" 2> /dev/null)
+    fi
+    # After the header, one line per folder asked: file system, size, used, available, capacity,
+    # mount point.
+    _da=$1 _du=- DU_USR2=- DU_USB2=- _dn=0
+    _rest=${_df#*"$NL"}
+    [ "$_rest" = "$_df" ] && _rest=""
+    while [ -n "$_rest" ]; do
+        _l=${_rest%%"$NL"*}
+        case $_rest in *"$NL"*) _rest=${_rest#*"$NL"} ;; *) _rest="" ;; esac
+        _dn=$((_dn + 1))
+        _dv=-
         set -f
         # shellcheck disable=SC2086
         set -- $_l
@@ -76,15 +85,21 @@ disk_usage() {
             case $4 in
             '' | *[!0-9]*) ;;
             *)
-                _p=${5%\%}
                 human_kb "$4"
-                _du="$4 $_p $HK"
+                _dv="$4 ${5%\%} $HK"
                 ;;
             esac
         fi
+        case $_dn in 1) DU_USR2=$_dv _du=$_dv ;; 2) DU_USB2=$_dv ;; esac
+    done
+    case $_dk in
+    usr) DU_USR=$_du ;;
+    usb) DU_USB=$_du ;;
+    both)
+        DU_USR=$DU_USR2 DU_USB=$DU_USB2
+        [ "$_da" = /usr ] && _du=$DU_USR || _du=$DU_USB
         ;;
     esac
-    case $_dk in usr) DU_USR=$_du ;; usb) DU_USB=$_du ;; esac
     disk_usage_set
 }
 

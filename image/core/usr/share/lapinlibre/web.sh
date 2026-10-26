@@ -42,6 +42,9 @@ WEB_LIB=/usr/share/lapinlibre
 # The API's own state: in RAM (lost on reboot), and the data it keeps on the flash.
 WEB_RUN=/var/run/lapinlibre-web
 WEB_DATA=/usr/etc/conf/web
+# The controller's state as the tag listener follows it (its number, or empty while the controller
+# isn't on the bus); no file while the listener doesn't know it.
+WEB_CONTROLLER=$WEB_RUN/controller
 # The longest query string and request body taken, in bytes.
 WEB_MAX=4096
 # Parameters whose tabs and line ends become spaces instead of refusing the value.
@@ -529,15 +532,29 @@ usb_mounted() {
 }
 
 # The controller's state: CONTROLLER_STATE (its number, empty when it isn't on the bus or
-# didn't answer) and CONTROLLER (its name, or "not running").
+# didn't answer) and CONTROLLER (its name, or "not running"). Read from the tag listener's file
+# when it has one, else asked on the bus (controller_ask 1).
 read_controller() {
     CONTROLLER_STATE=""
     if [ "$WEB_CHECK" = 1 ]; then
         CONTROLLER="not running"
         return 0
     fi
-    _out=$(timeout 6 dbus-send --system --print-reply --reply-timeout=5000 --dest=com.mindscape.karotz.Controller \
-        /com/mindscape/karotz/Controller com.mindscape.karotz.KarotzInterface.get_status 2> /dev/null 9>&-) || _out=""
+    if first_line "$WEB_CONTROLLER"; then
+        case $FL in *[!0-9]*) ;; *) CONTROLLER_STATE=$FL ;; esac
+    else
+        controller_ask 1
+    fi
+    controller_name
+}
+
+# controller_ask SECONDS: the controller's state asked on the bus, waiting at most SECONDS for
+# its answer, in CONTROLLER_STATE (empty without one).
+controller_ask() {
+    CONTROLLER_STATE=""
+    _out=$(timeout $(($1 + 1)) dbus-send --system --print-reply --reply-timeout=$(($1 * 1000)) \
+        --dest=com.mindscape.karotz.Controller /com/mindscape/karotz/Controller \
+        com.mindscape.karotz.KarotzInterface.get_status 2> /dev/null 9>&-) || _out=""
     set -f
     # shellcheck disable=SC2086
     set -- $_out
@@ -549,6 +566,10 @@ read_controller() {
         fi
         shift
     done
+}
+
+# controller_name: CONTROLLER, the name of CONTROLLER_STATE.
+controller_name() {
     case $CONTROLLER_STATE in
     '') CONTROLLER="not running" ;;
     14) CONTROLLER=connecting ;;
@@ -598,12 +619,7 @@ ears_disabled() {
 # The programs running, by the name of the file each runs (the kernel's name for the process, at
 # most 15 characters), in PROGRAMS, one per line.
 read_programs() {
-    PROGRAMS=""
-    for _rp_p in /proc/[0-9]*; do
-        { IFS= read -r _rp_st < "$_rp_p/stat"; } 2> /dev/null || continue
-        _rp_c=${_rp_st#*\(}
-        PROGRAMS=$PROGRAMS$NL${_rp_c%\)*}
-    done
+    PROGRAMS=$NL$(ps -o comm 2> /dev/null)
 }
 
 # running PROGRAM: true when PROGRAMS lists it (by its first 15 characters, as the kernel keeps

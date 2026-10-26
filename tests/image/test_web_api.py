@@ -227,15 +227,17 @@ class Sandbox:
              'out="" prev=""\n'
              'for a; do [ "$prev" = -outfile ] && out=$a; prev=$a; done\n'
              'printf "GIF89a thumb" > "$out"')
-        stub(self.bin / "ps", f'cat {sb}/ps.txt 2> /dev/null')
+        # ps: the command lines (ps.txt), or with -o comm the kernel's names (ps-comm.txt).
+        stub(self.bin / "ps", f'if [ "$1" = -o ]; then cat {sb}/ps-comm.txt; else cat {sb}/ps.txt; fi 2> /dev/null')
         stub(self.bin / "ifconfig", f'[ "$1" = wlan0 ] && cat {sb}/ifconfig.txt 2> /dev/null; exit 0')
         stub(self.bin / "iwgetid", f'cat {sb}/ssid.txt 2> /dev/null')
         stub(self.bin / "dmesg", f'cat {sb}/dmesg.txt 2> /dev/null')
         stub(self.bin / "dropbearkey", 'cat "$3"')
         stub(self.bin / "df",
-             'for d; do :; done\n'
              'echo "Filesystem           1024-blocks    Used Available Capacity Mounted on"\n'
-             f'case $d in */mnt/usbkey) cat {sb}/df-usb.txt ;; *) cat {sb}/df-usr.txt ;; esac')
+             'for d; do\n'
+             f'    case $d in -*) ;; */mnt/usbkey) cat {sb}/df-usb.txt ;; *) cat {sb}/df-usr.txt ;; esac\n'
+             'done')
         # Every program started from PATH first writes its name into procs.log, so a test can count
         # the processes a request starts; what the stand-ins start themselves isn't counted.
         self.procs = sb / "procs.log"
@@ -272,12 +274,16 @@ class Sandbox:
             shutil.rmtree(old)
         if commands is None:
             (self.sb / "ps.txt").unlink(missing_ok=True)
+            (self.sb / "ps-comm.txt").unlink(missing_ok=True)
             return
         self.write("ps.txt", "COMMAND\n" + "".join(c + "\n" for c in commands))
+        names = []
         for pid, command in enumerate(commands, start=100):
             m = re.match(r"\{([^}]*)\}", command)
             name = m.group(1) if m else command.split()[0].rsplit("/", 1)[-1]
+            names.append(name[:15])
             self.write(f"proc/{pid}/stat", f"{pid} ({name[:15]}) S 1 {pid} {pid} 0 -1 4194560 0 0 0 0\n")
+        self.write("ps-comm.txt", "COMMAND\n" + "".join(n + "\n" for n in names))
 
     def files(self):
         w = self.write
@@ -528,15 +534,31 @@ class EndpointTest(WebApiCase):
             self.assertEqual(self.json("lapinlibre/status")["controller"], name, state)
 
     def test_controller_that_does_not_answer(self):
-        # dbus-send's reply timeout, and timeout around it: the status still answers.
+        # Without the tag listener's state, the controller is asked, for at most 1 s (dbus-send's
+        # reply timeout, and timeout around it): the status still answers.
         self.box.write("controller.state", "hang\n")
         start = time.monotonic()
         reply = self.json("lapinlibre/status")
-        self.assertLess(time.monotonic() - start, 25)
+        self.assertLess(time.monotonic() - start, 10)
         self.assertEqual(reply["controller"], "not running")
         call = [line for line in self.box.actions_log().splitlines() if "get_status" in line][0]
-        self.assertIn("--reply-timeout=5000", call)
+        self.assertIn("--reply-timeout=1000", call)
         self.assertIn("--dest=com.mindscape.karotz.Controller", call)
+
+    def test_controller_state_from_the_listener(self):
+        # The tag listener's file is read instead of asking the controller: a number, or empty
+        # (not on the bus); anything else counts as not running.
+        self.box.write("controller.state", "hang\n")
+        for kept, name in (("21", "interactive"), ("16", "available"), ("", "not running"), ("x1", "not running")):
+            with self.subTest(kept):
+                self.box.write("var/run/lapinlibre-web/controller", kept + "\n")
+                start = time.monotonic()
+                self.assertEqual(self.json("lapinlibre/status")["controller"], name)
+                self.assertLess(time.monotonic() - start, 5)
+        self.assertNotIn("get_status", self.box.actions_log())
+        # An application owning the rabbit, as the listener says, refuses the hardware.
+        self.box.write("var/run/lapinlibre-web/controller", "21\n")
+        self.assertError(self.json("leds", query="color=FF0000", method="POST"), "application")
 
     def test_unreadable_values_are_empty(self):
         for rel in ("karotz/etc/lapinlibre-build", "usr/etc/conf/lapinlibre_build_id", "proc/net/route", "etc/resolv.conf",
@@ -766,8 +788,8 @@ class CostTest(WebApiCase):
         procs, body = self.box.started("leds", "color=ff0000", method="POST")
         self.assertEqual(json.loads(body)["return"], "0")
         # The controller's state and the LED, each through timeout; the lock; the log line after the
-        # reply; and this boot's one look for the start-up's LED tool.
-        self.assertEqual(sorted(procs), sorted(["sh", "timeout", "dbus-send", "flock", "timeout", "dbus-send", "logger"]))
+        # reply; and this boot's one look for the start-up's LED tool (ps).
+        self.assertEqual(sorted(procs), sorted(["sh", "timeout", "dbus-send", "flock", "ps", "timeout", "dbus-send", "logger"]))
         procs, _ = self.box.started("leds", "color=00FF00&pulse=1&color2=000000&speed=500", method="POST")
         self.assertEqual(sorted(procs), sorted(["sh", "timeout", "dbus-send", "flock", "timeout", "dbus-send", "logger"]))
         # As the page sends it: a form body.
@@ -782,13 +804,19 @@ class CostTest(WebApiCase):
     def test_status(self):
         procs, body = self.box.started("status")
         self.assertEqual(json.loads(body)["return"], "0")
-        self.assertEqual(sorted(procs), sorted(["sh", "ifconfig", "timeout", "iwgetid", "timeout", "dbus-send", "date", "df"]))
+        self.assertEqual(sorted(procs), sorted(["sh", "ifconfig", "timeout", "iwgetid", "timeout", "dbus-send", "ps", "date",
+                                                "df"]))
+        # One df for /usr and the stick together.
         self.box.mount_stick()
         self.box.write("usr/etc/conf/web/tags", "0123456789ABCDEF\t1\t1\t0\t-1\tone\n")
         procs, body = self.box.started("status")
         self.assertEqual((json.loads(body)["nb_tags"], json.loads(body)["nb_sounds"]), ("1", "4"))
-        self.assertEqual(sorted(procs), sorted(["sh", "ifconfig", "timeout", "iwgetid", "timeout", "dbus-send", "date",
-                                                "df", "df", "awk"]))
+        self.assertEqual(sorted(procs), sorted(["sh", "ifconfig", "timeout", "iwgetid", "timeout", "dbus-send", "ps", "date",
+                                                "df", "awk"]))
+        # With the tag listener's state, the controller isn't asked.
+        self.box.write("var/run/lapinlibre-web/controller", "16\n")
+        procs, body = self.box.started("status")
+        self.assertEqual(sorted(procs), sorted(["sh", "ifconfig", "timeout", "iwgetid", "ps", "date", "df", "awk"]))
 
     def test_reads(self):
         for path, most in (("voice_list", 1), ("get_version", 1), ("sound_list", 2), ("rfid_list", 1),
@@ -1992,7 +2020,8 @@ class LearningTest(TagCase):
         self.ok("rfid_start_record")
         left = self.json("lapinlibre/status")["learning_left"]
         self.assertTrue(110 <= left <= 120, left)
-        self.assertEqual(self.json("status")["lapinlibre"]["learning_left"], left)
+        # The second request may fall in the next second.
+        self.assertIn(self.json("status")["lapinlibre"]["learning_left"], (left, left - 1))
         self.ok("rfid_stop_record")
         self.assertEqual(self.json("lapinlibre/status")["learning_left"], 0)
 
@@ -2064,9 +2093,40 @@ class TagListenerTest(TagCase):
         self.assertEqual((rc, out), (1, b""))
         rule = [line for line in self.box.actions_log().splitlines() if line.startswith("dbus-monitor")]
         self.assertEqual(rule, ["dbus-monitor --system type='signal',path='/com/mindscape/karotz/Rfid',"
-                                "interface='com.mindscape.karotz.KarotzInterface',member='tag_in'"])
+                                "interface='com.mindscape.karotz.KarotzInterface',member='tag_in' "
+                                "type='signal',path='/com/mindscape/karotz/Controller',"
+                                "interface='com.mindscape.karotz.KarotzInterface',member='karotz_status_changed' "
+                                "type='signal',sender='org.freedesktop.DBus',interface='org.freedesktop.DBus',"
+                                "member='NameOwnerChanged',arg0='com.mindscape.karotz.Controller'"])
         self.assertTrue([line for line in self.listener_log() if "monitor ended" in line])
         self.assertEqual([p.name for p in (self.sb / "var/run/lapinlibre-web").iterdir()], [])
+
+    def test_controller_state(self):
+        # The controller asked at the start, then its signal, its leaving the bus and its coming
+        # back (asked again); each step read from the file while the listener runs.
+        def owner(old, new):
+            return ("signal time=1 sender=org.freedesktop.DBus -> destination=(null destination) serial=11 "
+                    "path=/org/freedesktop/DBus; interface=org.freedesktop.DBus; member=NameOwnerChanged\n"
+                    f'   string "com.mindscape.karotz.Controller"\n   string "{old}"\n   string "{new}"\n')
+        state = ("signal time=1 sender=:1.3 -> destination=(null destination) serial=10 path=/com/mindscape/karotz/Controller; "
+                 "interface=com.mindscape.karotz.KarotzInterface; member=karotz_status_changed\n   int32 21\n")
+        other = owner("", ":1.7").replace("com.mindscape.karotz.Controller", "com.mindscape.karotz.Led")
+        self.box.write("tag.signals", "SLEEP 4\n" + state + "SLEEP 4\n" + other + owner(":1.3", "") + "SLEEP 4\n"
+                       + owner("", ":1.9") + "SLEEP 4\n")
+        kept = self.sb / "var/run/lapinlibre-web/controller"
+        seen = []
+        p = subprocess.Popen([str(self.box.bin / "sh"), str(self.sb / "usr/scripts/tag_listener")],
+                             env={"PATH": str(self.box.bin)}, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        try:
+            time.sleep(3)
+            for _ in range(4):
+                seen.append(kept.read_text() if kept.exists() else None)
+                time.sleep(4)
+            self.assertEqual(p.wait(timeout=60), 1)
+        finally:
+            p.kill()
+        self.assertEqual(seen, ["16\n", "21\n", "\n", "16\n"])
+        self.assertFalse(kept.exists())
 
     def test_learning(self):
         self.tones()

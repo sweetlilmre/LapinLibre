@@ -15,14 +15,25 @@
 #   controller.
 # The store's actions are data only: each is checked again when read (tags_read), and none is ever
 # run as a shell command.
+# It also follows the controller's state for the web API, so that no request has to ask the
+# controller (which answers no one while it waits for its app server): the controller's
+# karotz_status_changed signals, and the bus's NameOwnerChanged for its name. It writes the state
+# to $WEB_CONTROLLER: the number, or empty while the controller isn't on the bus. When it starts,
+# and when the controller comes onto the bus, it removes the file (requests then ask the
+# controller themselves) and asks the controller in the background; the answer is written unless
+# a signal came first. The file goes when the listener stops.
 # It stays in the foreground. When its monitor ends (the bus went away) it exits 1, so immortaldog
 # starts it again; SIGTERM ends the monitor and a running action, and it exits 0.
 . /usr/share/lapinlibre/web.sh
 LOG_TAG=tag_listener
 RFID_PATH=/com/mindscape/karotz/Rfid
 RFID_INTERFACE=com.mindscape.karotz.KarotzInterface
-# Only rfid-daemon's tag_in signals: never the whole bus.
+CONTROLLER_NAME=com.mindscape.karotz.Controller
+CONTROLLER_PATH=/com/mindscape/karotz/Controller
+# Only rfid-daemon's tag_in signals and the controller's state and name: never the whole bus.
 RULE="type='signal',path='$RFID_PATH',interface='$RFID_INTERFACE',member='tag_in'"
+RULE_STATE="type='signal',path='$CONTROLLER_PATH',interface='$RFID_INTERFACE',member='karotz_status_changed'"
+RULE_OWNER="type='signal',sender='org.freedesktop.DBus',interface='org.freedesktop.DBus',member='NameOwnerChanged',arg0='$CONTROLLER_NAME'"
 FIFO=$WEB_RUN/tag_listener.fifo.$$
 
 exec < /dev/null > /dev/null 2>&1
@@ -128,11 +139,39 @@ on_tag() {
     ACTION=$!
 }
 
+# controller_set STATE: the controller's state for the web API, replaced whole.
+controller_set() {
+    printf '%s\n' "$1" > "$WEB_CONTROLLER.$$" && mv -f "$WEB_CONTROLLER.$$" "$WEB_CONTROLLER"
+}
+
+ASK=
+# controller_unknown: no state for the web API until the controller has answered (in the
+# background, at most 6 s: it answers no one while it connects to its app server) or signalled.
+controller_unknown() {
+    controller_forget
+    (
+        exec 3<&-
+        trap - TERM INT HUP
+        controller_ask 6
+        # Not once the listener has stopped ($$ is the listener's own process).
+        kill -0 $$ 2> /dev/null || exit 0
+        [ -e "$WEB_CONTROLLER" ] || controller_set "$CONTROLLER_STATE"
+    ) &
+    ASK=$!
+}
+
+# controller_forget: stops the last question to the controller, then removes the state file.
+controller_forget() {
+    [ -n "$ASK" ] && kill "$ASK" 2> /dev/null && wait "$ASK" 2> /dev/null
+    rm -f "$WEB_CONTROLLER"
+}
+
 MON=
 stop() {
     trap '' TERM INT HUP
     [ -n "$MON" ] && kill "$MON" 2> /dev/null
     action_running && kill "$ACTION" 2> /dev/null
+    controller_forget
     rm -f "$FIFO" "$ACTION_MARK"
     log info "stopped"
     exit 0
@@ -145,32 +184,54 @@ if ! mkfifo -m 600 "$FIFO"; then
     log err "can't make $FIFO"
     exit 1
 fi
-dbus-monitor --system "$RULE" > "$FIFO" 2> /dev/null &
+dbus-monitor --system "$RULE" "$RULE_STATE" "$RULE_OWNER" > "$FIFO" 2> /dev/null &
 MON=$!
 exec 3< "$FIFO"
 rm -f "$FIFO"
-log info "started: dbus-monitor --system $RULE"
+log info "started: dbus-monitor --system $RULE $RULE_STATE $RULE_OWNER"
+controller_unknown
 
 # dbus-monitor prints a header line per message ("signal ... path=P; interface=I; member=M") and
-# one indented line per argument: tag_in's uid, blocks, app, type, picture and colour codes.
-n=0
+# one indented line per argument: tag_in's uid, blocks, app, type, picture and colour codes;
+# karotz_status_changed's state; NameOwnerChanged's name, old owner and new owner.
+kind= n=0
 uid= type=
 while IFS= read -r line <&3; do
     case $line in
     "signal "*" path=$RFID_PATH; interface=$RFID_INTERFACE; member=tag_in")
-        n=1 uid= type=
+        kind=tag n=1 uid= type=
+        ;;
+    "signal "*" path=$CONTROLLER_PATH; interface=$RFID_INTERFACE; member=karotz_status_changed")
+        kind=state n=1
+        ;;
+    "signal "*"; interface=org.freedesktop.DBus; member=NameOwnerChanged")
+        kind=owner n=1
         ;;
     " "*)
         [ $n -gt 0 ] || continue
         n=$((n + 1))
         value=${line#"${line%%[! ]*}"}
-        case $n:$value in
-        2:"string \""*\") value=${value#string \"}; uid=${value%\"} ;;
-        3:"string "*) ;;
-        [456]:"int32 "*) [ $n = 5 ] && type=${value#int32 } ;;
-        7:"int32 "*)
+        case $kind:$n:$value in
+        tag:2:"string \""*\") value=${value#string \"}; uid=${value%\"} ;;
+        tag:3:"string "*) ;;
+        tag:[456]:"int32 "*) [ $n = 5 ] && type=${value#int32 } ;;
+        tag:7:"int32 "*)
             n=0
             on_tag "$uid" "$type" "${value#int32 }"
+            ;;
+        state:2:"int32 "*)
+            n=0
+            value=${value#int32 }
+            case $value in '' | *[!0-9]*) ;; *) controller_set "$value" ;; esac
+            ;;
+        owner:2:"string \"$CONTROLLER_NAME\"" | owner:3:"string "*) ;;
+        owner:4:"string \"\"")
+            n=0
+            controller_set ""
+            ;;
+        owner:4:"string "*)
+            n=0
+            controller_unknown
             ;;
         *) n=0 ;;
         esac
@@ -182,6 +243,7 @@ while IFS= read -r line <&3; do
 done
 exec 3<&-
 action_running && wait "$ACTION"
+controller_forget
 rm -f "$ACTION_MARK"
 wait "$MON"
 log err "the monitor ended (status $?): exiting"
