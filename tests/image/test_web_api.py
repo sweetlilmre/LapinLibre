@@ -46,7 +46,7 @@ READ_ONLY = ["status", "get_version", "get_free_space", "tools_log", "lapinlibre
 # The endpoints that drive the rabbit's daemons, and those that change something else.
 HARDWARE = ["leds", "ears", "ears_reset", "ears_random", "sleep", "wakeup", "sound", "sound_control", "tts",
             "snapshot", "snapshot_view", "rfid_start_record", "rfid_stop_record", "apps/moods", "apps/clock", "stories"]
-CHANGES = ["reboot", "ears_mode", "clear_cache", "clear_snapshots", "setclock", "rfid_rename", "rfid_delete",
+CHANGES = ["reboot", "ears_mode", "clear_cache", "clear_snapshots", "lapinlibre/snapshot_delete", "setclock", "rfid_rename", "rfid_delete",
            "rfid_unassign", "clear_rfid", "rfid_assign_url", "rfid_test_url", "rfid_assign_karotz"]
 CGIS = READ_ONLY + HARDWARE + CHANGES
 LISTENER = ROOT / "image/core/usr/scripts/tag_listener"
@@ -725,7 +725,7 @@ class EndpointTest(WebApiCase):
         self.assertIn('id="get-url-template"', page)
         for path in ("leds", "ears", "ears_reset", "ears_random", "ears_mode", "sleep", "wakeup", "sound", "sound_control",
                      "sound_list", "tts", "voice_list", "snapshot", "snapshot_view", "snapshot_list", "snapshot_get",
-                     "clear_snapshots", "status", "rfid_start_record", "rfid_stop_record", "rfid_list_ext", "rfid_rename",
+                     "clear_snapshots", "lapinlibre/snapshot_delete", "status", "rfid_start_record", "rfid_stop_record", "rfid_list_ext", "rfid_rename",
                      "rfid_delete", "rfid_unassign", "clear_rfid", "rfid_assign_url", "rfid_test_url", "rfid_assign_karotz",
                      "moods_list", "stories_list", "radios_list", "apps/moods", "apps/clock", "stories"):
             self.assertRegex(script, rf'"(cgi-bin/)?{path}[?"]')
@@ -1561,6 +1561,27 @@ class CameraTest(HardwareCase):
         self.assertEqual(self.ok("clear_snapshots"), {"return": "0"})
         self.assertEqual(self.stored(), [])
         self.assertEqual(self.json("snapshot_list")["snapshots"], [])
+
+    def test_delete_one(self):
+        snapshots = self.sb / "var/run/lapinlibre-web/snapshots"
+        snapshots.mkdir(parents=True)
+        names = ["snapshot_2020_01_01_00_00_01", "snapshot_2020_01_01_00_00_02"]
+        for name in names:
+            (snapshots / (name + ".jpg")).write_bytes(JPEG)
+            (snapshots / (name + ".thumb.gif")).write_bytes(b"GIF")
+        first = names[0] + ".jpg"
+        self.assertEqual(self.ok("lapinlibre/snapshot_delete", "filename=" + first), {"return": "0", "filename": first})
+        self.assertEqual(self.stored(), [names[1] + ".jpg", names[1] + ".thumb.gif"])
+        self.assertEqual(self.box.syslog_lines()[-1], f"-t lapinlibre-web lapinlibre/snapshot_delete {CLIENT} ok")
+        for bad in ("", first, names[1] + ".thumb.gif", "../led", "snapshot_2026.jpg", "x" + names[1] + ".jpg",
+                    names[1] + ".jpg%00", "%2F" + names[1] + ".jpg", "snapshots"):
+            with self.subTest(bad):
+                self.refused("lapinlibre/snapshot_delete", "filename=" + bad, "snapshot")
+        self.assertEqual(self.stored(), [names[1] + ".jpg", names[1] + ".thumb.gif"])
+        # A picture without a thumbnail.
+        (snapshots / (names[1] + ".thumb.gif")).unlink()
+        self.ok("lapinlibre/snapshot_delete", "filename=" + names[1] + ".jpg")
+        self.assertEqual(self.stored(), [])
 
     def test_ten_kept(self):
         snapshots = self.sb / "var/run/lapinlibre-web/snapshots"

@@ -300,7 +300,7 @@ The page loads `status` first, and again every 30 s while the page is visible, a
 | Ears | Move to two positions (0 to 16), with or without recalibration; recalibrate; random; turn the API's ear moves off or on. | `ears`, `ears_reset`, `ears_random`, `ears_mode` |
 | Sound | The list of sounds with a play button; play a URL; pause or resume, stop, previous, next. | `sound_list`, `sound`, `sound_control` |
 | Speech | Speak a text with a voice from the list; say the time. | `voice_list`, `tts`, `apps/clock` |
-| Camera | Take a picture; show a live picture that is not stored; the gallery; delete all pictures. | `snapshot`, `snapshot_view`, `snapshot_list`, `snapshot_get`, `clear_snapshots` |
+| Camera | Take a picture; show a live picture that is not stored; the gallery; delete one picture or all of them. | `snapshot`, `snapshot_view`, `snapshot_list`, `snapshot_get`, `lapinlibre/snapshot_delete`, `clear_snapshots` |
 | RFID tags | Learn tags with a countdown; the tag list; edit a tag (name, colour, action); test a URL; remove the action; forget a tag or all tags. | `rfid_start_record`, `rfid_stop_record`, `rfid_list_ext`, `rfid_rename`, `rfid_assign_karotz`, `rfid_assign_url`, `rfid_test_url`, `rfid_unassign`, `rfid_delete`, `clear_rfid` |
 | Radio, moods and stories | The lists from the USB key, each with a play button; a random mood. Tells how to make the files when a list is empty. | `radios_list`, `moods_list`, `stories_list`, `sound`, `apps/moods`, `stories` |
 | Logs | Show the system, kernel or `mpd` log (1 to 1000 lines); save it as a file. | `lapinlibre/logs` |
@@ -479,6 +479,7 @@ With `format=xml`, the answer is `<?xml ...?><OPENKAROTZ>` with the elements `VE
 | `lapinlibre/status` (read) | none | LapinLibre's own status for the web page. | See below |
 | `lapinlibre/logs` (read) | `lines` 1 to 1000 (200); `source`: `system`, `kernel` or `mpd` (`system`) | The newest lines of a log, oldest first. `system` is `/var/log/messages.0` and `/var/log/messages`; `kernel` is `dmesg`; `mpd` is `/var/log/mpd.log`. | Plain text; an error as JSON |
 | `lapinlibre/tag_action` (read) | `tag` (required) | A learned tag's action, for the page's tag editor. Never sends a stored password. | `return`, `tag`, `cmd` (`0` none, `3` a URL request, `5` one of the API's endpoints); for `5`: `endpoint` and `query`; for `3`: `url`, `user` and `password_set` (`1` when a password is stored) |
+| `lapinlibre/snapshot_delete` (change) | `filename` (required): a picture's name as `snapshot` gave it (`snapshot_<time>.jpg`) | Deletes that stored picture and its thumbnail. Any other name, or one not stored, is refused. | `return`, `filename` |
 | `lapinlibre/ssh` (read) | none | What the SSH section of the page shows. Never sends a key itself. | `return`, `enabled` (`1` when `/usr/karotz/.ssh/authorized_keys` has a key), `keys` (a list of `{"type", "comment", "fingerprint"}`), `host_keys` (a list of `{"type", "fingerprint"}` from `/usr/etc/conf/dropbear`), `hostname`, `ip`, `users` (`["root","karotz"]`), `telnet` |
 
 The fingerprints are SHA-256, in the form `SHA256:<base64>`.

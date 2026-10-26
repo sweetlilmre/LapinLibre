@@ -579,9 +579,33 @@
         });
         link.appendChild(thumb);
         link.appendChild(el("span", { className: "when", text: label }));
-        gallery.appendChild(el("li", {}, [link]));
+        gallery.appendChild(el("li", {}, [link, camera.deleter(name, label)]));
       }
       if (!gallery.firstChild) gallery.appendChild(el("li", { className: "note", text: "No pictures stored." }));
+    },
+
+    // A picture's bin button, which asks before deleting the picture and its thumbnail.
+    deleter(name, label) {
+      const bin = el("button", { type: "button", className: "bin", title: "Delete this picture", "aria-label": "Delete the picture of " + label, text: "\u{1F5D1}" });
+      const yes = el("button", { type: "button", className: "danger", text: "Delete" });
+      const no = el("button", { type: "button", text: "Cancel" });
+      const ask = el("div", { className: "confirm" }, [yes, no]);
+      ask.hidden = true;
+      bin.addEventListener("click", () => {
+        bin.hidden = true;
+        ask.hidden = false;
+      });
+      no.addEventListener("click", () => {
+        ask.hidden = true;
+        bin.hidden = false;
+      });
+      yes.addEventListener("click", async () => {
+        ask.hidden = true;
+        bin.hidden = false;
+        const data = await act("camera", "lapinlibre/snapshot_delete", { filename: name }, "The picture is deleted.");
+        if (data) camera.refresh();
+      });
+      return el("div", { className: "picture-actions" }, [bin, ask]);
     },
   };
 

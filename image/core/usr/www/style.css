@@ -436,6 +436,17 @@ textarea {
   color: var(--muted);
 }
 
+.gallery .picture-actions .confirm {
+  margin-top: 0;
+}
+
+.gallery .bin {
+  background: var(--card);
+  border-color: var(--line);
+  color: var(--text);
+  margin-top: 4px;
+}
+
 @media (min-width: 900px) {
   #camera,
   #tags {

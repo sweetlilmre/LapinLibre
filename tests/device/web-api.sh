@@ -393,6 +393,12 @@ if [ $HARDWARE = 1 ]; then
     curl -s -m 30 -u "admin:$PASS" -D "$W/headers" -o "$W/picture" "$U/cgi-bin/snapshot_view"
     check "snapshot_view: a JPEG" "$(head -c 2 "$W/picture" | od -An -tx1 | tr -d ' ')" ffd8
     # shellcheck disable=SC2086
+    get "cgi-bin/lapinlibre/snapshot_delete?filename=$name" $auth
+    check "lapinlibre/snapshot_delete" "$BODY" "{\"return\":\"0\",\"filename\":\"$name\"}"
+    # shellcheck disable=SC2086
+    get cgi-bin/snapshot_list $auth
+    hasnt "snapshot_list: the deleted picture" "$BODY" "\"$name\""
+    # shellcheck disable=SC2086
     get cgi-bin/clear_snapshots $auth
     check "clear_snapshots" "$BODY" '{"return":"0"}'
     # shellcheck disable=SC2086

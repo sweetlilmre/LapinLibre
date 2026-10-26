@@ -1366,6 +1366,7 @@ usr:www/cgi-bin/lapinlibre/status f 0755 0:0 core
 usr:www/cgi-bin/lapinlibre/logs f 0755 0:0 core
 usr:www/cgi-bin/lapinlibre/ssh f 0755 0:0 core
 usr:www/cgi-bin/lapinlibre/tag_action f 0755 0:0 core
+usr:www/cgi-bin/lapinlibre/snapshot_delete f 0755 0:0 core
 usr:share/lapinlibre d 0755 0:0
 usr:share/lapinlibre/web.sh f 0644 0:0 core  # the web API's request checks, parameters and replies; outside the web root, so never run by httpd
 usr:share/lapinlibre/web-extra.sh f 0644 0:0 core  # the web API's less common helpers (encoded parameters, JSON escaping, URL checks), read by web.sh when needed

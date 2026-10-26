@@ -1,0 +1,18 @@
+#!/bin/sh
+# SPDX-License-Identifier: MIT
+# lapinlibre/snapshot_delete: deletes one stored snapshot and its thumbnail.
+#   filename  a picture's name as snapshot gave it (snapshot_<time>.jpg)
+. /usr/share/lapinlibre/web.sh
+web_begin change
+param filename
+name=$PV
+case $name in
+*.jpg) valid_snapshot_file "$name" || name="" ;;
+*) name="" ;;
+esac
+[ -n "$name" ] && [ -f "$WEB_SNAPSHOTS/$name" ] || web_fail "no stored snapshot has that name"
+web_lock
+rm -f "$WEB_SNAPSHOTS/$name" "$WEB_SNAPSHOTS/${name%.jpg}.thumb.gif"
+web_unlock
+web_ok
+reply_json "{\"return\":\"0\",\"filename\":\"$name\"}"
