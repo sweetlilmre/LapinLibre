@@ -59,6 +59,9 @@ endef
 define PYTHON24_KAROTZ_INSTALL_TARGET_CMDS
 	rm -rf $(@D)/Lib/test
 	$(MAKE1) -C $(@D) install DESTDIR=$(TARGET_DIR) CROSS_COMPILE=yes $(PYTHON24_KAROTZ_MAKE_OPTS)
+	# Python installs the library read-only (0555), and Buildroot's strip can't rewrite a read-only
+	# file; writable here, it is stripped. The image gives it its mode (core-files.txt).
+	chmod 0755 $(TARGET_DIR)/usr/lib/libpython2.4.so.1.0
 	rm -f $(TARGET_DIR)/usr/bin/python $(TARGET_DIR)/usr/bin/idle $(TARGET_DIR)/usr/bin/pydoc
 	ln -s python2.4 $(TARGET_DIR)/usr/bin/python
 	find $(TARGET_DIR)/usr/lib/python2.4 -name '*.pyo' -delete
