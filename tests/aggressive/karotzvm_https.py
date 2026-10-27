@@ -7,10 +7,10 @@ the test CA, valid in 2020 only) and for another name (signed by the test CA). k
 test CA in $SSL_CERT_DIR. One application ("https") requests each, and plain HTTP, in three runs:
 
 - checks: the valid certificate is taken, the other three are refused ("curl error");
-- clock: karotzVM's clock in 1970, as the rabbit's is at boot before ntpd: the dates aren't
-  checked, so the expired certificate is taken too, and the self-signed and wrong-name ones are
-  still refused;
-- off: /usr/etc/conf/https_check says "no" (in the sysroot) and there is no CA: all four are taken.
+- clock: karotzVM's clock starts in 1970, as the rabbit's is at boot before ntpd, and is set
+  CLOCK_SET_S later: the first HTTPS request waits for it, then it is as in "checks";
+- unset: the clock stays in 1970: the first HTTPS request waits for it until karotzVM gives up,
+  then every certificate is refused, the valid one too (not valid yet).
 
 ARM only, like the karotzVM scenario.
 """
@@ -32,9 +32,17 @@ HELLO = '"hello from 127.0.0.1"'
 REFUSED = '"curl error"'
 EXPECTED = {
     "checks": {"valid": HELLO, "selfsigned": REFUSED, "expired": REFUSED, "wronghost": REFUSED, "plain": HELLO},
-    "clock": {"valid": HELLO, "selfsigned": REFUSED, "expired": HELLO, "wronghost": REFUSED, "plain": HELLO},
-    "off": {"valid": HELLO, "selfsigned": HELLO, "expired": HELLO, "wronghost": HELLO, "plain": HELLO},
+    "clock": {"valid": HELLO, "selfsigned": REFUSED, "expired": REFUSED, "wronghost": REFUSED, "plain": HELLO},
+    "unset": {"valid": REFUSED, "selfsigned": REFUSED, "expired": REFUSED, "wronghost": REFUSED, "plain": HELLO},
 }
+# karotzVM's log lines for a wait for the clock, and for one that ran out; which runs have them.
+WAITS = "the HTTPS request waits for it"
+GAVE_UP = "certificates can't be checked"
+WAITED = {"checks": (False, False), "clock": (True, False), "unset": (True, True)}
+# When the clock run sets the clock: after karotzVM's start under qemu and the first request.
+CLOCK_SET_S = 40
+# About a day after the epoch.
+BACK_TO_1970 = -(int(time.time()) - 86400)
 
 HTTPS_JS = kvm.PRELUDE + r"""
 var ports = %s;
@@ -104,11 +112,12 @@ def make_certificates(folder):
     return out, ca_dir
 
 
-def run(d, bus, certs, env, shift):
-    names = ("APPS", "LAUNCHES", "PARALLEL", "SPINNERS", "TIMESHIFT", "TIMESHIFT_START", "EXTRA_ENV", "HTTPS")
+def run(d, bus, certs, env, shift, later=None):
+    names = ("APPS", "LAUNCHES", "PARALLEL", "SPINNERS", "TIMESHIFT", "TIMESHIFT_START", "TIMESHIFT_LATER",
+             "EXTRA_ENV", "HTTPS")
     saved = {n: getattr(kvm, n) for n in names}
     kvm.APPS, kvm.LAUNCHES, kvm.PARALLEL, kvm.SPINNERS = APPS, LAUNCHES, [], []
-    kvm.TIMESHIFT, kvm.TIMESHIFT_START = shift is not None, shift
+    kvm.TIMESHIFT, kvm.TIMESHIFT_START, kvm.TIMESHIFT_LATER = shift is not None, shift, later
     kvm.EXTRA_ENV = env
     kvm.HTTPS = [(PORTS[name], *certs[name]) for name in PORTS]
     try:
@@ -120,21 +129,17 @@ def run(d, bus, certs, env, shift):
 
 def drive(d, bus):
     folder = Path(tempfile.mkdtemp(prefix="karotzvm-https-"))
-    switch = Path(d.sysroot) / "usr" / "etc" / "conf" / "https_check"
     record = []
     try:
         certs, ca_dir = make_certificates(folder)
+        env = {"SSL_CERT_DIR": str(ca_dir)}
         record.append("== run checks")
-        record.extend(run(d, bus, certs, {"SSL_CERT_DIR": str(ca_dir)}, None))
+        record.extend(run(d, bus, certs, env, None))
         record.append("== run clock")
-        # Back to about a day after the epoch.
-        record.extend(run(d, bus, certs, {"SSL_CERT_DIR": str(ca_dir)}, -(int(time.time()) - 86400)))
-        record.append("== run off")
-        switch.parent.mkdir(parents=True, exist_ok=True)
-        switch.write_text("no\n")
-        record.extend(run(d, bus, certs, {"SSL_CERT_DIR": str(folder / "no-ca")}, None))
+        record.extend(run(d, bus, certs, env, BACK_TO_1970, (CLOCK_SET_S, 0)))
+        record.append("== run unset")
+        record.extend(run(d, bus, certs, env, BACK_TO_1970))
     finally:
-        switch.unlink(missing_ok=True)
         shutil.rmtree(folder, ignore_errors=True)
     return record
 
@@ -162,6 +167,14 @@ def check(record):
             have = got.get(name, {}).get(request)
             if have != result:
                 problems.append(f"{name}: {request} gave {have or 'nothing'}, expected {result}")
+    runs = re.split(r"^== run (\w+)$", text, flags=re.M)
+    logs = dict(zip(runs[1::2], runs[2::2]))
+    for name, (waits, gave_up) in WAITED.items():
+        log = logs.get(name, "")
+        if (WAITS in log) != waits:
+            problems.append(f"{name}: the first HTTPS request {'did not wait' if waits else 'waited'} for the clock")
+        if (GAVE_UP in log) != gave_up:
+            problems.append(f"{name}: the wait for the clock {'did not run out' if gave_up else 'ran out'}")
     if text.count("JSLOG: https done") != 3:
         problems.append(f"the application finished {text.count('JSLOG: https done')} of 3 runs")
     return problems

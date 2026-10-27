@@ -97,7 +97,7 @@ voice-daemon_EXTRA     := $(GEN)/asr-message.pb.cc
 k2k-daemon_PRELIBS     := -ldbus-glib-1 -ldbus-1 -lpthread -lgobject-2.0 -lgthread-2.0 -lglib-2.0 -lintl
 k2k-daemon_LIBS        := $(shell $(PKG_CONFIG) --cflags linphone 2>/dev/null) -llinphone -lmediastreamer -lortp \
                           -losip2 -leXosip2 -losipparser2 -lpthread -lgthread-2.0
-karotzVM_LIBS          := -lv8 $(shell $(PKG_CONFIG) --cflags --libs protobuf libcurl libssl libcrypto libxml-2.0 uuid zlib) -liconv
+karotzVM_LIBS          := -lv8 $(shell $(PKG_CONFIG) --cflags --libs protobuf libcurl libxml-2.0 uuid zlib) -liconv
 karotzVM_EXTRA         := $(GEN)/platform-message.pb.cc
 controller_LIBS        := $(shell $(PKG_CONFIG) --cflags --libs protobuf gio-2.0 libcurl libxml-2.0 uuid) \
                           $(shell $(PKG_CONFIG) --libs libjpeg 2>/dev/null || echo -ljpeg) \

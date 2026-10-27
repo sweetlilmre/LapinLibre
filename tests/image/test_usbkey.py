@@ -247,7 +247,7 @@ class UsbKeyTest(unittest.TestCase):
         # quoted values; a fixed address, an SSH key and telnet. All of it lands in /usr/etc/conf.
         settings = ("\ufeff# my rabbit\r\nWIFI_SSID = \"my net\"\r\nWIFI_PASSWORD='pa ss word'\r\nIP=192.168.1.20\r\n"
                     "NETMASK=255.255.255.0\r\nGATEWAY=192.168.1.1\r\nDNS=192.168.1.1\r\n"
-                    f"SSH_PUBKEY={TEST_KEY}\r\nTELNET=yes\r\nHTTPS_CHECK=no\r\n").encode("utf-8")
+                    f"SSH_PUBKEY={TEST_KEY}\r\nTELNET=yes\r\n").encode("utf-8")
         r = self.rabbit("windows", rootfs_version="11.03.10.00", settings=settings)
         r.boot()
         self.assert_flashed(r, ssid="my net")
@@ -259,25 +259,22 @@ class UsbKeyTest(unittest.TestCase):
                          'IP="192.168.1.20"\nNETMASK="255.255.255.0"\nGATEWAY="192.168.1.1"\nDNS="192.168.1.1"\n')
         self.assertEqual((conf / "authorized_keys").read_text(), TEST_KEY + "\n")
         self.assertEqual((conf / "telnet").read_text(), "yes\n")
-        self.assertEqual((conf / "https_check").read_text(), "no\n")
         self.assertNotIn("pa ss word", r.setuplog(), "the Wi-Fi password must not be logged")
 
     def test_blank_settings_keep_the_rabbits(self):
         # An update with an empty lapinlibre.txt keeps the rabbit's Wi-Fi, address,
         # SSH key and telnet choice (all in /usr/etc/conf, which installs keep).
-        r = self.rabbit("blank", build_id="0123456789abcdef", settings="WIFI_SSID=\nSSH_PUBKEY=\nTELNET=\nHTTPS_CHECK=\n")
+        r = self.rabbit("blank", build_id="0123456789abcdef", settings="WIFI_SSID=\nSSH_PUBKEY=\nTELNET=\n")
         conf = r.sb / "usr/etc/conf"
         (conf / "network.conf").write_text('IP="10.1.1.5"\n', newline="\n")
         (conf / "authorized_keys").write_text(TEST_KEY + "\n", newline="\n")
         (conf / "telnet").write_text("no\n", newline="\n")
-        (conf / "https_check").write_text("no\n", newline="\n")
         r.boot()
         self.assert_flashed(r, ssid=None)
         self.assertEqual((conf / "wpa.conf").read_text(), "kept\n")
         self.assertEqual((conf / "network.conf").read_text(), 'IP="10.1.1.5"\n')
         self.assertEqual((conf / "authorized_keys").read_text(), TEST_KEY + "\n")
         self.assertEqual((conf / "telnet").read_text(), "no\n")
-        self.assertEqual((conf / "https_check").read_text(), "no\n")
 
     def test_app_server_and_language(self):
         # SERVER points the controller (karotz.conf) and voice-daemon (voice.conf) at
@@ -330,7 +327,6 @@ class UsbKeyTest(unittest.TestCase):
                 ("bad-server", TEST_SETTINGS + "SERVER=http://pc\n", "SERVER must be a host name"),
                 ("bad-language", TEST_SETTINGS + "LANGUAGE=french\n", "LANGUAGE must look like"),
                 ("bad-name", TEST_SETTINGS + "HOSTNAME=My_Rabbit\n", "HOSTNAME must be"),
-                ("bad-https-check", TEST_SETTINGS + "HTTPS_CHECK=off\n", "HTTPS_CHECK must be yes, no or empty"),
                 ("short-web-password", TEST_SETTINGS + "WEB_PASSWORD=short\n", "WEB_PASSWORD must be"),
                 ("long-web-password", TEST_SETTINGS + "WEB_PASSWORD=" + "x" * 65 + "\n", "WEB_PASSWORD must be"),
                 ("web-password-colon", TEST_SETTINGS + "WEB_PASSWORD=pass:word1\n", "WEB_PASSWORD must be"),

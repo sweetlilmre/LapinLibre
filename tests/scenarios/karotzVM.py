@@ -51,6 +51,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import threading
 from pathlib import Path
 
 DAEMON = "karotzVM"
@@ -654,6 +655,8 @@ END = None
 TIMESHIFT = False
 # The shift karotzVM's clock starts with (seconds, may be negative; with TIMESHIFT).
 TIMESHIFT_START = None
+# (seconds after the start, shift): the shift karotzVM's clock takes then (with TIMESHIFT).
+TIMESHIFT_LATER = None
 # Extra environment for karotzVM, and HTTPS servers for the helper: [(port, certificate file,
 # key file)], each serving what 127.0.0.1:8088 serves (tests/aggressive).
 EXTRA_ENV = {}
@@ -774,11 +777,17 @@ def drive(d, bus):
     env = {**os.environ, "PATH": f"{make_stub_dir(work)}:/usr/bin:/bin", "TZ": "UTC0"}
     helper = HERE / "karotzvm_controller.py"
     script = LOOPBACK_UP + f'exec python3 -I -B {helper} {work / "config.json"}'
+    later = None
+    if TIMESHIFT and TIMESHIFT_LATER is not None:
+        later = threading.Timer(TIMESHIFT_LATER[0], (work / "timeshift").write_text, [str(TIMESHIFT_LATER[1])])
+        later.start()
     try:
         subprocess.run([*SANDBOX, "/bin/sh", "-c", script], env=env, timeout=1500,
                        stdout=open(work / "helper.log", "w"), stderr=subprocess.STDOUT)
     except subprocess.TimeoutExpired:
         record.append("== helper timed out")
+    if later is not None:
+        later.cancel()
     try:
         record.extend(json.load(open(work / "record.json")))
     except (OSError, ValueError) as e:
