@@ -388,7 +388,7 @@ The configuration (`system/buildroot.config`) enables these groups of packages:
 | Group | Packages |
 |---|---|
 | Root tools | BusyBox 1.37 (configuration `system/external/busybox.config`), bash, mtd-utils, wireless tools, e2fsprogs, util-linux (libuuid and programs), strace, netcat, iw, wpa_supplicant (WEXT and nl80211), Dropbear, mdnsd (with the SSH service), liblockfile and lockfile-progs, GnuPG 1.4 (AES and RSA), crda and wireless-regdb |
-| Libraries | libiconv, GNU gettext (`BR2_SYSTEM_ENABLE_NLS=y`, for `libintl.so.8`), ncurses, zlib, OpenSSL (with the `openssl` program), libcurl, D-Bus, dbus-glib, expat, libxml2, GLib, libgcrypt, libgpg-error, libnl, libjpeg-turbo (with its tools), libpng |
+| Libraries | libiconv, GNU gettext (`BR2_SYSTEM_ENABLE_NLS=y`, for `libintl.so.8`), ncurses, zlib, OpenSSL (with the `openssl` program), libcurl, ca-certificates (the image keeps its hash links in `/etc/ssl/certs`, each as a file, and its bundle file), D-Bus, dbus-glib, expat, libxml2, GLib, libgcrypt, libgpg-error, libnl, libjpeg-turbo (with its tools), libpng |
 | Audio and video | FLAC, libogg, libvorbis, Tremor, libtheora, Speex, SpeexDSP, libmad, madplay, libid3tag, libmms, FFmpeg (a selected set of audio decoders, demuxers, parsers and protocols, `pcm_s16le` and `wav` out, and no devices) |
 | LapinLibre's own packages | See the next table |
 

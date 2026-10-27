@@ -786,7 +786,9 @@ The global functions and objects:
 | `http.post2(...)` | access `http` | `{header, content}`. |
 | `social.init(cb [, data])` | | Gets the `social` part of the configuration, adds `social.twitter`, `social.facebook` and `social.soundcloud` for the granted accesses, then calls `cb(data)`. |
 
-`http` must connect within 10 s, and a transfer slower than 1 byte a second for 30 s fails. It does not check certificates. On a curl error the content is `"curl error"`.
+`http` must connect within 10 s, and a transfer slower than 1 byte a second for 30 s fails. On a curl error the content is `"curl error"`.
+
+`http` checks HTTPS servers' certificates, and the `social` posts use the same checks. The certificate must lead to one of the CA certificates in `/etc/ssl/certs` (from the ca-certificates package, one file per certificate, named by its subject hash; `$SSL_CERT_DIR` replaces the directory), and it must name the host. A request that fails the check gets `"curl error"`, and the log has a `certificate check failed` warning that gives the reason. OpenSSL reads only the CA certificate that a server's chain needs. On the rabbit, the check adds about 0.2 s of CPU to a request; curl's single bundle file, `ca-certificates.crt`, would add about 1.1 s. The rabbit's clock reads 1970 at every boot until `ntpd` sets it. While the clock is earlier than 2026, certificates' dates aren't checked, but the chain and the name still are. `HTTPS_CHECK=no` in `lapinlibre.txt` (`/usr/etc/conf/https_check`) turns the checks off, for applications that call servers with self-signed or expired certificates. karotzVM reads the setting before each request.
 
 The `karotz` object:
 

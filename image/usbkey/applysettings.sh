@@ -1,7 +1,7 @@
 #!/bin/bash
 # SPDX-License-Identifier: MIT
 # The key's settings (lapinlibre.txt) onto the rabbit: the Wi-Fi network,
-# a fixed address or DHCP, the SSH key, the telnet choice, the web page's password, the app server
+# a fixed address or DHCP, the SSH key, the telnet choice, the HTTPS checks, the web page's password, the app server
 # and the language, all in /usr/etc/conf, which installs keep.
 # A value left empty keeps what the rabbit has.
 #
@@ -18,7 +18,7 @@ FILE=/mnt/usbkey/lapinlibre.txt
 CONF=/usr/etc/conf
 BOM=$(printf '\357\273\277')
 
-WIFI_SSID= WIFI_PASSWORD= IP= NETMASK= GATEWAY= DNS= SSH_PUBKEY= TELNET= WEB_PASSWORD=
+WIFI_SSID= WIFI_PASSWORD= IP= NETMASK= GATEWAY= DNS= SSH_PUBKEY= TELNET= HTTPS_CHECK= WEB_PASSWORD=
 SERVER= TTS_SERVER= ASR_SERVER= LANGUAGE= HOSTNAME=
 problems=""
 problem() { problems="${problems}${problems:+; }$1"; }
@@ -40,7 +40,7 @@ if [ -f "${FILE}" ]; then
         value="${value#"${value%%[![:space:]]*}"}"
         case "${value}" in \"*\") value=${value#\"}; value=${value%\"} ;; \'*\') value=${value#\'}; value=${value%\'} ;; esac
         case "${key}" in
-        WIFI_SSID|WIFI_PASSWORD|IP|NETMASK|GATEWAY|DNS|SSH_PUBKEY|TELNET|WEB_PASSWORD|SERVER|TTS_SERVER|ASR_SERVER|LANGUAGE|HOSTNAME)
+        WIFI_SSID|WIFI_PASSWORD|IP|NETMASK|GATEWAY|DNS|SSH_PUBKEY|TELNET|HTTPS_CHECK|WEB_PASSWORD|SERVER|TTS_SERVER|ASR_SERVER|LANGUAGE|HOSTNAME)
             printf -v "${key}" '%s' "${value}" ;;
         *) problem "line ${n}: unknown setting ${key}" ;;
         esac
@@ -68,6 +68,7 @@ if [ -n "${SSH_PUBKEY}" ] && ! [[ "${SSH_PUBKEY}" =~ ^(ssh-ed25519|ssh-rsa|ecdsa
     problem "SSH_PUBKEY isn't one public key line (ssh-ed25519 AAAA... comment)"
 fi
 case "${TELNET}" in ''|yes|no) ;; *) problem "TELNET must be yes, no or empty" ;; esac
+case "${HTTPS_CHECK}" in ''|yes|no) ;; *) problem "HTTPS_CHECK must be yes, no or empty" ;; esac
 # The web password: printable ASCII without spaces (values are trimmed), and none of the
 # characters the web server's configuration or the settings file give a meaning to.
 web_password_ok() {
@@ -112,6 +113,11 @@ fi
 if [ -n "${TELNET}" ]; then
     echo "${TELNET}" > "${CONF}/telnet"
     LOG "Settings: telnet ${TELNET}"
+fi
+# Read by karotzVM before each HTTPS request: "no" turns the certificate checks off.
+if [ -n "${HTTPS_CHECK}" ]; then
+    echo "${HTTPS_CHECK}" > "${CONF}/https_check"
+    LOG "Settings: HTTPS checks ${HTTPS_CHECK}"
 fi
 # The web password as given; the rabbit hashes it at its next start (inetd.sh) and removes this.
 # None given: no password, so any earlier one goes.

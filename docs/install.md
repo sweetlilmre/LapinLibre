@@ -129,6 +129,7 @@ The install does not change other files on the key, for example music folders.
 | `SSH_PUBKEY` | One public key line: `ssh-ed25519`, `ssh-rsa` or `ecdsa-sha2-nistp…`. The rabbit accepts SSH logins with this key only. There is no password login. | `/usr/etc/conf/authorized_keys` |
 | `WEB_PASSWORD` | 8 to 64 printable characters, without spaces, `"`, `\` or `:`. With a password, the web page and the API ask for the user `admin` and this password. Empty removes the password. | `/usr/etc/conf/web_password` |
 | `TELNET` | `yes` or `no`. `yes` gives a root shell with no password to all on your network: use it for tests only. | `/usr/etc/conf/telnet` |
+| `HTTPS_CHECK` | `yes` or `no`. `no` turns off the certificate checks of applications' HTTPS requests (`http` in karotzVM). Without the setting, the checks are on. | `/usr/etc/conf/https_check` |
 | `SERVER` | The host name or address of the computer that runs the app server. See [app-server.md](app-server.md). | `/usr/etc/conf/karotz.conf`: the platform at port 9123, the applications at `http://SERVER:8080` |
 | `TTS_SERVER` | A URL like `http://192.168.1.10:8081`, if the speech server is not on `SERVER`. Default: `http://SERVER:8081`. | `/usr/etc/conf/voice.conf`, one entry for each language |
 | `ASR_SERVER` | `host` or `host:port`, if the speech recognition server is not on `SERVER`. Default: `SERVER:8443`. | `/usr/etc/conf/voice.conf` |

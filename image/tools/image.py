@@ -154,6 +154,29 @@ def timezone_list(changes):
     return text.encode("ascii")
 
 
+def ca_certificates(changes):
+    """{path in /usr: data} of the CA directory: each of the system build's hash links in
+    etc/ssl/certs (ca-certificates, made with c_rehash) as a file of its own, with the certificate
+    it leads to. OpenSSL reads only the one a server's chain needs; curl's bundle file is left out."""
+    target = (work_dir() / "system" / "out" / "target").resolve()
+    certs = target / "etc" / "ssl" / "certs"
+    out = {}
+    for link in sorted(certs.glob("*")) if certs.is_dir() else []:
+        if not re.fullmatch(r"[0-9a-f]{8}\.[0-9]+", link.name):
+            continue
+        real = link.resolve()
+        if not real.is_file() or target not in real.parents:
+            raise ImageError(f"etc/ssl/certs/{link.name} leads outside the system build's target")
+        data = real.read_bytes()
+        if not data.startswith(b"-----BEGIN CERTIFICATE-----"):
+            raise ImageError(f"etc/ssl/certs/{link.name} isn't a PEM certificate")
+        out[f"etc/ssl/certs/{link.name}"] = data
+    if not out:
+        raise ImageError("the system build has no CA certificates in etc/ssl/certs (BR2_PACKAGE_CA_CERTIFICATES)")
+    changes.append(f"usr: etc/ssl/certs: {len(out)} CA certificates")
+    return out
+
+
 def core_generated(changes):
     """{(part, path): data} of the files system/core-files.txt marks generated. The core's inetd.conf
     serves the rabbit's web page (BusyBox httpd on port 80, IPv4, at most 60 connections a minute)
@@ -171,6 +194,8 @@ def core_generated(changes):
            ("rootfs", "lib/firmware/rt73.bin"): firmware.read_bytes(),
            ("rootfs", "lib/firmware/LICENCE.ralink-firmware.txt"): licence.read_bytes(),
            ("usr", "etc/timezone.list"): timezone_list(changes)}
+    for path, data in ca_certificates(changes).items():
+        out[("usr", path)] = data
     for name, notes in SOUNDS.items():
         out[("usr", f"karotz/sounds/{name}")] = tone_wav(notes)
     for name, notes in EFFECTS.items():

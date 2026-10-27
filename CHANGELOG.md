@@ -1,6 +1,11 @@
 <!-- SPDX-License-Identifier: MIT -->
 # Changelog
 
+## Unreleased
+
+### Changed
+
+- Applications' HTTPS requests (`http` in karotzVM, and the `social` posts) now check the server's certificate against the CA certificates in `/etc/ssl/certs`, from the ca-certificates package. A request to a server whose certificate is self-signed, expired or for another name gets `"curl error"`, and the log says why. The check adds about 0.2 s of CPU per request on the rabbit. Until `ntpd` sets the clock after a boot, certificates' dates aren't checked. The new `HTTPS_CHECK=no` setting in `lapinlibre.txt` turns the checks off.
 ## v0.1.1 (2026-10-26)
 
 ### Fixed

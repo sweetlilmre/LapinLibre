@@ -652,6 +652,12 @@ END = None
 # Whether karotzVM runs with tests/fakes/timeshift-arm.c's preload, so that the
 # helper's CMD:age=N can move its clock (tests/aggressive).
 TIMESHIFT = False
+# The shift karotzVM's clock starts with (seconds, may be negative; with TIMESHIFT).
+TIMESHIFT_START = None
+# Extra environment for karotzVM, and HTTPS servers for the helper: [(port, certificate file,
+# key file)], each serving what 127.0.0.1:8088 serves (tests/aggressive).
+EXTRA_ENV = {}
+HTTPS = []
 
 LAUNCHES = [
     ("basic normal inst-1", 90),
@@ -747,6 +753,10 @@ def drive(d, bus):
     if TIMESHIFT:
         extra = ["-E", f"LD_PRELOAD={harness.FAKES / 'timeshift-arm.so'}",
                  "-E", f"KAROTZ_TIMESHIFT_FILE={work / 'timeshift'}"]
+        if TIMESHIFT_START is not None:
+            (work / "timeshift").write_text(str(TIMESHIFT_START))
+    for name, value in EXTRA_ENV.items():
+        extra += ["-E", f"{name}={value}"]
     command = harness.qemu_command(d.sysroot, d.build, DAEMON, extra)
     config = {
         "command": command,
@@ -758,6 +768,7 @@ def drive(d, bus):
         "record": str(work / "record.json"),
         "end": END,
         "timeshift": str(work / "timeshift"),
+        "https": [[port, str(cert), str(key)] for port, cert, key in HTTPS],
     }
     (work / "config.json").write_text(json.dumps(config))
     env = {**os.environ, "PATH": f"{make_stub_dir(work)}:/usr/bin:/bin", "TZ": "UTC0"}

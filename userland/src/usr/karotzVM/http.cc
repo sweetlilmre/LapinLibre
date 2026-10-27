@@ -26,12 +26,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #include <fstream>
 #include <string>
 #include <vector>
 
 #include <curl/curl.h>
+#include <openssl/ssl.h>
+#include <openssl/x509_vfy.h>
 
 #include "karotzvm.h"
 
@@ -71,6 +74,57 @@ static size_t curl_append(void *ptr, size_t size, size_t nmemb, void *userdata)
 #define CHARSET_SCAN_LENGTH 200 /* how far into the body to look for encoding= */
 #define CONNECT_TIMEOUT_S 10     /* to make the connection */
 #define STALL_TIMEOUT_S 30       /* below 1 byte a second, the transfer fails */
+
+/* HTTPS servers' certificates are checked against the CA certificates in
+ * CA_DIR (one file per certificate, named by its subject hash), or in
+ * $SSL_CERT_DIR when that is set. A "no" in HTTPS_CHECK_FILE (the install's
+ * HTTPS_CHECK setting) turns the checks off. */
+#define CA_DIR "/etc/ssl/certs"
+#define HTTPS_CHECK_FILE "/usr/etc/conf/https_check"
+/* The rabbit's clock starts at 1970 at every boot until ntpd sets it: before
+ * 2026-01-01 it counts as not set, and certificates' dates aren't checked. */
+#define CLOCK_SET_AFTER 1767225600L
+
+/* Whether HTTPS_CHECK_FILE leaves the certificate checks on. */
+static bool https_check_on(void)
+{
+    char text[8] = "";
+    FILE *f = fopen(HTTPS_CHECK_FILE, "r");
+    if (f == NULL)
+        return true;
+    size_t n = fread(text, 1, sizeof text - 1, f);
+    fclose(f);
+    text[n] = '\0';
+    return strncmp(text, "no", 2) != 0;
+}
+
+/* CURLOPT_SSL_CTX_FUNCTION while the clock isn't set: the chain and the
+ * name are still checked, the dates aren't. */
+static CURLcode skip_cert_dates(CURL *curl, void *ssl_ctx, void *userdata)
+{
+    (void)curl;
+    (void)userdata;
+    X509_VERIFY_PARAM_set_flags(SSL_CTX_get0_param(static_cast<SSL_CTX *>(ssl_ctx)), X509_V_FLAG_NO_CHECK_TIME);
+    return CURLE_OK;
+}
+
+/* The certificate options of a request: checked against the CA directory
+ * (curl's default CA file is left out), or not at all. */
+static void set_cert_checks(CURL *curl)
+{
+    if (!https_check_on()) {
+        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
+        return;
+    }
+    const char *dir = getenv("SSL_CERT_DIR");
+    curl_easy_setopt(curl, CURLOPT_CAINFO, (char *)NULL);
+    curl_easy_setopt(curl, CURLOPT_CAPATH, dir != NULL && dir[0] != '\0' ? dir : CA_DIR);
+    if (time(NULL) < CLOCK_SET_AFTER) {
+        g_log(KVM_LOG, G_LOG_LEVEL_INFO, "the clock isn't set: certificate dates not checked");
+        curl_easy_setopt(curl, CURLOPT_SSL_CTX_FUNCTION, skip_cert_dates);
+    }
+}
 
 /*
  * genCurlPostSimple: "k1=v1&k2=v2" with curl_escape'd keys and
@@ -329,7 +383,7 @@ static int utf8_size(iconv_t cd, char *data, size_t length, size_t *size)
  * httpCall: performs the request (a POST when post is not NULL: a PostData,
  * or with is_form the FormPart list of a multipart form, a GET when that
  * list is empty) and returns {header, content} when full is 1, otherwise the content
- * string. Certificates are not verified. On a curl error the content is
+ * string. HTTPS certificates are checked as set_cert_checks says. On a curl error the content is
  * "curl error". A body that announces another charset is converted to
  * UTF-8 with libiconv (failures are reported with printf on stdout and
  * leave the body as it is).
@@ -342,10 +396,12 @@ static v8::Handle<v8::Value> http_call(const char *url, curl_slist *headers, voi
     memcpy(to_code, "UTF-8", 6);
     /* A failed curl_easy_init counts as a curl error. */
     CURLcode result = CURLE_FAILED_INIT;
+    char error_text[CURL_ERROR_SIZE] = "";
 
     CURL *curl = curl_easy_init();
     if (curl != NULL) {
-        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+        set_cert_checks(curl);
+        curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, error_text);
         curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1L);
         curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, (long)CONNECT_TIMEOUT_S);
         curl_easy_setopt(curl, CURLOPT_LOW_SPEED_LIMIT, 1L);
@@ -473,6 +529,8 @@ static v8::Handle<v8::Value> http_call(const char *url, curl_slist *headers, voi
         }
     } else {
         g_log(KVM_LOG, G_LOG_LEVEL_WARNING, "curl error code: %d", result);
+        if (result == CURLE_PEER_FAILED_VERIFICATION || result == CURLE_SSL_CACERT_BADFILE)
+            g_log(KVM_LOG, G_LOG_LEVEL_WARNING, "certificate check failed: %s", error_text);
         body.data = static_cast<char *>(realloc(body.data, 11));
         if (body.data == NULL) {
             g_log(KVM_LOG, G_LOG_LEVEL_CRITICAL, "realloc() failed");

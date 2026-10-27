@@ -273,12 +273,13 @@ def build_core(rootfs, usr, core_files, target: Path, own: dict, accepted_file: 
                core_dir: "Path | None" = None, generated: "dict | None" = None):
     """Fill the empty parts from the core lists (system/core-files.txt), then check the libraries
     and symbols; returns the count of entries made.
-    Sources beyond target and own: core, core_dir/<part>/<path>; generated, generated[(part, path)]."""
+    Sources beyond target and own: core, core_dir/<part>/<path>; generated, generated[(part, path)],
+    or for a path dir/*, every generated file in dir."""
     if not (target / "lib").is_dir():
         raise SystemBuildError(f"no {target} (run ./build.sh system)")
     parts = {"rootfs": rootfs, "usr": usr}
     generated = generated or {}
-    entries, seen = [], {}
+    entries, seen, placed = [], {}, set()
     for core_file in core_files:
         for n, label, path, kind, f, reason in read_core(core_file):
             where = f"{core_file.name}:{n}: {label}:{path}"
@@ -311,6 +312,18 @@ def build_core(rootfs, usr, core_files, target: Path, own: dict, accepted_file: 
                 data = src.read_bytes()
                 if data.startswith(b"#!") and b"\r" in data:
                     raise SystemBuildError(f"{where}: {src} has CRLF line endings; the rabbit's shell can't run it")
+            elif source == "generated" and path.endswith("/*"):
+                # Every generated file in that directory, each with this entry's mode and owner.
+                folder = path[:-1]
+                names = sorted(p for (l, p) in generated if l == label and p.startswith(folder) and "/" not in p[len(folder):])
+                if not names:
+                    raise SystemBuildError(f"{where}: the image build made no files there")
+                for name in names:
+                    part.put_file(name, generated[(label, name)])
+                    part.chmod(name, mode)
+                    part.chown(name, uid, gid)
+                    placed.add((label, name))
+                continue
             elif source == "generated":
                 if (label, path) not in generated:
                     raise SystemBuildError(f"{where}: the image build made no such file")
@@ -330,7 +343,7 @@ def build_core(rootfs, usr, core_files, target: Path, own: dict, accepted_file: 
     missing_own = sorted(f"{l}:{p}" for l, p in own if (l, p) not in listed)
     if missing_own:
         raise SystemBuildError("LapinLibre builds not in system/core-files.txt: " + ", ".join(missing_own))
-    used = {(label, path) for _, label, path, kind, f, _ in entries if kind == "f" and f[2] == "generated"}
+    used = placed | {(label, path) for _, label, path, kind, f, _ in entries if kind == "f" and f[2] == "generated"}
     unused = sorted(f"{l}:{p}" for l, p in generated if (l, p) not in used)
     if unused:
         raise SystemBuildError("generated files no core list places: " + ", ".join(unused))

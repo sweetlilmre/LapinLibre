@@ -7,6 +7,7 @@
 #                                          core, image/core/<part>/<path> in this repository;
 #                                          generated, made by image/tools/image.py (the sounds,
 #                                          inetd.conf, the pinned firmware)
+#   part:dir/* f MODE UID:GID generated    every file image/tools/image.py made in dir, each a file
 #   part:path l TARGET                     a symbolic link
 #   part:path d MODE UID:GID               a directory
 #   part:path c|b MODE UID:GID RDEV        a device node
@@ -1408,6 +1409,10 @@ usr:karotz/.ssh d 0700 0:0
 usr:karotz/.ssh/authorized_keys l /usr/etc/conf/authorized_keys  # the install writes the key from lapinlibre.txt into /usr/etc/conf, which installs keep
 usr:karotz/sounds d 0755 0:0
 usr:etc/timezone.list f 0644 0:0 generated  # every zone of the pinned tzdata, with its POSIX TZ (image/tools/tzlist.py)
+usr:etc/ssl d 0755 0:0
+usr:etc/ssl/certs d 0755 0:0
+usr:etc/ssl/certs/* f 0644 0:0 generated  # the CA certificates karotzVM checks HTTPS servers against, one file each, named by subject hash (ca-certificates)
+usr:etc/ssl/certs/ca-certificates.crt f 0644 0:0 target:etc/ssl/certs/ca-certificates.crt  # the same in one file, curl's default: the tag listener's requests and the daemons
 usr:karotz/sounds/boot-ready.wav f 0644 0:0 generated  # the ready chime, made by the build
 usr:karotz/sounds/button-long.wav f 0644 0:0 generated
 usr:karotz/sounds/button-click.wav f 0644 0:0 generated

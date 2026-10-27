@@ -22,7 +22,8 @@ waits for the child to end (watch_children() sees its process go), while it
   memory, as a "MEM: rss" line) and CMD:burst=<event>,<n> (an event n
   times at once);
   a launch's options can refuse interactive mode or answer it late;
-- serves HTTP on 127.0.0.1:8088 for http.get/post, recording each request.
+- serves HTTP on 127.0.0.1:8088 for http.get/post, recording each request, and the same over
+  HTTPS on the config's "https" ports, each with its own certificate (tests/aggressive).
 
 It writes a JSON list of record lines: per launch, karotzVM's stderr, the
 messages karotzVM sent, the HTTP requests, and at the end its stdout. UUIDs
@@ -36,6 +37,7 @@ import os
 import re
 import signal
 import socket
+import ssl
 import struct
 import subprocess
 import sys
@@ -493,6 +495,26 @@ def http_server():
     http.server.ThreadingHTTPServer(("127.0.0.1", 8088), HttpHandler).serve_forever()
 
 
+class HttpsServer(http.server.ThreadingHTTPServer):
+    def shutdown_request(self, request):
+        # The answer has no length, so it ends with the connection: TLS's close_notify first,
+        # without which OpenSSL 3 takes the end for a truncation (curl error 56).
+        try:
+            request.settimeout(2)
+            request.unwrap()
+        except (OSError, ValueError):
+            pass
+        super().shutdown_request(request)
+
+
+def https_server(port, cert, key):
+    server = HttpsServer(("127.0.0.1", port), HttpHandler)
+    context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+    context.load_cert_chain(cert, key)
+    server.socket = context.wrap_socket(server.socket, server_side=True)
+    server.serve_forever()
+
+
 def read_stderr(stream):
     for raw in iter(stream.readline, b""):
         line = raw.decode(errors="replace").rstrip("\n")
@@ -532,6 +554,8 @@ def normalise(lines):
 def main():
     threading.Thread(target=controller_server, daemon=True).start()
     threading.Thread(target=http_server, daemon=True).start()
+    for port, cert, key in CONFIG.get("https", []):
+        threading.Thread(target=https_server, args=(port, cert, key), daemon=True).start()
     time.sleep(0.2)
     stdout = open(CONFIG["stdout"], "wb")
     proc = subprocess.Popen(CONFIG["command"] + CONFIG["args"], stdin=subprocess.PIPE, stdout=stdout,

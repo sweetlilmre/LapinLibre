@@ -129,6 +129,12 @@ urls = ["https://sources.buildroot.net/busybox/busybox-1.37.0.tar.bz2", "https:/
 file = "br2026/busybox/busybox-1.37.0.tar.bz2"
 sha256 = "3311dff32e746499f4df0d5df04d7eb396382d7e108bb9250e7b519b837043a4"
 
+[download.br-ca-certificates-ca-certificates-20260223-tar-xz]
+group = "system"
+urls = ["https://sources.buildroot.net/ca-certificates/ca-certificates_20260223.tar.xz", "https://snapshot.debian.org/archive/debian/20260223T202245Z/pool/main/c/ca-certificates/ca-certificates_20260223.tar.xz"]
+file = "br2026/ca-certificates/ca-certificates_20260223.tar.xz"
+sha256 = "2fa2b00d4360f0d14ec51640ae8aea9e563956b95ea786e3c3c01c4eead42b56"
+
 [download.br-dbus-dbus-1-14-10-tar-xz]
 group = "system"
 urls = ["https://sources.buildroot.net/dbus/dbus-1.14.10.tar.xz", "https://dbus.freedesktop.org/releases/dbus/dbus-1.14.10.tar.xz"]

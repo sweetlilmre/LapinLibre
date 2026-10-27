@@ -5,8 +5,9 @@
  *
  * time() returns the real time plus a number of seconds read, on every call,
  * from the file named by $KAROTZ_TIMESHIFT_FILE (no file, or no variable: no
- * shift). The test's fake controller writes the file to age karotzVM's reply
- * handlers past their ten hours without waiting for them.
+ * shift; a leading "-" moves it back). The test's fake controller writes the
+ * file to age karotzVM's reply handlers past their ten hours without waiting
+ * for them; karotzvm_https moves the clock back to 1970, as the rabbit's is at boot.
  *
  * The rabbit's libc is uClibc, so this is freestanding: build with
  *   arm-buildroot-linux-uclibcgnueabi-gcc (the system toolchain's) -march=armv4t -marm -O2 -nostdlib -shared -fPIC -Wl,--hash-style=sysv
@@ -45,7 +46,7 @@ static long shift(void)
 {
     const char *path = shift_file();
     char text[24];
-    long fd, n, i, v = 0;
+    long fd, n, i = 0, v = 0, sign = 1;
 
     if (path == 0)
         return 0;
@@ -54,9 +55,13 @@ static long shift(void)
         return 0;
     n = syscall3(3 /* __NR_read */, fd, (long)text, sizeof text);
     syscall3(6 /* __NR_close */, fd, 0, 0);
-    for (i = 0; i < n && text[i] >= '0' && text[i] <= '9'; i++)
+    if (n > 0 && text[0] == '-') {
+        sign = -1;
+        i = 1;
+    }
+    for (; i < n && text[i] >= '0' && text[i] <= '9'; i++)
         v = v * 10 + (text[i] - '0');
-    return v;
+    return sign * v;
 }
 
 long time(long *t)
