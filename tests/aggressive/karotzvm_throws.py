@@ -9,6 +9,9 @@
 - http.get and http.post with wrong arguments, social.twitter.sign,
   social.facebook.get and social.soundcloud.post before social.init: each
   throws into the application, which catches it.
+- At the top level of main.js (a second application, "toplevel"): http.get()
+  and a JavaScript throw are both caught, and the application carries on to
+  exit().
 
 What must hold: the application reaches its end, every listener was called
 twice (once per event, so it was kept after throwing), every listener's
@@ -71,31 +74,18 @@ add(function () {
 start();
 """
 
+# At the top level of main.js: a native call's exception and a JavaScript throw are both caught,
+# and the application carries on to exit() there.
 TOPLEVEL_JS = r"""
 try { log("top get() -> " + http.get()); } catch (e) { log("top get() threw " + e); }
+try { throw new Error("js"); } catch (e) { log("top throw caught " + e); }
 log("top survived");
 exit();
 """
 
-PROBES = {
-    "t1": 'log("t1 start"); log("t1 end"); exit();',
-    "t2": 'log("t2 start"); try { karotz.led.light(); } catch (e) { log("t2 caught " + e); } log("t2 end"); exit();',
-    "t3": 'log("t3 start"); try { http.get(); } catch (e) { log("t3 caught " + e); } log("t3 end"); exit();',
-    "t4": 'log("t4 start"); try { throw new Error("js"); } catch (e) { log("t4 caught " + e); } log("t4 end"); exit();',
-    "t5": 'function f() { karotz.led.light(); } log("t5 start"); try { f(); } catch (e) { log("t5 caught " + e); } '
-          'log("t5 end"); exit();',
-    "t6": 'log("t6 start"); try { throw new Error("js"); } catch (e) { log("t6 caught " + e); } '
-          'setTimeout(10, function () { log("t6 end"); exit(); return false; });',
-    "t7": 'log("t7 start"); try { log("t7 in try"); } catch (e) { } log("t7 end"); exit();',
-    "t8": 'log("t8 start"); try { throw new Error("js"); } catch (e) { log("t8 caught " + e); } log("t8 end");',
-    "t9": 'for (var i = 0; i < 1; i++) {} log("t9 start"); try { throw new Error("js"); } catch (e) { log("t9 caught " + e); } '
-          'log("t9 end"); exit();',
-}
-
 APPS = {"throws": {"accesses": kvm.ALL_ACCESSES, "main": THROWS_JS},
-        "toplevel": {"accesses": ["http"], "main": TOPLEVEL_JS},
-        **{name: {"accesses": kvm.ALL_ACCESSES, "main": js} for name, js in PROBES.items()}}
-LAUNCHES = [("throws manual", 180), ("toplevel", 60), ("t1", 60), ("t2", 60), ("t3", 60), ("t4", 60), ("t5", 60), ("t6", 60), ("t7", 60), ("t8", 60), ("t9", 60)]
+        "toplevel": {"accesses": ["http"], "main": TOPLEVEL_JS}}
+LAUNCHES = [("throws manual", 180), ("toplevel", 60)]
 
 
 def drive(d, bus):
@@ -127,4 +117,6 @@ def check(record):
             problems.append(f"{name}: not caught as an exception")
     if "JSLOG: top get() threw" not in text or "JSLOG: top survived" not in text:
         problems.append("http.get() at the top level of main.js: not caught (the VM died?)")
+    if "JSLOG: top throw caught Error: js" not in text:
+        problems.append("a throw at the top level of main.js: not caught")
     return problems

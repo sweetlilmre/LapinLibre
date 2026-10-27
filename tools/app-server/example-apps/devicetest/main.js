@@ -112,6 +112,29 @@ step("webcam.photo (uploaded to the server)", 30000, function (done) {
         if (seen.length == 2 || event.type != "OK") done(seen.join(", "));
     });
 });
+step("webcam.photo direct", 15000, function (done) {
+    karotz.webcam.photo("direct", function (event) { done(event.type); });
+});
+step("webcam video for 5 s, then videoStop", 15000, function (done) {
+    // A Response for each frame while the stream runs; after videoStop, at most the frame already
+    // on its way.
+    var frames = 0, failed = 0, after = 0, stopped = false;
+    karotz.webcam.photo("video", function (event) {
+        if (stopped) after++;
+        else if (event.type == "OK") frames++;
+        else failed++;
+        return true;
+    });
+    setTimeout(5000, function () {
+        stopped = true;
+        karotz.webcam.photo("videoStop");
+        setTimeout(3000, function () {
+            done(frames + " frame(s), " + failed + " failed, " + after + " after the stop");
+            return false;
+        });
+        return false;
+    });
+});
 step("record 3 s and upload", 30000, function (done) {
     karotz.multimedia.record(function (event) {
         if (event.type == "OK") {

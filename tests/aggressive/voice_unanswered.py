@@ -6,14 +6,19 @@ voice.conf (the scenario's own) names two ASR servers, 192.0.2.64/65 port
 to a dummy device, which drops every packet, as a host or firewall that
 drops packets does (a refused connection would fail at once); without a
 dummy device they lead to a listener whose accept queue is full, which
-Linux mostly leaves unanswered too. The ASR connection is made in
-the D-Bus method, so while it waits the whole daemon waits.
+Linux mostly leaves unanswered too. The ASR connection is made from the
+daemon's main loop, and the asr_start_* call is answered once it has failed.
 
 An asr_start_string is sent, and 1 s later a tts_stop. What must hold: the
-start is answered false and the asr_event reports the failure, and both
-answers come within the connect timeout per server (5 s each, two servers;
-30 s allowed under qemu). Without a timeout each server took the kernel's
-retries, about 189 s, and the daemon answered nothing meanwhile.
+start is answered false and the asr_event reports the failure, within the
+connect timeout per server (5 s each, two servers; 30 s allowed under qemu),
+and the tts_stop is answered meanwhile, within PROMPT_S. Without a timeout
+each server took the kernel's retries, about 189 s; with the connection made
+in the method, the daemon answered nothing until it was over.
+
+Then a second asr_start_string, and 1 s later an asr_stop: the stop is
+answered within PROMPT_S, the start then false, and that session signals no
+asr_event (asr_stop drops a session silently).
 """
 
 import os
@@ -36,6 +41,8 @@ FAKE_IOCTL_TYPES = vd.FAKE_IOCTL_TYPES
 sandbox_setup = vd.sandbox_setup
 
 ALLOWED_S = 30
+# For a call answered while a session connects (qemu-user is slow).
+PROMPT_S = 3
 
 
 def ip(*args):
@@ -127,17 +134,25 @@ def drive(d, bus):
                 return
             answers[name] = (time.time() - t, " | ".join(l.strip() for l in out.splitlines()
                                                          if not l.startswith("method return")))
-        start = threading.Thread(target=timed, args=("asr_start_string", "string:asr-silent",
-                                                     "string:oui | non", "string:fr-FR", "int32:0"))
-        start.start()
-        time.sleep(1)
-        timed("tts_stop", "string:nothing", "int32:0")
-        start.join(60)
+        def session(uid, then, name):
+            start = threading.Thread(target=timed, args=("asr_start_string", f"string:{uid}",
+                                                         "string:oui | non", "string:fr-FR", "int32:0"))
+            start.start()
+            time.sleep(1)
+            timed(then, "string:nothing", "int32:0")
+            start.join(60)
+            answers[name] = answers.pop("asr_start_string", (None, "no answer"))
+            answers[name + " " + then] = answers.pop(then)
+
+        session("asr-silent", "tts_stop", "start")
         vd.wait_signals(bus, 2, timeout=5)
-        for name in ("asr_start_string", "tts_stop"):
+        session("asr-stopped", "asr_stop", "stopped start")
+        time.sleep(2)
+        for name, limit in (("start", ALLOWED_S), ("start tts_stop", PROMPT_S), ("stopped start", PROMPT_S),
+                            ("stopped start asr_stop", PROMPT_S)):
             seconds, reply = answers.get(name, (None, "no answer"))
-            within = seconds is not None and seconds < ALLOWED_S
-            record.append(f"{name}: {reply}, within {ALLOWED_S} s: {within} ({seconds:.0f} s)" if seconds is not None
+            within = seconds is not None and seconds < limit
+            record.append(f"{name}: {reply}, within {limit} s: {within} ({seconds:.1f} s)" if seconds is not None
                           else f"{name}: no answer within 30 s")
     finally:
         proc.kill()
@@ -147,7 +162,7 @@ def drive(d, bus):
 
 
 def summary(record):
-    return "; ".join(l for l in record if l.startswith(("== the ASR servers:", "asr_start_string:", "tts_stop:")))
+    return "; ".join(l for l in record if l.startswith(("== the ASR servers:", "start", "stopped")))
 
 
 def check(record):
@@ -155,14 +170,15 @@ def check(record):
     problems = []
     if "== the ASR servers: silent: True" not in text:
         problems.append("the test's ASR servers weren't silent (connections were answered or refused)")
-    if not any(l.startswith("asr_start_string: boolean false") for l in record):
-        problems.append("asr_start_string wasn't answered false")
-    for name, reply in (("asr_start_string", "boolean false"), ("tts_stop", "boolean true")):
+    for name, reply in (("start", "boolean false"), ("start tts_stop", "boolean true"),
+                        ("stopped start", "boolean false"), ("stopped start asr_stop", "boolean true")):
         line = next((l for l in record if l.startswith(name + ":")), "")
-        if not line.startswith(f"{name}: {reply},") or f"within {ALLOWED_S} s: True" not in line:
-            problems.append(f"{name} wasn't answered {reply} within {ALLOWED_S} s: {line[:160] or 'no answer'}")
+        if not line.startswith(f"{name}: {reply},") or "s: True" not in line:
+            problems.append(f"{name} wasn't answered {reply} in time: {line[:160] or 'no answer'}")
     if 'asr_event(string "asr-silent"' not in text:
         problems.append("no asr_event for the failed session")
+    if 'asr_event(string "asr-stopped"' in text:
+        problems.append("an asr_event for the session asr_stop dropped")
     if "== daemon still running: True" not in text:
         problems.append("the daemon died")
     return problems

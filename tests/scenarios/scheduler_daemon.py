@@ -27,6 +27,11 @@ IFACE = "com.mindscape.karotz.KarotzInterface"
 # empty); compute the dates below in the same zone.
 os.environ["TZ"] = "UTC0"
 
+# The periodic entries' period (s). A periodic entry's next time counts from its previous due time,
+# so a step of the wall clock (WSL corrects its clock by seconds at a time) can bring it due again
+# at once; with this period, a step must be about as long to fire one twice before the delete.
+PERIOD = 10
+
 
 def call(bus, method, *args, timed=False):
     """Call a method; return its reply without the header that carries times and serials.
@@ -41,7 +46,7 @@ def call(bus, method, *args, timed=False):
     return f"{method}({shown}) -> {' | '.join(l.strip() for l in lines)}"
 
 
-def wait_for(bus, ident, count=1, timeout=20):
+def wait_for(bus, ident, count=1, timeout=30):
     """Wait until schedule_event for ident has been seen count times (or the timeout)."""
     needle = f'schedule_event(string "{ident}"'
     deadline = time.time() + timeout
@@ -77,16 +82,16 @@ def drive(d, bus):
     record.extend(harness.introspection(bus, SERVICE, PATH))
     record.append("== calls")
 
-    # Periodic, every 4 s: deleted after its first fire, before the next.
-    record.append(call(bus, "add_periodic_entry", "string:p1", "int32:4", "int32:0"))
+    # Periodic, every PERIOD s: deleted after its first fire, before the next.
+    record.append(call(bus, "add_periodic_entry", "string:p1", f"int32:{PERIOD}", "int32:0"))
     wait_for(bus, "p1")
     record.append(call(bus, "delete_entry", "string:p1"))
-    time.sleep(4)  # the stale timeout fires on an empty list: nothing emitted
+    time.sleep(PERIOD)  # the stale timeout fires on an empty list: nothing emitted
     record.append(call(bus, "delete_entry", "string:p1"))  # unknown now
 
     # delta 1: rand() % 1 is always 0, so this is deterministic (larger deltas
     # would depend on the C library's rand()).
-    record.append(call(bus, "add_periodic_entry", "string:p2", "int32:3", "int32:1"))
+    record.append(call(bus, "add_periodic_entry", "string:p2", f"int32:{PERIOD}", "int32:1"))
     wait_for(bus, "p2")
     record.append(call(bus, "delete_entry", "string:p2"))
 
@@ -137,11 +142,11 @@ def drive(d, bus):
     wait_for(bus, "weekly")
 
     # A periodic entry still running when everything is deleted stops firing.
-    record.append(call(bus, "add_periodic_entry", "string:p3", "int32:3", "int32:0"))
+    record.append(call(bus, "add_periodic_entry", "string:p3", f"int32:{PERIOD}", "int32:0"))
     wait_for(bus, "p3")
     record.append(call(bus, "print_task"))
     record.append(call(bus, "delete_all_entry"))
-    time.sleep(4)
+    time.sleep(PERIOD)
     record.append(call(bus, "delete_all_entry"))
     record.append(call(bus, "delete_entry", "string:weekly"))
     return record

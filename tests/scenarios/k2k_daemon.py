@@ -4,15 +4,16 @@
 What runs under qemu: start-up (karotz.conf read from the sysroot, account.conf
 missing so no account is registered, the controller absent so the rabbit is
 set busy), every exported method with valid and invalid arguments, and an
-unknown one. linphone can't start its SIP transport (eXosip's thread can't be
-created: qemu-user rejects LinuxThreads' clone()), so nothing goes on the
-wire and no registration or incoming call can happen; an outgoing call is
-still created, stays in progress (so a second call is refused) and ends on
-hangup with a finished_call signal. Every method replies, with a result
-saying whether calling, answering or hanging up worked.
+unknown one. The daemon's network namespace has no interface up, so nothing
+reaches another host and no registration or incoming call can happen; an
+outgoing call is still created, stays in progress (so a second call is
+refused) and ends on hangup with a finished_call signal. Every method
+replies, with a result saying whether calling, answering or hanging up
+worked. The aggressive test k2k_sip_peer puts calls on the wire, with a SIP
+peer on the loopback interface.
 
 /dev/dsp and /dev/mixer are FIFOs with the OSS ioctl types ('P', 'M') faked
-so mediastreamer finds a sound card; streams never start (no threads).
+so mediastreamer finds a sound card.
 Afterwards a helper owns com.mindscape.karotz.Controller and sends
 karotz_status_changed (available, unavailable, available); its effect (SIP
 presence) is only visible in the daemon's log.

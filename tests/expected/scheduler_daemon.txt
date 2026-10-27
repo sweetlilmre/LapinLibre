@@ -9,10 +9,10 @@ method com.mindscape.karotz.KarotzInterface.print_task()
 signal com.mindscape.karotz.KarotzInterface.registered()
 signal com.mindscape.karotz.KarotzInterface.schedule_event(out:s,out:i)
 == calls
-add_periodic_entry(string:p1 int32:4 int32:0) -> boolean true
+add_periodic_entry(string:p1 int32:10 int32:0) -> boolean true
 delete_entry(string:p1) -> boolean true
 delete_entry(string:p1) -> boolean false
-add_periodic_entry(string:p2 int32:3 int32:1) -> boolean true
+add_periodic_entry(string:p2 int32:10 int32:1) -> boolean true
 delete_entry(string:p2) -> boolean true
 add_periodic_entry(string:dup int32:1000 int32:0) -> boolean true
 add_periodic_entry(string:dup int32:2000 int32:0) -> boolean true
@@ -36,7 +36,7 @@ add_date_entry(string:any-year ...) -> boolean true
 add_weekly_entry(string:weekly ...) -> boolean true
 add_weekly_entry(string:next-week ...) -> boolean true
 add_weekly_entry(string:bad-day int32:9 int32:12 int32:0 int32:0) -> boolean true
-add_periodic_entry(string:p3 int32:3 int32:0) -> boolean true
+add_periodic_entry(string:p3 int32:10 int32:0) -> boolean true
 print_task() -> 
 delete_all_entry() -> boolean true
 delete_all_entry() -> boolean true

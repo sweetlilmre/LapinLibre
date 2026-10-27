@@ -16,12 +16,14 @@
       <arg name="result" type="b" direction="out"/>
     </method>
     <method name="asr_start_file">
+      <annotation name="org.freedesktop.DBus.GLib.Async" value=""/>
       <arg name="uid" type="s" direction="in"/>
       <arg name="filename" type="s" direction="in"/>
       <arg name="behaviour" type="i" direction="in"/>
       <arg name="result" type="b" direction="out"/>
     </method>
     <method name="asr_start_string">
+      <annotation name="org.freedesktop.DBus.GLib.Async" value=""/>
       <arg name="uid" type="s" direction="in"/>
       <arg name="grammar" type="s" direction="in"/>
       <arg name="lang" type="s" direction="in"/>

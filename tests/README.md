@@ -40,4 +40,28 @@ A failing scenario keeps its working directory (logs and `record.txt`) and print
 - `device/immortaldog.sh`: immortaldog's launching, relaunching, SIGTERM and pid-file handling. qemu-user can't judge it (it runs `vfork()` as `fork()`), so it runs on the rabbit, with a build copied to `/dev/shm`, or natively.
 - `device/web-api.sh`: the web page and API from RAM (a second httpd on 127.0.0.1:8099 with a test password), before the files are installed: authentication, each endpoint's reply, and the refusals. With `hardware` it also drives the LED (red, green and yellow only), the ears (within one turn), a tone, speech, the camera, and sleep and wake-up, starting and ending awake so it can be run again; run it with someone at the rabbit. With `tag` (someone at the rabbit with one RFID tag) it also learns a tag and checks the tag listener's action for it, and forgets the tag at the end. With `reboot` it also checks the reboot endpoint: the rabbit restarts about 10 s after the check.
 
+## Tested only on the rabbit
+
+These paths need the rabbit's hardware or its whole system, which the scenarios fake or stub, so they are tested by hand with the device test application, `tools/app-server/example-apps/devicetest`. Run the app server and the speech server on a computer (see `tools/app-server/README.md`), give the application an instance whose `server` parameter is that computer's app server (`http://<computer>:8080`), then `appctl.py run devicetest`. Each step's result is printed on the app server's console, and every step must end without "timed out" (the button's needs a press within 15 s). Run it twice: the first run's `message.new` leaves a message on the server, which the second run's `message.list`, `message.get` and `message.markAsRead` find. Like any application, the device test is installed in `/usr/karotz/apps` on the rabbit's flash; its picture goes to `/tmp/picture.jpg` and its recording to `/tmp`.
+
+| Path | What the scenarios do instead | The device test's step |
+|---|---|---|
+| karotzVM running a real application against the app server, end to end | karotzVM against a fake controller (`karotzvm_controller.py`), the controller against a fake karotzVM (`app_server.py`) | every step |
+| multimedia-daemon: karotz-player's playback of a file | a karotz-player stub that sleeps | `play a sound`: OK, then TERMINATED |
+| multimedia-daemon: MPD's database on the USB key | an `mpd` stub that exits | `multimedia.artist` lists the key's artists |
+| multimedia-daemon: a recording through flac, uploaded | flac not on PATH, so the recording fails | `record 3 s and upload`: TERMINATED, upload `"OK"` |
+| voice-daemon: speech played to the end | a `madplay` stub | `tts`: OK, then TERMINATED |
+| voice-daemon: speech recognition with the microphone | a fake ASR server and a regular file for `/dev/audio` | `asr.string` gives the server's answer (`--asr-answer`) |
+| webcam-daemon: a real capture and its upload | a regular file for `/dev/camera`, whose frames are empty | `webcam.photo (uploaded to the server)`: OK, then TERMINATED |
+| controller: the video stream and a direct snapshot | `controller_webcam_direct`, with no camera | `webcam.photo direct`: OK; `webcam video for 5 s, then videoStop`: frames, none failed, at most one after the stop |
+| controller: messages relayed between the platform and an application | `controller_message_query` forwards a query | `message.new`, then on the second run `message.list`, `message.get` (TEXT) and `message.markAsRead` (status 1) |
+| ears-daemon and led-daemon on the real devices | the device files are regular files, the ioctls faked | `led light`, `led pulse`, `led fade`, `ears move`, `ears reset`: OK, then TERMINATED |
+
+What no test reaches yet:
+
+- k2k-daemon's call audio: the aggressive test `k2k_sip_peer` calls a SIP peer on the loopback interface and is called by it (an INVITE with SDP, busy, declined, answered and hung up), with regular files for the sound devices, but no audio is checked, and a call between two rabbits has not been made.
+- `power` (rootfs) is followed only up to its first `reboot` command, since everything after it assumes the machine is going down.
+- karotzVM's JavaScript API calls that neither the scenario's test applications nor the device test make.
+- The programs' log output (`g_log` messages): the scenarios record signals, replies and device I/O, not the log.
+
 `image/test_web_api.py` runs the web API's programs on the host (with the image's BusyBox under qemu when it can, including its httpd), and `image/test_core_boot.py` the configuration `inetd.sh` makes for httpd.

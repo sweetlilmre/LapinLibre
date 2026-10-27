@@ -579,8 +579,8 @@ setTimeout(100, function () { log("about to throw"); return missing.thing; });
 setTimeout(600, function () { log("still alive after the throw"); exit(); return false; });
 """},
     "badinclude": {"accesses": ["led"], "summary": True, "files": {"bad.js": "var x = (1 +;\n"}, "main": r"""
-// (Quirk: at the top level, try/catch and exit() together kill V8 2.5
-// itself while it compiles the script, so this runs from a timer.)
+// From a timer, as the record was made; a top-level try/catch works as well
+// (aggressive test karotzvm_throws).
 setTimeout(10, function () {
     try { include("bad.js"); } catch (e) { log("include bad.js threw " + e); }
     log("after the include");
@@ -589,8 +589,8 @@ setTimeout(10, function () {
 });
 """},
     "missinginclude": {"accesses": ["led"], "summary": True, "main": r"""
-// (Quirk: at the top level, try/catch and exit() together kill V8 2.5
-// itself while it compiles the script, so this runs from a timer.)
+// From a timer, as the record was made; a top-level try/catch works as well
+// (aggressive test karotzvm_throws).
 setTimeout(10, function () {
     try { include("nofile.js"); } catch (e) { log("include nofile.js threw " + e); }
     log("after the include");

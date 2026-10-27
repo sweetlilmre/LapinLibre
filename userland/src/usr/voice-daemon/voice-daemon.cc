@@ -62,8 +62,9 @@ using lapinlibre::asr::Response;
  * How long a connection to a TTS or ASR server may take. Without a limit,
  * a server that doesn't answer at all (a host or firewall that drops the
  * packets, rather than refusing) is given up only when the kernel stops
- * retrying, about 189 s later. The ASR connection is made in the D-Bus
- * method, so the whole daemon waited that long; TTS runs in its child.
+ * retrying, about 189 s later. TTS connects in its child, ASR from the main
+ * loop (the asr_start_* call is answered once the session has started), so
+ * the daemon keeps answering while either waits.
  */
 #define TTS_CONNECT_TIMEOUT_S 10L
 #define ASR_CONNECT_TIMEOUT_S 5
@@ -99,6 +100,16 @@ typedef struct {
     char *asr_server;  /* host of the server in use */
     int asr_port;
     guint asr_source;  /* the idle callback streaming the audio */
+    /* While a session connects (asr_context set): the method's pending reply,
+     * the connection's watch and time limit, the servers tried so far, and
+     * the session's grammar (inline in asr_lang) or grammar file. */
+    DBusGMethodInvocation *asr_context;
+    guint connect_watch;
+    guint connect_timeout;
+    int connect_attempt;
+    char *asr_grammar;
+    char *asr_lang;
+    char *asr_file;
     int server_index;  /* the [asr] server<n> in use */
     int server_count;  /* nbserver */
     GKeyFile *conf;    /* voice.conf */
@@ -116,9 +127,9 @@ gboolean voice_object_tts_speak(VoiceObject *self, const char *id, const char *t
 gboolean voice_object_tts_stop(VoiceObject *self, const char *id, gint behaviour, gboolean *result,
                                GError **error);
 gboolean voice_object_asr_start_file(VoiceObject *self, const char *uid, const char *filename, gint behaviour,
-                                     gboolean *result, GError **error);
+                                     DBusGMethodInvocation *context);
 gboolean voice_object_asr_start_string(VoiceObject *self, const char *uid, const char *grammar,
-                                       const char *lang, gint behaviour, gboolean *result, GError **error);
+                                       const char *lang, gint behaviour, DBusGMethodInvocation *context);
 gboolean voice_object_asr_stop(VoiceObject *self, const char *id, gint behaviour, gboolean *result,
                                GError **error);
 }
@@ -309,58 +320,99 @@ static int asr_init(VoiceObject *self)
     return 0;
 }
 
-/* Connect to a server, trying each of them once at most. Returns 0 or -1. */
 /*
- * connect() with a time limit: non-blocking, then select() for up to
- * `seconds`. Returns 0 (the socket is blocking again), or -1 with errno
- * set (ETIMEDOUT when nothing answered in time).
+ * The connection of a starting session, made from the main loop so the
+ * daemon keeps answering meanwhile: each server is tried once at most, in
+ * turn, each for up to ASR_CONNECT_TIMEOUT_S. asr_connected(self, 0) runs
+ * once one has connected (asr_socket blocking again), asr_connected(self, -2)
+ * when none could be reached.
  */
-static int connect_with_timeout(int sock, const struct sockaddr_in *address, int seconds)
-{
-    int flags = fcntl(sock, F_GETFL, 0);
-    int error = 0;
-    socklen_t length = sizeof error;
-    fd_set writable;
-    struct timeval timeout = {seconds, 0};
-    int ready;
+static void asr_connected(VoiceObject *self, int ret);
+static void asr_connect_next(VoiceObject *self);
 
-    if (flags < 0 || fcntl(sock, F_SETFL, flags | O_NONBLOCK) < 0)
-        return -1;
-    if (connect(sock, (const struct sockaddr *)address, sizeof *address) < 0) {
-        if (errno != EINPROGRESS)
-            return -1;
-        FD_ZERO(&writable);
-        FD_SET(sock, &writable);
-        do
-            ready = select(sock + 1, NULL, &writable, NULL, &timeout);
-        while (ready < 0 && errno == EINTR);
-        if (ready == 0) {
-            errno = ETIMEDOUT;
-            return -1;
-        }
-        if (ready < 0)
-            return -1;
-        if (getsockopt(sock, SOL_SOCKET, SO_ERROR, &error, &length) < 0)
-            return -1;
-        if (error != 0) {
-            errno = error;
-            return -1;
-        }
-    }
-    return fcntl(sock, F_SETFL, flags) < 0 ? -1 : 0;
+/* Drop the attempt's watch and time limit. */
+static void asr_connect_unwatch(VoiceObject *self)
+{
+    if (self->connect_watch != 0)
+        g_source_remove(self->connect_watch);
+    if (self->connect_timeout != 0)
+        g_source_remove(self->connect_timeout);
+    self->connect_watch = 0;
+    self->connect_timeout = 0;
 }
 
-static int asr_connect(VoiceObject *self)
+/* The attempt failed (errno says why): close it and try the next server. */
+static void asr_connect_failed(VoiceObject *self)
+{
+    g_log(NULL, G_LOG_LEVEL_WARNING, "connect failed on '%s:%d': %s", self->asr_server, self->asr_port,
+          strerror(errno));
+    asr_connect_unwatch(self);
+    close(self->asr_socket);
+    self->asr_socket = 0;
+    asr_next_server(self);
+    asr_connect_next(self);
+}
+
+/* The attempt connected: the socket is made blocking again. */
+static void asr_connect_done(VoiceObject *self)
+{
+    int flags = fcntl(self->asr_socket, F_GETFL, 0);
+
+    asr_connect_unwatch(self);
+    if (flags < 0 || fcntl(self->asr_socket, F_SETFL, flags & ~O_NONBLOCK) < 0) {
+        asr_connect_failed(self);
+        return;
+    }
+    asr_connected(self, 0);
+}
+
+/* The socket is writable or failed: the connection's outcome is known. */
+static gboolean asr_connect_ready(GIOChannel *channel, GIOCondition condition, gpointer data)
+{
+    VoiceObject *self = (VoiceObject *)data;
+    int error = 0;
+    socklen_t length = sizeof error;
+
+    (void)channel;
+    (void)condition;
+    self->connect_watch = 0;
+    if (getsockopt(self->asr_socket, SOL_SOCKET, SO_ERROR, &error, &length) < 0)
+        error = errno;
+    if (error != 0) {
+        errno = error;
+        asr_connect_failed(self);
+    } else {
+        asr_connect_done(self);
+    }
+    return FALSE;
+}
+
+/* Nothing answered in time. */
+static gboolean asr_connect_late(gpointer data)
+{
+    VoiceObject *self = (VoiceObject *)data;
+
+    self->connect_timeout = 0;
+    errno = ETIMEDOUT;
+    asr_connect_failed(self);
+    return FALSE;
+}
+
+/* Start the next attempt, or report that no server could be reached. */
+static void asr_connect_next(VoiceObject *self)
 {
     struct sockaddr_in address;
     struct hostent *host;
-    int attempt = 0;
+    GIOChannel *channel;
+    int flags;
 
     for (;;) {
-        attempt++;
-        g_log(NULL, G_LOG_LEVEL_DEBUG, "try connection %d/%d", attempt, self->server_count);
-        if (attempt > self->server_count)
-            return -1;
+        self->connect_attempt++;
+        g_log(NULL, G_LOG_LEVEL_DEBUG, "try connection %d/%d", self->connect_attempt, self->server_count);
+        if (self->connect_attempt > self->server_count) {
+            asr_connected(self, -2);
+            return;
+        }
         /* A failed attempt's socket is closed (and asr_socket reset) before
          * the next one. */
         self->asr_socket = socket(AF_INET, SOCK_STREAM, 0);
@@ -376,13 +428,25 @@ static int asr_connect(VoiceObject *self)
         address.sin_family = AF_INET;
         memcpy(&address.sin_addr, host->h_addr_list[0], 4);
         address.sin_port = htons((uint16_t)self->asr_port);
-        if (connect_with_timeout(self->asr_socket, &address, ASR_CONNECT_TIMEOUT_S) == 0)
-            return 0;
-        g_log(NULL, G_LOG_LEVEL_WARNING, "connect failed on '%s:%d': %s", self->asr_server, self->asr_port,
-              strerror(errno));
-        close(self->asr_socket);
-        self->asr_socket = 0;
-        asr_next_server(self);
+        flags = fcntl(self->asr_socket, F_GETFL, 0);
+        if (flags < 0 || fcntl(self->asr_socket, F_SETFL, flags | O_NONBLOCK) < 0) {
+            asr_connect_failed(self);
+            return;
+        }
+        if (connect(self->asr_socket, (const struct sockaddr *)&address, sizeof address) == 0) {
+            asr_connect_done(self);
+            return;
+        }
+        if (errno != EINPROGRESS) {
+            asr_connect_failed(self);
+            return;
+        }
+        channel = g_io_channel_unix_new(self->asr_socket);
+        self->connect_watch = g_io_add_watch(channel, (GIOCondition)(G_IO_OUT | G_IO_ERR | G_IO_HUP),
+                                             asr_connect_ready, self);
+        g_io_channel_unref(channel);
+        self->connect_timeout = g_timeout_add_seconds(ASR_CONNECT_TIMEOUT_S, asr_connect_late, self);
+        return;
     }
 }
 
@@ -575,10 +639,32 @@ static gboolean asr_stream(gpointer data)
     return FALSE;
 }
 
-/* End the session, if any, without a signal. */
+/* Answer the pending asr_start_* call: TRUE when the session started. */
+static void asr_reply(VoiceObject *self, int ret)
+{
+    gboolean result = ret == 0;
+
+    dbus_g_method_return(self->asr_context, result);
+    self->asr_context = NULL;
+    g_free(self->asr_grammar);
+    g_free(self->asr_lang);
+    g_free(self->asr_file);
+    self->asr_grammar = self->asr_lang = self->asr_file = NULL;
+}
+
+/* End the session, if any, without a signal. A session still connecting
+ * stops trying, and its asr_start_* call is answered FALSE. */
 static int asr_cancel(VoiceObject *self)
 {
     g_log(NULL, G_LOG_LEVEL_DEBUG, "asrCancel CANCEL");
+    if (self->asr_context != NULL) {
+        asr_connect_unwatch(self);
+        if (self->asr_socket != 0)
+            close(self->asr_socket);
+        self->asr_socket = 0;
+        asr_reply(self, -2);
+        return 0;
+    }
     if (self->asr_socket != 0) {
         close(self->audio_fd);
         self->audio_fd = 0;
@@ -590,26 +676,38 @@ static int asr_cancel(VoiceObject *self)
 }
 
 /* Start a session with either an inline `grammar` in `lang` or the grammar in
- * `filename`. Returns 0, -1 if a session is running, -2 if no server could be
- * reached, -3 if /dev/audio can't be used, -6 if the file can't be read. */
-static int asr_start(VoiceObject *self, const char *uid, const char *grammar, const char *lang,
-                     const char *filename)
+ * `filename`, answering `context` once it has started or failed: the
+ * connection is made from the main loop (asr_connect_next), the rest in
+ * asr_connected. A session already running is answered FALSE at once. */
+static void asr_start(VoiceObject *self, const char *uid, const char *grammar, const char *lang,
+                      const char *filename, DBusGMethodInvocation *context)
 {
-    std::string text;
-    AsrMsg *message;
-    int ret = 0;
-
     g_log(NULL, G_LOG_LEVEL_DEBUG, "ASR Go\n");
-    if (self->asr_socket != 0) {
+    if (self->asr_socket != 0 || self->asr_context != NULL) {
         g_log(NULL, G_LOG_LEVEL_DEBUG, "asr session already present\n");
-        return -1;
+        dbus_g_method_return(context, FALSE);
+        return;
     }
     g_string_assign(self->asr_uid, uid);
     g_log(NULL, G_LOG_LEVEL_DEBUG, "ASR uuid %s\n", self->asr_uid->str);
+    self->asr_context = context;
+    self->asr_grammar = g_strdup(grammar);
+    self->asr_lang = g_strdup(lang);
+    self->asr_file = g_strdup(filename);
+    self->connect_attempt = 0;
+    asr_connect_next(self);
+}
 
-    if (asr_connect(self) != 0) {
+/* The session's connection is made (ret 0) or no server could be reached
+ * (-2): send the grammar and start streaming, or fail with -3 if /dev/audio
+ * can't be used, -6 if the grammar file can't be read. Answers the call. */
+static void asr_connected(VoiceObject *self, int ret)
+{
+    std::string text;
+    AsrMsg *message;
+
+    if (ret != 0) {
         g_log(NULL, G_LOG_LEVEL_DEBUG, "asr server connection FAIL");
-        ret = -2;
         goto fail;
     }
     self->audio_fd = open(AUDIO_DEVICE, O_RDONLY);
@@ -624,25 +722,25 @@ static int asr_start(VoiceObject *self, const char *uid, const char *grammar, co
         goto fail;
     }
 
-    if (filename == NULL) {
-        if (g_strstr_len(grammar, 10, "http") != NULL) {
+    if (self->asr_file == NULL) {
+        if (g_strstr_len(self->asr_grammar, 10, "http") != NULL) {
             /* A grammar URL is passed on as is. */
-            text = grammar;
+            text = self->asr_grammar;
         } else {
             /* A grammar rule is wrapped into an ABNF grammar. */
             text += "#ABNF 1.0 UTF-8;\r\nlanguage ";
-            text += lang;
+            text += self->asr_lang;
             text += ";\r\nmode voice;\r\ntag-format <semantics/1.0>;\r\nroot $App;\r\npublic $App = ";
-            text += grammar;
+            text += self->asr_grammar;
             text += ";\r\n";
         }
     } else {
         char buffer[100];
         size_t n;
-        FILE *file = fopen(filename, "r");
+        FILE *file = fopen(self->asr_file, "r");
 
         if (file == NULL) {
-            g_log(NULL, G_LOG_LEVEL_DEBUG, "asr server can't open %s\n", filename);
+            g_log(NULL, G_LOG_LEVEL_DEBUG, "asr server can't open %s\n", self->asr_file);
             ret = -6;
             goto fail;
         }
@@ -656,7 +754,8 @@ static int asr_start(VoiceObject *self, const char *uid, const char *grammar, co
     asr_send(self->asr_socket, *message);
     delete message;
     self->asr_source = g_idle_add(asr_stream, self);
-    return 0;
+    asr_reply(self, 0);
+    return;
 
 fail:
     if (self->asr_socket != 0)
@@ -668,7 +767,7 @@ fail:
     self->audio_fd = 0;
     g_signal_emit(self, klass_of(self)->signals[SIGNAL_ASR_EVENT], 0, self->asr_uid->str,
                   "<error_server_timeout>", "cancel", ASR_SCORE_ERROR);
-    return ret;
+    asr_reply(self, ret);
 }
 
 /* --- D-Bus methods ---------------------------------------------------------- */
@@ -702,27 +801,22 @@ gboolean voice_object_tts_stop(VoiceObject *self, const char *id, gint behaviour
     return TRUE;
 }
 
+/* asr_start_file and asr_start_string answer once the session has started
+ * or failed (org.freedesktop.DBus.GLib.Async), so the daemon answers other
+ * calls while the session connects. */
 gboolean voice_object_asr_start_file(VoiceObject *self, const char *uid, const char *filename, gint behaviour,
-                                     gboolean *result, GError **error)
+                                     DBusGMethodInvocation *context)
 {
-    int ret;
-
     (void)behaviour;
-    (void)error;
-    ret = asr_start(self, uid, NULL, NULL, filename);
-    *result = ret == 0;
+    asr_start(self, uid, NULL, NULL, filename, context);
     return TRUE;
 }
 
 gboolean voice_object_asr_start_string(VoiceObject *self, const char *uid, const char *grammar,
-                                       const char *lang, gint behaviour, gboolean *result, GError **error)
+                                       const char *lang, gint behaviour, DBusGMethodInvocation *context)
 {
-    int ret;
-
     (void)behaviour;
-    (void)error;
-    ret = asr_start(self, uid, grammar, lang, NULL);
-    *result = ret == 0;
+    asr_start(self, uid, grammar, lang, NULL, context);
     return TRUE;
 }
 
