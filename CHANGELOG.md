@@ -3,9 +3,13 @@
 
 ## Unreleased
 
+### Fixed
+
+- A tag whose action is an `https://` URL now works. The tag listener's curl checks certificates, but the system had no CA certificates, so every such request failed.
+
 ### Changed
 
-- Applications' HTTPS requests (`http` in karotzVM, and the `social` posts) now check the server's certificate against the CA certificates in `/etc/ssl/certs`, from the ca-certificates package. A request to a server whose certificate is self-signed, expired or for another name gets `"curl error"`, and the log says why. The check adds about 0.2 s of CPU per request on the rabbit. An HTTPS request made before `ntpd` has set the clock after a boot waits for it, for up to 60 s. The checks can't be turned off.
+- Applications' HTTPS requests (`http` in karotzVM, and the `social` posts) now check the server's certificate against the CA certificates in `/etc/ssl/certs`, from the ca-certificates package. A request to a server whose certificate is self-signed, expired or for another name gets `"curl error"`, and the log says why. The check adds about 0.2 s of CPU per request on the rabbit; a whole request to a site such as example.com or github.com takes 0.7 to 2.6 s. An HTTPS request made before `ntpd` has set the clock after a boot waits for it, for up to 60 s. The checks can't be turned off.
 
 ## v0.1.1 (2026-10-26)
 
