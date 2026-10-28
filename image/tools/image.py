@@ -100,8 +100,11 @@ def tone_wav(notes, rate=22050):
     return header + bytes(frames)
 
 
-# The core's own sounds (system/core-files.txt): the ready chime and the head button's.
+# The core's own sounds (system/core-files.txt): the ready chime, the head button's, and the tag
+# listener's tone before a tag's action (notify.mp3's notes, as WAV: karotz-player is done with a
+# WAV about half a second sooner than with an MP3, so the action follows sooner).
 SOUNDS = {"boot-ready.wav": [(523.25, 0.18), (659.25, 0.18), (783.99, 0.45)],
+          "tag-action.wav": [(1318.51, 0.07), (1760.0, 0.12)],
           "button-click.wav": [(880.0, 0.12)],
           "button-double.wav": [(880.0, 0.1), (1046.5, 0.12)],
           "button-triple.wav": [(880.0, 0.1), (987.77, 0.1), (1174.66, 0.14)],

@@ -157,9 +157,11 @@ class Sandbox:
         # answers as dbus/<Name>.<method> or dbus/<Name> says (default true; false, missing,
         # noreply); a reset and a snapshot send their signals into signal.out for dbus-monitor,
         # and a snapshot writes the picture (unless dbus/nopicture); with dbus/playfinished, so
-        # does a play. With noreply, the snapshot's picture and event come a second later.
+        # does a play. With noreply, the snapshot's picture and event come a second later. The
+        # record is one write, so a program writing to the log at the same time can't split it.
         stub(self.bin / "dbus-send",
-             f'{{ printf "dbus-send"; printf "\\037%s" "$@"; printf "\\n"; }} >> {self.actions}\n'
+             'rec=$(printf "dbus-send"; printf "\\037%s" "$@")\n'
+             f'printf "%s\\n" "$rec" >> {self.actions}\n'
              'dest="" member="" id=""\n'
              'for a; do\n'
              '    case $a in\n'
@@ -1702,7 +1704,7 @@ class TagCase(HardwareCase):
 
     def tones(self):
         for rel in ("usr/karotz/sounds/button-long.wav", "usr/karotz/sounds/button-triple.wav",
-                    "usr/karotz/sounds/notify.mp3", "usr/karotz/sounds/error.mp3"):
+                    "usr/karotz/sounds/notify.mp3", "usr/karotz/sounds/error.mp3", "usr/karotz/sounds/tag-action.wav"):
             self.box.write(rel, "RIFF")
 
     def raw_pairs(self, path, query=""):
@@ -2218,7 +2220,7 @@ class TagListenerTest(TagCase):
         self.tones()
         self.store(tag_line(TAG_A, cmd="3", a1="http://h.example/x"))
         self.listen(tag_in(TAG_A))
-        self.assertEqual(self.calls(), [("Led", "light", ["string:FF0000"]), self.play("notify.mp3"),
+        self.assertEqual(self.calls(), [("Led", "light", ["string:FF0000"]), self.play("tag-action.wav"),
                                         ("Led", "light", ["string:00FF00"]), ("Led", "light", ["string:00FF00"])])
 
     def test_action_waits_for_the_tone(self):
@@ -2232,6 +2234,37 @@ class TagListenerTest(TagCase):
         self.assertGreaterEqual(time.time() - started, 4)
         self.assertIn("the tone didn't end within 4 s", "\n".join(self.listener_log()))
         self.assertIn("curl\x1f", self.box.actions_log())
+
+    def test_action_during_the_tone(self):
+        # The action starts while the tone plays: a URL request goes at once; an endpoint waits
+        # for the API's lock, so it sets the LED only after the tone and the LED restored.
+        self.tones()
+        (self.sb / "dbus/playfinished").unlink()
+        self.store(tag_line(TAG_A, cmd="3", a1="http://h.example/x"), tag_line(TAG_B, cmd="5", a1="leds", a2="color=ffff00"))
+        self.listen(tag_in(TAG_A), "SLEEP 6\n", tag_in(TAG_B), timeout=90)
+        lines = [l for l in self.box.actions_log().splitlines() if l.startswith(("curl\x1f", "dbus-send\x1f"))]
+
+        def first(*words, after=-1):
+            return next(i for i, l in enumerate(lines) if i > after and all(w in l for w in words))
+        # Tag A: the request goes during the tone, before the LED is restored.
+        tone_a = first("tag-action.wav")
+        self.assertLess(first("curl\x1f"), first("string:00FF00", after=tone_a))
+        # Tag B: its tone, the LED restored, then the endpoint's own LED.
+        tone_b = first("tag-action.wav", after=tone_a)
+        self.assertLess(first("string:00FF00", after=tone_b), first("string:FFFF00"))
+        self.assertIn(f"tag {TAG_B}: leds done", "\n".join(self.listener_log()))
+
+    def test_controller_not_answering(self):
+        # A controller that doesn't answer (connecting to its app server) is asked once, in the
+        # background, when the listener starts; a tag never waits for it: the state isn't known
+        # yet, so the tag is handled at once without asking it.
+        self.box.write("controller.state", "hang\n")
+        self.store(tag_line(TAG_A, cmd="3", a1="http://h.example/x"))
+        self.listen(tag_in(TAG_A))
+        asked = [m for d, m, _ in self.box.dbus_calls(controller=True) if d == "Controller"]
+        self.assertEqual(asked, ["get_status"])
+        self.assertEqual(self.calls()[0], RED)
+        self.assertIn(f"tag {TAG_A}: request to h.example: HTTP 200", "\n".join(self.listener_log()))
 
     def test_unknown_tags_and_no_action(self):
         # The error sound, then the phrase of the rabbit's language; only tag_in signals count.
@@ -2270,7 +2303,7 @@ class TagListenerTest(TagCase):
         self.tones()
         self.box.write("dbus/Controller.has_tag_app", "true")
         self.listen(tag_in(TAG_B, type_=3, color=2))
-        self.assertEqual(self.calls(), [("Led", "light", ["string:FF0000"]), self.play("notify.mp3"),
+        self.assertEqual(self.calls(), [("Led", "light", ["string:FF0000"]), self.play("tag-action.wav"),
                                         ("Led", "light", ["string:00FF00"])])
         asked = [(m, a) for d, m, a in self.box.dbus_calls(controller=True) if d == "Controller" and m != "get_status"]
         self.assertEqual(asked, [("has_tag_app", [f"string:{TAG_B}"]),
@@ -2288,7 +2321,8 @@ class TagListenerTest(TagCase):
             with self.subTest(state):
                 self.clear()
                 self.box.write("controller.state", state + "\n")
-                self.listen(tag_in(TAG_B))
+                # The listener has the controller's answer before the tag, as on the rabbit.
+                self.listen("SLEEP 1\n", tag_in(TAG_B))
                 self.assertEqual(self.calls(), expected)
                 self.assertEqual([m for d, m, _ in self.box.dbus_calls(controller=True) if d == "Controller"
                                   and m != "get_status"], [])

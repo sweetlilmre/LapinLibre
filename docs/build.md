@@ -541,7 +541,7 @@ An overlay folder (`image/tools/fstree.py`) can have `files/`, which is copied o
 | `rootfs:karotz/etc/inetd.conf` | Text: BusyBox `httpd` on port 80, at most 60 connections a minute, with the configuration that `inetd.sh` makes in RAM. |
 | `rootfs:lib/firmware/rt73.bin` and `LICENCE.ralink-firmware.txt` | The pinned downloads `rt73-firmware` and `rt73-licence`. |
 | `usr:etc/timezone.list` | `image/tools/tzlist.py`: one `<zone>;<POSIX TZ>` line for each zone and link of the pinned tzdata, compiled with the pinned tzcode's `zic`. Rules that uClibc-ng cannot read are replaced. The reference date is the release date of tzdata, so the list depends only on the pins. |
-| `usr:karotz/sounds/boot-ready.wav`, `button-click.wav`, `button-double.wav`, `button-triple.wav`, `button-long.wav` | Tones (`SOUNDS`): 16-bit mono WAV at 22050 Hz, each note a sine that fades. |
+| `usr:karotz/sounds/boot-ready.wav`, `button-click.wav`, `button-double.wav`, `button-triple.wav`, `button-long.wav`, `tag-action.wav` | Tones (`SOUNDS`): 16-bit mono WAV at 22050 Hz, each note a sine that fades. |
 | `usr:karotz/sounds/wakeup.mp3`, `notify.mp3`, `acknowledge.mp3`, `shutter.mp3`, `error.mp3` | Tones (`EFFECTS`; `error.mp3` is `ERROR_SOUND`, also the key's), encoded to MP3 by the host's `ffmpeg` (64 kbit/s, no tags, bit-exact). |
 
 The spoken sounds are not made by the build. They are kept in the repository (`image/core/usr/karotz/sounds/*.mp3` and `image/usbkey/sound/*.mp3`). `image/tools/speech_sounds.py` and `image/tools/install_prompts.py` made them one time, with their own virtual environments.

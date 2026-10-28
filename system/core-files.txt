@@ -1423,3 +1423,4 @@ usr:karotz/sounds/button-long.wav f 0644 0:0 generated
 usr:karotz/sounds/button-click.wav f 0644 0:0 generated
 usr:karotz/sounds/button-double.wav f 0644 0:0 generated
 usr:karotz/sounds/button-triple.wav f 0644 0:0 generated
+usr:karotz/sounds/tag-action.wav f 0644 0:0 generated  # the tag listener's tone before a tag's action (image.py SOUNDS)

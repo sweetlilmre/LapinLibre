@@ -167,6 +167,7 @@ WEB_TAGS_READ_AWK='BEGIN {
     n = split(ENVIRON["WEB_TAG_ENDPOINTS"], e, " ")
     for (i = 1; i <= n; i++) allowed[e[i]] = 1
     qre = "^([]A-Za-z0-9._~:/?@!$&()*+,;=[-]|%[0-9A-Fa-f][0-9A-Fa-f])*$"
+    only = ENVIRON["TAGS_ONLY"]
 }
 function num(v) { return (v ~ /^-?[0-9]+$/ && length(v) <= 6) ? v + 0 : -1 }
 function cred(u, p) {
@@ -184,7 +185,8 @@ function cred(u, p) {
     a1 = ""; a2 = ""; a3 = ""
     if ($4 == "3" && goodurl($7) && cred($8, $9)) { cmd = 3; a1 = $7; a2 = $8; a3 = $9 }
     else if ($4 == "5" && ($7 in allowed) && length($8) <= 1024 && $8 ~ qre && !index($8, "::")) { cmd = 5; a1 = $7; a2 = $8 }
-    print id, num($2), num($3), cmd, (cmd ? num($5) : -1), name, a1, a2, a3
+    if (only == "" || id == only) print id, num($2), num($3), cmd, (cmd ? num($5) : -1), name, a1, a2, a3
+    if (id == only) exit
 }'
 
 # Applies the change OP (add, rename, assign, unassign, delete, clear) to the valid tags on its
@@ -221,10 +223,11 @@ END {
     if (op != "add" && op != "clear" && !found) exit 3
 }'
 
-# tags_read: the store's valid tags (WEB_TAGS_READ_AWK), one per line; nothing without a store.
+# tags_read: the store's valid tags (WEB_TAGS_READ_AWK), one per line, or only the tag TAGS_ONLY
+# when it is set; nothing without a store.
 tags_read() {
     [ -e "$WEB_TAGS" ] || return 0
-    WEB_TAG_ENDPOINTS="$WEB_TAG_ENDPOINTS" awk "$WEB_URL_AWK$WEB_TAGS_READ_AWK" "$WEB_TAGS"
+    WEB_TAG_ENDPOINTS="$WEB_TAG_ENDPOINTS" TAGS_ONLY="${TAGS_ONLY:-}" awk "$WEB_URL_AWK$WEB_TAGS_READ_AWK" "$WEB_TAGS"
 }
 
 # tags_change OP: the store changed by WEB_TAGS_EDIT_AWK, under the store's lock (waited for at
@@ -279,7 +282,9 @@ tag_fields() {
 
 # tag_get ID: the stored tag ID's fields (tag_fields). False when it isn't stored.
 tag_get() {
-    _line=$(tags_read | awk -F "$TAB" -v id="$1" '$1 == id { print; exit }')
+    TAGS_ONLY=$1
+    _line=$(tags_read)
+    TAGS_ONLY=""
     [ -n "$_line" ] || return 1
     tag_fields "$_line"
 }

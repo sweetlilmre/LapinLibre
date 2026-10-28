@@ -10,7 +10,7 @@ The web API's `sound_list` and `sound?id=NAME` take a sound's id as its file nam
 | File | Played by | When |
 |---|---|---|
 | `acknowledge.mp3` | controller | New settings arrive from the app server; speech recognition matches an application's command, just before the application starts. |
-| `notify.mp3` | controller, web API | A tag with an action, or an application's tag, is laid on the nose (the LED red, before the action or the application runs); the connection to the app server drops; a new tag is learned through the web API. |
+| `notify.mp3` | controller, web API | The connection to the app server drops; a new tag is learned through the web API. |
 | `wakeup.mp3` | controller, web API | Waking up: the scheduled wake-up, a triple click while asleep, the API's `wakeup`. |
 | `shutter.mp3` | webcam-daemon | Every snapshot. |
 | `error.mp3` | tag listener; the key's install | Before the phrase for a tag without an action or an unknown tag; the install stopped on an error (the same sound, `ERROR_SOUND` in `image.py`, also on the key). |
@@ -45,6 +45,7 @@ The controller and the tag listener find these files through the language files 
 | `button-double.wav` | button watcher | A double click. |
 | `button-triple.wav` | button watcher; web API | A triple click; tag learning saw a tag it already knows. |
 | `button-long.wav` | button watcher; web API | The start of a long press; tag learning started. |
+| `tag-action.wav` | tag listener | A tag with an action, or an application's tag, is laid on the nose (the LED red), before the action or the application. `notify.mp3`'s notes as WAV, which karotz-player is done with about half a second sooner. |
 
 The button watcher plays its tones only while `/etc/conf/playsounds` exists (on from the first boot; the app server's settings can turn it off).
 

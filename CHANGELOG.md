@@ -12,7 +12,7 @@
 
 ### Added
 
-- The tag listener gives every tag's feedback, in the rabbit's language. The nose turns red as soon as a tag is read. A tag with an action, or an application's tag, then plays a tone before its action or application. A tag learned on the web page but without an action plays the error sound and "I know this object, but it hasn't been given an action yet". An unknown tag plays the error sound and "I don't recognise this object". Nothing shows or plays while the rabbit sleeps or an application has control. The new phrase is in English, French, German and Spanish; other languages use the English one.
+- The tag listener gives every tag's feedback, in the rabbit's language. The nose turns red as soon as a tag is read (about 0.2 to 0.4 s after it on a rabbit; a speech action then starts about 2.5 to 3 s after the tag). A tag with an action, or an application's tag, then plays a tone before its action or application. A tag learned on the web page but without an action plays the error sound and "I know this object, but it hasn't been given an action yet". An unknown tag plays the error sound and "I don't recognise this object". Nothing shows or plays while the rabbit sleeps or an application has control. The new phrase is in English, French, German and Spanish; other languages use the English one.
 - The device test application also takes a photo directly and streams video for 5 s, then stops it. The device test procedure in `docs/app-server.md` ends by removing the application from the rabbit.
 
 ### Changed

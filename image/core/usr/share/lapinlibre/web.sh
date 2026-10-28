@@ -533,7 +533,9 @@ usb_mounted() {
 
 # The controller's state: CONTROLLER_STATE (its number, empty when it isn't on the bus or
 # didn't answer) and CONTROLLER (its name, or "not running"). Read from the tag listener's file
-# when it has one, else asked on the bus (controller_ask 1).
+# when it has one, else asked on the bus (controller_ask 1), except in the tag listener itself
+# (WEB_NO_ASK=1): it keeps that file, so without one the state isn't known yet, and a controller
+# that is connecting would hold every tag up for the second it doesn't answer.
 read_controller() {
     CONTROLLER_STATE=""
     if [ "$WEB_CHECK" = 1 ]; then
@@ -542,7 +544,7 @@ read_controller() {
     fi
     if first_line "$WEB_CONTROLLER"; then
         case $FL in *[!0-9]*) ;; *) CONTROLLER_STATE=$FL ;; esac
-    else
+    elif [ "${WEB_NO_ASK:-}" != 1 ]; then
         controller_ask 1
     fi
     controller_name
@@ -860,7 +862,7 @@ WEB_TONE_LEARNED=/usr/karotz/sounds/notify.mp3
 WEB_TONE_KNOWN=/usr/karotz/sounds/button-triple.wav
 # A tag laid outside learning: the tone before its action or application, and the error sound
 # before the phrase for a tag without an action or an unknown one.
-WEB_TONE_ACTION=/usr/karotz/sounds/notify.mp3
+WEB_TONE_ACTION=/usr/karotz/sounds/tag-action.wav
 WEB_TONE_ERROR=/usr/karotz/sounds/error.mp3
 
 # valid_tag VALUE: a tag's id, 16 hexadecimal digits, upper case in TG.

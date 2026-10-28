@@ -33,6 +33,8 @@
 # starts it again; SIGTERM ends the monitor and a running action, and it exits 0.
 . /usr/share/lapinlibre/web.sh
 LOG_TAG=tag_listener
+# The controller's state comes from this listener's own file only (read_controller).
+WEB_NO_ASK=1
 RFID_PATH=/com/mindscape/karotz/Rfid
 RFID_INTERFACE=com.mindscape.karotz.KarotzInterface
 CONTROLLER_NAME=com.mindscape.karotz.Controller
@@ -59,20 +61,32 @@ action_running() {
     [ -n "$ACTION" ] && [ -e "$ACTION_MARK" ] && kill -0 "$ACTION" 2> /dev/null
 }
 
-# feedback COLOR AFTER [TONE]: the LED COLOR for a moment (none when COLOR is empty), then AFTER:
-# "learn" (the learning pulse) or "state" (the API's LED state); the TONE meanwhile, unless the
-# rabbit sleeps, waited for (at most 4 s) so that what follows has the sound device. Under the
-# API's hardware lock (waited for at most 5 s, else skipped); nothing while an application owns
-# the rabbit, and while it sleeps only the learning pulse.
+# feedback COLOR AFTER [TONE [FUNCTION]]: the LED COLOR for a moment (none when COLOR is empty),
+# then AFTER: "learn" (the learning pulse) or "state" (the API's LED state); the TONE meanwhile,
+# unless the rabbit sleeps, waited for (at most 4 s) so that what follows has the sound device.
+# Under the API's hardware lock (waited for at most 5 s, else skipped); nothing while an
+# application owns the rabbit, and while it sleeps only the learning pulse. FUNCTION, when given,
+# starts in the background once the lock is held, so its own start-up runs during the tone; an
+# endpoint it runs waits for the lock (web_lock), so it drives the rabbit only after the tone and
+# the LED. feedback returns once FUNCTION has ended (it runs even when the feedback is skipped).
 feedback() {
+    _fn=${4:-}
     read_controller
-    case $CONTROLLER_STATE in 21 | 22) return 0 ;; esac
+    case $CONTROLLER_STATE in 21 | 22) [ -n "$_fn" ] && $_fn; return 0 ;; esac
     read_api_state
-    exec 9>> "$WEB_LOCK" || return 0
+    exec 9>> "$WEB_LOCK" || { [ -n "$_fn" ] && $_fn; return 0; }
     if ! timeout 5 flock -x 9; then
         exec 9>&-
         log warning "the rabbit is busy: no LED feedback"
+        [ -n "$_fn" ] && $_fn
         return 0
+    fi
+    _fp=""
+    if [ -n "$_fn" ]; then
+        # The function's process mustn't hold the lock's descriptor, or its endpoint would wait
+        # for itself.
+        $_fn 9>&- &
+        _fp=$!
     fi
     new_id
     _tone=""
@@ -100,6 +114,7 @@ feedback() {
     fi
     flock -u 9
     exec 9>&-
+    [ -n "$_fp" ] && wait "$_fp"
     return 0
 }
 
@@ -168,28 +183,8 @@ app_tag() {
     return 0
 }
 
-# One tag, in its own process (UID CONTENT APP TYPE PICT COLOR, and the stored tag's fields from
-# tag_get; T_CMD empty for a tag that isn't stored).
-run_action() {
-    exec 3<&-
-    trap - TERM INT HUP
-    seen
-    case $T_CMD in
-    3 | 5) feedback "" state "$WEB_TONE_ACTION" ;;
-    *)
-        if ! app_tag "$@"; then
-            if [ -n "$T_CMD" ]; then
-                log info "tag $TG: no action"
-                say_error tag_no_action
-            else
-                log info "tag $TG: unknown"
-                say_error tag_unknown
-            fi
-        fi
-        rm -f "$ACTION_MARK"
-        exit 0
-        ;;
-    esac
+# the_action: the stored tag's action (its fields from tag_get).
+the_action() {
     case $T_CMD in
     3)
         url_host "$T_A1"
@@ -207,6 +202,36 @@ run_action() {
         else
             log warning "tag $T_ID: $T_A1 failed: $AR_MSG"
         fi
+        ;;
+    esac
+}
+
+# One tag, in its own process (UID CONTENT APP TYPE PICT COLOR, with TG from valid_tag): the LED
+# red first, then the tag looked up in the store (T_CMD empty for a tag that isn't stored, 0 for
+# one without an action).
+run_action() {
+    exec 3<&-
+    trap - TERM INT HUP
+    seen
+    if tag_get "$TG"; then
+        case $T_CMD in 3 | 5) ;; *) T_CMD=0 ;; esac
+    else
+        T_CMD=""
+    fi
+    case $T_CMD in
+    3 | 5) feedback "" state "$WEB_TONE_ACTION" the_action ;;
+    *)
+        if ! app_tag "$@"; then
+            if [ -n "$T_CMD" ]; then
+                log info "tag $TG: no action"
+                say_error tag_no_action
+            else
+                log info "tag $TG: unknown"
+                say_error tag_unknown
+            fi
+        fi
+        rm -f "$ACTION_MARK"
+        exit 0
         ;;
     esac
     feedback "" state
@@ -236,11 +261,6 @@ on_tag() {
     if action_running; then
         log info "tag $TG: an action is still running: ignored"
         return 0
-    fi
-    if tag_get "$TG"; then
-        case $T_CMD in 3 | 5) ;; *) T_CMD=0 ;; esac
-    else
-        T_CMD=""
     fi
     # The codes go to the controller as int32 and the blocks as a string: anything else is
     # dropped.
