@@ -112,6 +112,7 @@ Use this procedure to test the rabbit's functions one step at a time.
 3. Run `uv run python appctl.py run devicetest`.
 4. Read the results on the console of the server, or run `uv run python appctl.py app-log`.
 5. Push the rabbit's button when the test asks for it (the last step, 15 seconds).
+6. When the test is done, remove the application from the rabbit over SSH with `rm -rf /usr/karotz/apps/devicetest`. The controller removes only empty folders of applications that are no longer configured, so the application stays on the rabbit otherwise.
 
 ### Run the tests of the app server
 

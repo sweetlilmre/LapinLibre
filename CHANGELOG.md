@@ -6,6 +6,11 @@
 ### Fixed
 
 - A tag whose action is an `https://` URL now works. The tag listener's curl checks certificates, but the system had no CA certificates, so every such request failed.
+- The voice daemon answers other requests while it connects to a speech recognition server. It used to wait for the connection inside the call that started recognition, so a server that didn't answer held up speech and every other call for up to 5 s per server. Stopping recognition during the connection now ends the session.
+
+### Added
+
+- The device test application also takes a photo directly and streams video for 5 s, then stops it. The device test procedure in `docs/app-server.md` ends by removing the application from the rabbit.
 
 ### Changed
 
