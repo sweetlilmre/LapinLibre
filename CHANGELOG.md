@@ -7,6 +7,7 @@
 
 - A tag whose action is an `https://` URL now works. The tag listener's curl checks certificates, but the system had no CA certificates, so every such request failed.
 - A tag laid on the nose gets the same feedback whether or not the app server is reachable, and only once. Before, the light, sound and ear move came from the controller, which reacts only once logged in to its app server: without it, a tag with an action got only a short green flash before its action, and an unknown tag got nothing at all; with it, a tag from the web page got the controller's reaction and the tag listener's flash at the same time.
+- Stopping a sound no longer logs the warning "player not exited properly: bug". The multimedia daemon stops the player by ending it, and it took that end for a fault.
 - Learning a new tag from the web page no longer makes the rabbit say it doesn't recognise the object.
 - The voice daemon answers other requests while it connects to a speech recognition server. It used to wait for the connection inside the call that started recognition, so a server that didn't answer held up speech and every other call for up to 5 s per server. Stopping recognition during the connection now ends the session.
 

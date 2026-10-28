@@ -52,7 +52,6 @@ RELAYED = 'id: "p-kmr" correlationId: "a-q1" interactiveId: "u-1" karotzMessageR
 
 EXPECTED_WARNINGS = base.EXPECTED_WARNINGS + [
     r"^malformed message \(\d+ bytes\) not handled: ",
-    r"^earsMove returned FALSE$",
 ]
 
 

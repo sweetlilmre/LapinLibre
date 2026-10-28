@@ -79,7 +79,7 @@ COMMANDS = ["add", "clear", "commands", "crossfade", "currentsong", "disableoutp
 
 
 # Syslog warnings the run is known to log (harness.py): the refused and failing commands the
-# scenario sends, the stub encoder and player, and the stub player not ending as the daemon expects.
+# scenario sends and the stub encoder.
 EXPECTED_WARNINGS = [
     r"^playlist not found!$",
     r"^Multimedia: API - (lock|mode)::\w* failed or unknown$",
@@ -88,7 +88,6 @@ EXPECTED_WARNINGS = [
     r"^mpd_control_play_(dir|artist)\. (directory|artist) not found\. abort$",
     r"^Record: write to the encoder failed: Broken pipe$",
     r"^Record Stop: the recording failed \(encoder status \d+\)$",
-    r"^Multimedia: player not exited properly: bug$",
 ]
 
 

@@ -765,10 +765,11 @@ static int api_get_genre(MpdObj *mpd, char **out)
  */
 static guint player_watch;  /* the current player's child watch, 0 for none */
 
-/* player has ended (its waitpid status): the player is stopped. */
-static void player_ended(int status)
+/* player has ended (its waitpid status): the player is stopped. stopped: a stop
+ * killed it with SIGTERM, so that death is its normal end. */
+static void player_ended(int status, int stopped)
 {
-    if (WIFEXITED(status))
+    if (WIFEXITED(status) || (stopped && WIFSIGNALED(status) && WTERMSIG(status) == SIGTERM))
         g_log(NULL, G_LOG_LEVEL_DEBUG, "Multimedia: player end process: %d", multimedia->player_pid);
     else
         g_log(NULL, G_LOG_LEVEL_WARNING, "Multimedia: player not exited properly: bug\n");
@@ -783,7 +784,7 @@ static void player_child_ended(GPid pid, gint status, gpointer data)
     (void)data;
     if (multimedia != NULL && multimedia->player_pid == pid) {
         player_watch = 0;
-        player_ended(status);
+        player_ended(status, 0);
     }
     g_spawn_close_pid(pid);
 }
@@ -876,7 +877,7 @@ static int player_reap_if_ended(void)
     }
     if (waitpid(pid, &status, WNOHANG) == pid) {
         g_log(NULL, G_LOG_LEVEL_WARNING, "Multimedia: player %d had ended before its command", pid);
-        player_ended(status);
+        player_ended(status, 0);
         return 1;
     }
     player_watch = g_child_watch_add(pid, player_child_ended, NULL);
@@ -979,7 +980,7 @@ static int player_control_stop(pid_t pid)
     g_log(NULL, G_LOG_LEVEL_DEBUG, "player_control_stop: wait return: %d", waited);
     if (waited != pid)
         g_log(NULL, G_LOG_LEVEL_WARNING, "player_control_stop: waitpid(%d): %s", pid, strerror(errno));
-    player_ended(status);
+    player_ended(status, 1);
     return 0;
 }
 
@@ -1260,7 +1261,7 @@ static void record_init(MultimediaObject *self)
     self->record_timeout = 0;
 }
 
-/* OSS setup: unsigned 16-bit little endian, mono, 16 kHz. Results are ignored by the caller. */
+/* OSS setup: unsigned 16-bit little endian, mono, 16 kHz. 0, or -1 when a setting fails. */
 static int audio_setup(int fd)
 {
     int arg = AFMT_U16_LE;

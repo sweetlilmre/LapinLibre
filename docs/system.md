@@ -531,7 +531,7 @@ k2k-daemon makes voice calls between rabbits over SIP, with liblinphone. At star
 | `k2k_answer` | `ans` b | `result` b | Accepts or refuses the incoming call. |
 | `k2k_hangup` | none | `result` b | Ends the call. |
 | `k2k_set_busy` | `busy` b | `result` b | Sets the busy state. |
-| `k2k_set_answering_machine` | `on` b | `result` b | Sets the answering machine on or off. |
+| `k2k_set_answering_machine` | `on` b | `result` b | Not implemented: the value is ignored (logged as a warning) and the result is true. |
 | `k2k_use_account` | `sipId` s, `sipDomain` s, `sipPassword` s, `stunServer` s | `result` b | Replaces the SIP account. |
 | `k2k_echo_calibration` | none | `result` b | Starts the echo calibration. |
 

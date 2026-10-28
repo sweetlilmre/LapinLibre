@@ -74,6 +74,9 @@ EXPECTED_WARNINGS = [
     r"^socket \d+: the other side closed the connection$",
     r"^socket error on socket \d+$",
     r"^Platform - Offline$",
+    # The platform closing at the end resets the controller, which moves the ears after the
+    # test's fake daemons may have stopped.
+    r"^earsMove returned FALSE$",
 ]
 
 
