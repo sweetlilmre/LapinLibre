@@ -400,9 +400,9 @@ For `cmd` 3, the three action fields are the URL, the user and the password. For
 
 The tag listener, `/usr/scripts/tag_listener`, does the tags' work. `immortaldog` keeps it running (`/usr/etc/init.d/S40lapinlibre`). It listens only for the `tag_in` signal of `rfid-daemon` (`/com/mindscape/karotz/Rfid`), and for the controller's state: the controller's `karotz_status_changed` signal, and the bus's `NameOwnerChanged` for `com.mindscape.karotz.Controller`. It writes the state to `/var/run/lapinlibre-web/controller`: the number, or an empty line while the controller isn't on the bus. When it starts, and when the controller comes onto the bus, it removes the file and asks the controller in the background (6 s at most). The file goes when the listener stops. For each tag on the nose:
 
-- While learning is on, it adds a new tag to the store with the type and colour codes from `rfid-daemon`. The LED flashes green and `notify.mp3` plays. A known tag gets a yellow flash and `button-triple.wav`. Then the orange pulse comes back.
+- While learning is on, it adds a new tag to the store with the type and colour codes from `rfid-daemon`. The LED flashes green and `notify.wav` plays. A known tag gets a yellow flash and `button-triple.wav`. Then the orange pulse comes back.
 - Outside learning, the listener gives every tag's feedback; the controller gives none. The LED turns red as soon as the tag is read. Then the first case that fits:
-  - A stored tag with an action: `tag-action.wav` plays, the API's LED state comes back, then the action drives the rabbit, and the listener sets the API's LED state again. The action starts while the tone plays: a URL request goes at once; an endpoint does its checks meanwhile and waits for the API's lock, which the listener holds until the tone has ended and the LED is restored.
+  - A stored tag with an action: `notify.wav` plays, the API's LED state comes back, then the action drives the rabbit, and the listener sets the API's LED state again. The action starts while the tone plays: a URL request goes at once; an endpoint does its checks meanwhile and waits for the API's lock, which the listener holds until the tone has ended and the LED is restored.
   - A tag that an application's instance has: the listener asks the controller's `has_tag_app`, only while the controller is available (state 16). The same tone and LED, then the controller's `start_tag_app` starts the application.
   - A stored tag without an action: `error.mp3`, the API's LED state, then the language's "no action" phrase (`tag_no_action` in `/usr/karotz/res/lang/<lang>`).
   - Any other tag: the same with the language's "unknown object" phrase (`tag_unknown`).
@@ -416,7 +416,7 @@ The tag listener, `/usr/scripts/tag_listener`, does the tags' work. `immortaldog
 
 #### Snapshots
 
-`webcam-daemon` flashes the LED and plays `shutter.mp3` for every picture. The API cannot stop this. After the picture, the API sets its LED state again (off while the rabbit sleeps). All snapshot endpoints work while the rabbit sleeps.
+`webcam-daemon` flashes the LED and plays `shutter.wav` for every picture. The API cannot stop this. After the picture, the API sets its LED state again (off while the rabbit sleeps). All snapshot endpoints work while the rabbit sleeps.
 
 | Endpoint | Parameters | What it does | Answer |
 |---|---|---|---|

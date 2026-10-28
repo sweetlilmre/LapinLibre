@@ -19,6 +19,7 @@
 
 - The controller no longer reacts to a tag itself: no orange and green pulses, no `notify.mp3`, no "tag unknown" sound and no ear move. It still passes the tag to an interactive application and to the app server. The tag listener starts an application's tag through two new controller methods, `has_tag_app` and `start_tag_app`.
 - One error sound for the whole system: the install's error sound is now `error.mp3`, on the stick and in `/usr/karotz/sounds`.
+- The notification tone and the camera's shutter are WAV files: `notify.wav` (a tag about to run its action or application, a tag learned, the app server gone) and `shutter.wav`. The player is done with a WAV about half a second sooner than with an MP3, so what follows the sound comes sooner. `notify.mp3` and `shutter.mp3` are gone: an application that plays `notify.mp3` by its path should play `notify.wav`.
 - Applications' HTTPS requests (`http` in karotzVM, and the `social` posts) now check the server's certificate against the CA certificates in `/etc/ssl/certs`, from the ca-certificates package. A request to a server whose certificate is self-signed, expired or for another name gets `"curl error"`, and the log says why. The check adds about 0.2 s of CPU per request on the rabbit; a whole request to a site such as example.com or github.com takes 0.7 to 2.6 s. An HTTPS request made before `ntpd` has set the clock after a boot waits for it, for up to 60 s. The checks can't be turned off.
 
 ## v0.1.1 (2026-10-26)

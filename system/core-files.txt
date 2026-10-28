@@ -1392,9 +1392,7 @@ usr:karotz/res/lang/fr-FR f 0644 0:0 core
 usr:karotz/res/lang/de-DE f 0644 0:0 core
 usr:karotz/res/lang/es-ES f 0644 0:0 core
 usr:karotz/sounds/wakeup.mp3 f 0644 0:0 generated  # the controller's and webcam-daemon's effects (image.py EFFECTS)
-usr:karotz/sounds/notify.mp3 f 0644 0:0 generated
 usr:karotz/sounds/acknowledge.mp3 f 0644 0:0 generated
-usr:karotz/sounds/shutter.mp3 f 0644 0:0 generated
 usr:karotz/sounds/error.mp3 f 0644 0:0 generated  # the error sound, also the install's (image.py ERROR_SOUND)
 usr:karotz/sounds/en_tag_unknown.mp3 f 0644 0:0 core  # the spoken sounds (image/tools/speech_sounds.py): an unknown tag, a tag without an action, speech not understood, no speech recognition server
 usr:karotz/sounds/en_tag_no_action.mp3 f 0644 0:0 core
@@ -1423,4 +1421,5 @@ usr:karotz/sounds/button-long.wav f 0644 0:0 generated
 usr:karotz/sounds/button-click.wav f 0644 0:0 generated
 usr:karotz/sounds/button-double.wav f 0644 0:0 generated
 usr:karotz/sounds/button-triple.wav f 0644 0:0 generated
-usr:karotz/sounds/tag-action.wav f 0644 0:0 generated  # the tag listener's tone before a tag's action (image.py SOUNDS)
+usr:karotz/sounds/notify.wav f 0644 0:0 generated  # the notification and the shutter, as WAV (image.py SOUNDS)
+usr:karotz/sounds/shutter.wav f 0644 0:0 generated

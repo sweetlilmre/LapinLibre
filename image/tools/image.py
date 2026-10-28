@@ -100,11 +100,13 @@ def tone_wav(notes, rate=22050):
     return header + bytes(frames)
 
 
-# The core's own sounds (system/core-files.txt): the ready chime, the head button's, and the tag
-# listener's tone before a tag's action (notify.mp3's notes, as WAV: karotz-player is done with a
-# WAV about half a second sooner than with an MP3, so the action follows sooner).
+# The core's own sounds (system/core-files.txt), as WAV: karotz-player is done with a WAV about
+# half a second sooner than with an MP3, so what follows a sound comes sooner. The ready chime, the
+# head button's, the notification (a tag's action or application about to run, a tag learned, the
+# app server gone) and the camera's shutter.
 SOUNDS = {"boot-ready.wav": [(523.25, 0.18), (659.25, 0.18), (783.99, 0.45)],
-          "tag-action.wav": [(1318.51, 0.07), (1760.0, 0.12)],
+          "notify.wav": [(1318.51, 0.07), (1760.0, 0.12)],
+          "shutter.wav": [(2093.0, 0.04), (1567.98, 0.08)],
           "button-click.wav": [(880.0, 0.12)],
           "button-double.wav": [(880.0, 0.1), (1046.5, 0.12)],
           "button-triple.wav": [(880.0, 0.1), (987.77, 0.1), (1174.66, 0.14)],
@@ -112,13 +114,10 @@ SOUNDS = {"boot-ready.wav": [(523.25, 0.18), (659.25, 0.18), (783.99, 0.45)],
 # The error sound, one for the whole system: the install's error on the key, and a tag the tag
 # listener can't run (unknown, or without an action) in /usr/karotz/sounds.
 ERROR_SOUND = {"error.mp3": [(392.0, 0.3), (311.13, 0.3), (261.63, 0.6)]}
-# The effects the controller, webcam-daemon and the tag listener play (MP3, by their paths in
-# /usr/karotz/sounds): waking up, a known tag or the platform gone, new settings or a recognised
-# command, the shutter, an error.
+# The effects the controller and the tag listener play (MP3, by their paths in /usr/karotz/sounds):
+# waking up, new settings or a recognised command, an error.
 EFFECTS = {"wakeup.mp3": [(523.25, 0.2), (659.25, 0.2), (783.99, 0.2), (1046.5, 0.9)],
-           "notify.mp3": [(1318.51, 0.07), (1760.0, 0.12)],
            "acknowledge.mp3": [(783.99, 0.12), (1174.66, 0.3)],
-           "shutter.mp3": [(2093.0, 0.04), (1567.98, 0.08)],
            **ERROR_SOUND}
 
 

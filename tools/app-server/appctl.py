@@ -110,7 +110,7 @@ COMMANDS = [
     ("Sound and music", "play", "WHAT",
      "play a sound from the web, rabbit or USB stick",
      "WHAT is a web address (http://...), a sound file on the rabbit "
-     "(file:///usr/karotz/sounds/notify.mp3), or music from the USB stick: dir::FOLDER, "
+     "(file:///usr/karotz/sounds/notify.wav), or music from the USB stick: dir::FOLDER, "
      "artist::NAME, genre::NAME, title::NAME, playlist::NAME, or allsong:: for everything. The music "
      "player's settings work the same way: mode::normal, mode::random, mode::repeat, mode::norepeat, "
      "lock::yes, lock::no. Names with spaces need no quotes.\n"

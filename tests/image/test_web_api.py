@@ -1704,7 +1704,7 @@ class TagCase(HardwareCase):
 
     def tones(self):
         for rel in ("usr/karotz/sounds/button-long.wav", "usr/karotz/sounds/button-triple.wav",
-                    "usr/karotz/sounds/notify.mp3", "usr/karotz/sounds/error.mp3", "usr/karotz/sounds/tag-action.wav"):
+                    "usr/karotz/sounds/notify.wav", "usr/karotz/sounds/error.mp3"):
             self.box.write(rel, "RIFF")
 
     def raw_pairs(self, path, query=""):
@@ -2160,7 +2160,7 @@ class TagListenerTest(TagCase):
         self.box.write("var/run/lapinlibre-web/learning", f"{int(time.time())}\n")
         self.listen(tag_in(TAG_A.lower()), "SLEEP 0.3\n", tag_in(TAG_A), tag_in("nothex!!nothex!!"), tag_in("D0021"))
         self.assertEqual(self.stored(), [[TAG_A, "15", "4", "0", "-1", "", "", "", ""]])
-        bubble = f"string:{self.sb}/usr/karotz/sounds/notify.mp3"
+        bubble = f"string:{self.sb}/usr/karotz/sounds/notify.wav"
         triple = f"string:{self.sb}/usr/karotz/sounds/button-triple.wav"
         pulse = ("Led", "pulse", ["string:FF8800", "string:000000", "int32:400", "int32:-1"])
         self.assertEqual(self.calls(), [("Led", "light", ["string:00FF00"]), ("Multimedia", "play", [bubble, "int32:1"]), pulse,
@@ -2220,7 +2220,7 @@ class TagListenerTest(TagCase):
         self.tones()
         self.store(tag_line(TAG_A, cmd="3", a1="http://h.example/x"))
         self.listen(tag_in(TAG_A))
-        self.assertEqual(self.calls(), [("Led", "light", ["string:FF0000"]), self.play("tag-action.wav"),
+        self.assertEqual(self.calls(), [("Led", "light", ["string:FF0000"]), self.play("notify.wav"),
                                         ("Led", "light", ["string:00FF00"]), ("Led", "light", ["string:00FF00"])])
 
     def test_action_waits_for_the_tone(self):
@@ -2247,10 +2247,10 @@ class TagListenerTest(TagCase):
         def first(*words, after=-1):
             return next(i for i, l in enumerate(lines) if i > after and all(w in l for w in words))
         # Tag A: the request goes during the tone, before the LED is restored.
-        tone_a = first("tag-action.wav")
+        tone_a = first("notify.wav")
         self.assertLess(first("curl\x1f"), first("string:00FF00", after=tone_a))
         # Tag B: its tone, the LED restored, then the endpoint's own LED.
-        tone_b = first("tag-action.wav", after=tone_a)
+        tone_b = first("notify.wav", after=tone_a)
         self.assertLess(first("string:00FF00", after=tone_b), first("string:FFFF00"))
         self.assertIn(f"tag {TAG_B}: leds done", "\n".join(self.listener_log()))
 
@@ -2303,7 +2303,7 @@ class TagListenerTest(TagCase):
         self.tones()
         self.box.write("dbus/Controller.has_tag_app", "true")
         self.listen(tag_in(TAG_B, type_=3, color=2))
-        self.assertEqual(self.calls(), [("Led", "light", ["string:FF0000"]), self.play("tag-action.wav"),
+        self.assertEqual(self.calls(), [("Led", "light", ["string:FF0000"]), self.play("notify.wav"),
                                         ("Led", "light", ["string:00FF00"])])
         asked = [(m, a) for d, m, a in self.box.dbus_calls(controller=True) if d == "Controller" and m != "get_status"]
         self.assertEqual(asked, [("has_tag_app", [f"string:{TAG_B}"]),

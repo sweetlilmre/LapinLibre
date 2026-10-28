@@ -127,7 +127,7 @@ The controller also drives the LED and the ears. A command that you send can be 
 ### Play a sound
 
 1. Connect to the rabbit.
-2. Type `karotz-player /usr/karotz/sounds/notify.mp3`.
+2. Type `karotz-player /usr/karotz/sounds/notify.wav`.
 
 To play through multimedia-daemon (which the controller also uses):
 
@@ -620,7 +620,7 @@ The platform is a server on the network, for example the PC-side app server (see
 - Attempts are throttled: the first three go through, then one after 10 seconds, one after 30 seconds, then one each minute. The count goes back to zero when a configuration arrives.
 - Login: the platform sends `authenticationToken`. The controller copies `/usr/etc/conf/account.conf` to `/tmp/account.conf` and reads `id` and `pwd` from `[account]`. It answers `authenticationResponse` with the login and the MD5 (hex) of the password followed by the token. If `id` or `pwd` is empty, it does not answer.
 - Ping: the first ping is 20 seconds after the connection, then one each 60 seconds. When the platform has sent nothing for 75 seconds (and less than one hour), the ping counts as failed. At the second failed ping, the controller closes the connection and connects again.
-- When the connection fails, the controller sets NETWORK_OFFLINE then NETWORK_ONLINE, which connects again. PLATFORM_OFFLINE plays `notify.mp3`, forgets the application in control and goes to DISCONNECTED.
+- When the connection fails, the controller sets NETWORK_OFFLINE then NETWORK_ONLINE, which connects again. PLATFORM_OFFLINE plays `notify.wav`, forgets the application in control and goes to DISCONNECTED.
 - A message that does not parse is not used. The sender gets `response` with the code `ERROR` and a description that names the fields that are missing.
 
 #### The controller's own server

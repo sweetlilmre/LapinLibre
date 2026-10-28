@@ -858,11 +858,11 @@ WEB_TAGS_LOCK=/var/lock/lapinlibre-tags.lock
 WEB_LEARN_TIME=120
 WEB_TONE_LEARN_START=/usr/karotz/sounds/button-long.wav
 WEB_TONE_LEARN_STOP=/usr/karotz/sounds/button-click.wav
-WEB_TONE_LEARNED=/usr/karotz/sounds/notify.mp3
+WEB_TONE_LEARNED=/usr/karotz/sounds/notify.wav
 WEB_TONE_KNOWN=/usr/karotz/sounds/button-triple.wav
 # A tag laid outside learning: the tone before its action or application, and the error sound
 # before the phrase for a tag without an action or an unknown one.
-WEB_TONE_ACTION=/usr/karotz/sounds/tag-action.wav
+WEB_TONE_ACTION=/usr/karotz/sounds/notify.wav
 WEB_TONE_ERROR=/usr/karotz/sounds/error.mp3
 
 # valid_tag VALUE: a tag's id, 16 hexadecimal digits, upper case in TG.

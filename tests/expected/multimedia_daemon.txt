@@ -81,7 +81,7 @@ previous(string:m1, int32:0) -> boolean true
   mpd: playid "-1"
   mpd: previous
   mpd: playlistid "1"
-play(string:m2, string:/usr/karotz/sounds/notify.mp3, int32:0) -> boolean false
+play(string:m2, string:/usr/karotz/sounds/notify.wav, int32:0) -> boolean false
 stop(string:m1, int32:0) -> boolean true
   mpd: stop
 stop(string:m1, int32:0) -> boolean true
@@ -190,7 +190,7 @@ play(string:quick, string:/tmp/quick.mp3, int32:0) -> boolean true
 play(string:q2, string:/tmp/quick.mp3, int32:0) -> boolean true
 play(string:q2-mode, string:mode::random, int32:0) -> boolean true
   mpd: random "1"
-play(string:mp1, string:file:///usr/karotz/sounds/notify.mp3, int32:0) -> boolean true
+play(string:mp1, string:file:///usr/karotz/sounds/notify.wav, int32:0) -> boolean true
 play(string:mp2, string:  /tmp/radio.m3u 
 , int32:0) -> boolean true
   player_ctrl: "loadlist '/tmp/radio.m3u' 0\n"

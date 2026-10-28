@@ -220,7 +220,7 @@ conn 1: id: "<u51>" | correlationId: "p-after-system" | karotzinfo_response { | 
 conn 1: id: "<u>" | karotzinfo_response { |   infos { |     key: "mac_address" |     value: "00:0f:3d:12:34:56" |   } |   infos { |     key: "set_hard_drive_size" |     value: "<n>" |   } |   infos { |     key: "set_hard_drive_used" |     value: "<n>" |   } |   infos { |     key: "ip_address" |     value: "10.9.0.2" |   } |   infos { |     key: "lang" |     value: "fr-FR" |   } | }
 == the platform drops the connection
 conn 1: <closed>
-call Multimedia play("", "file:///usr/karotz/sounds/notify.mp3", 1)
+call Multimedia play("", "file:///usr/karotz/sounds/notify.wav", 1)
 call Ears reset("", "B")
 call Multimedia stop("", 0)
 call Voice tts_stop("", 0)

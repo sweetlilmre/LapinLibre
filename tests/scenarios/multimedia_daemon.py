@@ -415,7 +415,7 @@ def drive(d, bus):
     s.simple("resume", "m1")
     s.simple("next", "m1")
     s.simple("previous", "m1")
-    s.play("m2", "/usr/karotz/sounds/notify.mp3")  # busy with MPD
+    s.play("m2", "/usr/karotz/sounds/notify.wav")  # busy with MPD
     s.simple("stop", "m1")
     s.simple("stop", "m1")
     s.play("m3", "playlist::nope")
@@ -465,7 +465,7 @@ def drive(d, bus):
     # playFinished carries q2 (not q2-mode).
     s.play("q2", "/tmp/quick.mp3", settle=0.3)
     s.play("q2-mode", "mode::random", settle=2.5)
-    s.play("mp1", "file:///usr/karotz/sounds/notify.mp3")
+    s.play("mp1", "file:///usr/karotz/sounds/notify.wav")
     s.play("mp2", "  /tmp/radio.m3u \n")  # running: loadlist, trimmed
     s.play("mp3", "http://127.0.0.1:9/stream.mp3")
     s.play("mp4", "playlist::favourites")  # busy with karotz-player

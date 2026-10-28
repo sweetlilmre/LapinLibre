@@ -94,11 +94,8 @@ call Led pulse("", "00FF00", "000000", 1600, -1)
 call Ears move("", 14, 30, 14, 30)
 vm killall
 vm start --app_folder=/usr/karotz/apps
+== the tag listener asks: has_tag_app('string:E0040100C0FFEE42',): boolean true ; start_tag_app('string:E0040100C0FFEE42', 'string:content', 'int32:3', 'int32:1', 'int32:4', 'int32:2'): boolean true
 == the instance's RFID tag
-call Led pulse("", "FFA500", "000000", 500, 500)
-call Multimedia play("", "/usr/karotz/sounds/notify.mp3", 1)
-call Ears move_step("", 17, 30, 17, 30)
-call Led pulse("", "00FF00", "000000", 1600, -1)
 vm command hello RFID;E0040100C0FFEE42;3;FLAT;4;BLUE;content tagged
 == files
 hello/config.bin: 0a0568656c6c6f1201311a0548656c6c6f2206686f73746564520374747352046561727352036c6564a2062f6a0764656661756c74722432346538646330352d333030382d356366332d386562642d376265313236343935306264a206406210453030343031303043304646454534326a06746167676564722466663466623835642d343330392d356166612d383161332d663265366133376361343566

@@ -183,7 +183,10 @@ def drive(d, bus):
         reply("release", control("release"))
         step("release (available, reset)", until="vm start", settle=2.0)
 
+        # The tag's signal, then the tag listener's questions (the controller starts the
+        # application only through start_tag_app).
         fake.emit("Rfid", "tag_in", "ssiiii", TAG, "content", 3, 1, 4, 2)
+        record.append("== the tag listener asks: " + base.ask_tag(bus, TAG))
         step("the instance's RFID tag", until="vm command", settle=2.5)
 
         record.append("== files")

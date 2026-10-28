@@ -604,11 +604,10 @@ usr:karotz/sounds/es_tag_unknown.mp3 f 0644 0:0
 usr:karotz/sounds/fr_speech_not_understood.mp3 f 0644 0:0
 usr:karotz/sounds/fr_tag_no_action.mp3 f 0644 0:0
 usr:karotz/sounds/fr_tag_unknown.mp3 f 0644 0:0
-usr:karotz/sounds/notify.mp3 f 0644 0:0
-usr:karotz/sounds/shutter.mp3 f 0644 0:0
+usr:karotz/sounds/notify.wav f 0644 0:0
+usr:karotz/sounds/shutter.wav f 0644 0:0
 usr:karotz/sounds/speech_server_timeout_en-GB.mp3 f 0644 0:0
 usr:karotz/sounds/speech_server_timeout_fr-FR.mp3 f 0644 0:0
-usr:karotz/sounds/tag-action.wav f 0644 0:0
 usr:karotz/sounds/wakeup.mp3 f 0644 0:0
 usr:lib d 0755 0:0
 usr:lib/crda d 0755 0:0

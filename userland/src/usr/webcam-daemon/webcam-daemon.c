@@ -36,7 +36,7 @@
 #define FRAME_HEIGHT 480
 #define JPEG_QUALITY 80
 #define PICTURE_FILE "/tmp/picture.jpg"
-#define SHUTTER_SOUND "file:///usr/karotz/sounds/shutter.mp3"
+#define SHUTTER_SOUND "file:///usr/karotz/sounds/shutter.wav"
 
 /* The camera driver's private "switch to VGA" ioctl (0xc004f900, the
  * kernel's CAMIF_IOCTL_SET_VGA). It returns 1 if the resolution changed, 0

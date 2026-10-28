@@ -271,7 +271,7 @@ static void platform_offline(ControllerObject *controller, int status)
         controller_clear_interactive_id(controller);
         g_log(NULL, G_LOG_LEVEL_DEBUG, "Platform - destroying interactiveId");
         g_log(NULL, G_LOG_LEVEL_DEBUG, "Platform - disconnected");
-        multimediaPlay(controller->multimedia, NULL, "file:///usr/karotz/sounds/notify.mp3", 1);
+        multimediaPlay(controller->multimedia, NULL, "file:///usr/karotz/sounds/notify.wav", 1);
         controller_set_status(controller, E_STATUS_KAROTZ_DISCONNECTED);
     }
 }
