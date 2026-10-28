@@ -45,6 +45,11 @@ ALLOWED_S = 30
 PROMPT_S = 3
 
 
+EXPECTED_WARNINGS = vd.EXPECTED_WARNINGS + [
+    r"^connect failed on '[\d.]+:\d+': Connection timed out$",
+]
+
+
 def ip(*args):
     """Run ip(8) with args; True if it succeeded."""
     for path in ("/usr/sbin/ip", "/sbin/ip", "ip"):

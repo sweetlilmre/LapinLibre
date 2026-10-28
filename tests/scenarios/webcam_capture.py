@@ -30,6 +30,13 @@ CALLS = [
 ]
 
 
+# Syslog warnings the run is known to log (harness.py): uploads to a server that refuses them.
+EXPECTED_WARNINGS = [
+    r"^output_httppost_sendFrame curl perform ERROR$",
+    r"^lib_takeSnapshot: output_httppost_sendFile error$",
+]
+
+
 def sandbox_setup(workdir, sysroot):
     """Give the sysroot an empty, private var (its /tmp is var/tmp)."""
     var = Path(workdir) / "var"

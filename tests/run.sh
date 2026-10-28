@@ -68,7 +68,7 @@ app_server_tests() {
 
 build_fakes() {
     gcc -O2 -Wall -fPIC -shared -o "$F/devtrace.so" "$T/fakes/devtrace.c" -ldl &&
-    for f in ioctlfake-arm timeshift-arm; do
+    for f in ioctlfake-arm syslogfake-arm timeshift-arm; do
         "${X}gcc" -march=armv4t -marm -O2 -nostdlib -shared -fPIC -Wl,--hash-style=sysv \
             -o "$F/$f.so" "$T/fakes/$f.c" || return 1
     done &&

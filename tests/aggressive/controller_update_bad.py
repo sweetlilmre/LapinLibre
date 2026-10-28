@@ -14,6 +14,11 @@ DAEMON, DEVICES, normalise_record, drive = u.DAEMON, u.DEVICES, u.normalise_reco
 sandbox_setup = u.make_sandbox_setup({"rootfs_version": u.published(u.INSTALLED_ROOTFS), "yaffs_version": ""})
 
 
+EXPECTED_WARNINGS = u.EXPECTED_WARNINGS + [
+    r"^update check: version files unreadable or malformed, skipped$",
+]
+
+
 def check(record):
     problems = u.common_problems(record)
     if u.rebooted(record):

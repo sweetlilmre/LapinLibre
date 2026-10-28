@@ -19,6 +19,12 @@ DEVICES = md.DEVICES
 REGULAR_FILE_DEVICES = md.REGULAR_FILE_DEVICES
 
 
+EXPECTED_WARNINGS = md.EXPECTED_WARNINGS + [
+    r"^Unable to reset OSS driver\.$",
+    r"^Record Go: /dev/audio setup failed$",
+]
+
+
 def drive(d, bus):
     stubs = Path(os.path.dirname(d.log.name)) / "stub-bin"
     (stubs / "mpd").write_text("#!/bin/true\n")

@@ -400,6 +400,8 @@ add(function () {
         attempt("twitter sign", function () { return social.twitter.sign("GET&http%3A%2F%2Fx&a%3D1"); });
         attempt("facebook get", function () { return social.facebook.get("http://127.0.0.1:8088/fb"); });
         attempt("soundcloud post", function () { return social.soundcloud.post("http://127.0.0.1:8088/sc", {a: "1"}); });
+        attempt("facebook post", function () { return social.facebook.post("http://127.0.0.1:8088/fb", {a: "1"}); });
+        attempt("soundcloud get", function () { return social.soundcloud.get("http://127.0.0.1:8088/sc"); });
         next();
     }, {d: 1});
 });

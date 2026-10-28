@@ -26,6 +26,9 @@ PADDING = 32000  # record_stop()'s padding: 32 writes of 1000 bytes
 SILENCE = bytes([0x00, 0x80])  # the unsigned midpoint, little-endian
 
 
+EXPECTED_WARNINGS = md.EXPECTED_WARNINGS
+
+
 def sandbox_setup(workdir, sysroot):
     base = md.sandbox_setup(workdir, sysroot) if hasattr(md, "sandbox_setup") else ""
     w = Path(workdir)

@@ -29,6 +29,11 @@ TOKEN = "token-reconnect"
 QUERIES = ("p-info-1", "p-info-2", "p-info-3")
 
 
+EXPECTED_WARNINGS = base.EXPECTED_WARNINGS + [
+    r"^Platform - ping timeout( first_fail)?$",
+]
+
+
 def trigger(platform, p, fake, step):
     # Silence: nothing is sent; the controller's pings stay unanswered.
     again = platform.request("wait_connection", timeout=240)["conn"]

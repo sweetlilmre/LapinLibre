@@ -27,6 +27,13 @@ CALLS = [
 ]
 
 
+# Syslog warnings the run is known to log (harness.py): the fake camera fails its capture ioctls.
+EXPECTED_WARNINGS = [
+    r"^input_cam_init: takeOneShot: error ioctl$",
+    r"^lib_Webcam: takeSnapshot: error init_input\. abort$",
+]
+
+
 def drive(d, bus):
     from harness import introspection
 

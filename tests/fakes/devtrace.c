@@ -261,6 +261,47 @@ int system(const char *command)
     return 127 << 8;
 }
 
+/* syslog() appends "<level> <message>" to $KAROTZ_SYSLOG_FILE, as
+ * syslogfake-arm.c does for ARM builds; the sandbox has no syslog daemon. */
+void vsyslog(int priority, const char *format, va_list ap)
+{
+    const char *file = getenv("KAROTZ_SYSLOG_FILE");
+    char text[1024];
+    size_t n;
+    FILE *f;
+
+    if (file == NULL)
+        return;
+    vsnprintf(text, sizeof text, format, ap);
+    n = strlen(text);
+    while (n > 0 && text[n - 1] == '\n')
+        text[--n] = '\0';
+    if ((f = fopen(file, "a")) == NULL)
+        return;
+    fprintf(f, "%d %s\n", priority & 7, text);
+    fclose(f);
+}
+
+void syslog(int priority, const char *format, ...)
+{
+    va_list ap;
+
+    va_start(ap, format);
+    vsyslog(priority, format, ap);
+    va_end(ap);
+}
+
+/* What syslog() becomes with _FORTIFY_SOURCE. */
+void __syslog_chk(int priority, int flag, const char *format, ...)
+{
+    va_list ap;
+
+    (void)flag;
+    va_start(ap, format);
+    vsyslog(priority, format, ap);
+    va_end(ap);
+}
+
 int close(int fd)
 {
     REAL(close);

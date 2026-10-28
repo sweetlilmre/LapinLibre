@@ -3820,6 +3820,12 @@ MESSAGE: JSLOG: facebook get threw unauthorised url
 MESSAGE: secureHttpPost
 MESSAGE:  regexp match 1
 MESSAGE: JSLOG: soundcloud post threw unauthorised url
+MESSAGE: secureHttpPost
+MESSAGE:  regexp match 1
+MESSAGE: JSLOG: facebook post threw unauthorised url
+MESSAGE: secureHttpGet
+MESSAGE:  regexp match 1
+MESSAGE: JSLOG: soundcloud get threw unauthorised url
 DEBUG: SetTimeout: 1
 MESSAGE: JSLOG: web done
 DEBUG: EXIT

@@ -19,6 +19,11 @@ DAEMON = "controller"
 DEVICES = []
 
 
+EXPECTED_WARNINGS = [
+    r"^Platform - no platform server: ip_server is this rabbit \(127\.0\.0\.1\); set SERVER= in lapinlibre\.txt$",
+]
+
+
 def sandbox_setup(workdir, sysroot):
     conf, n = re.subn(r"^ip_server=.*$", "ip_server=127.0.0.1", conf_fixture.KAROTZ_CONF, flags=re.M)
     assert n == 1

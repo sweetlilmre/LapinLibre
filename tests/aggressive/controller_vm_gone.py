@@ -18,6 +18,11 @@ normalise_record = base.normalise_record
 KILLED = "== the VM was killed"
 
 
+EXPECTED_WARNINGS = base.EXPECTED_WARNINGS + [
+    r"^VM gone, starting a new one for: ",
+]
+
+
 def drive(d, bus):
     def trigger(platform, p, fake, step):
         platform.send(p, 'id: "p-stop" interactiveId: "ia-1" interactiveMode { action: STOP }')

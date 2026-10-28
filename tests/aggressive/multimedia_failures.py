@@ -37,6 +37,12 @@ FAKE_IOCTL_TYPES = md.FAKE_IOCTL_TYPES
 DONE, ERROR = 4, 2
 
 
+EXPECTED_WARNINGS = md.EXPECTED_WARNINGS + [
+    r"^(Multimedia: )?execlp( karotz-player)? ERROR$",
+    r"^Record Go: can't open /dev/audio: No such file or directory$",
+]
+
+
 def call(bus, record, method, *args, settle=1.5):
     out = bus.send("--reply-timeout=20000", f"--dest={md.SERVICE}", md.PATH, f"{md.IFACE}.{method}", *args)
     record.append(f"{method}({', '.join(args)}) -> {md.reply(out)}")

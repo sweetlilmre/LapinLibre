@@ -11,6 +11,11 @@ DAEMON, DEVICES, normalise_record, drive = u.DAEMON, u.DEVICES, u.normalise_reco
 sandbox_setup = u.make_sandbox_setup({"rootfs_version": u.published(u.INSTALLED_ROOTFS), "yaffs_version": None})
 
 
+EXPECTED_WARNINGS = u.EXPECTED_WARNINGS + [
+    r"^Error occurred during downloading (rootfs|yaffs)_version file$",
+]
+
+
 def check(record):
     problems = u.common_problems(record)
     if u.rebooted(record):

@@ -5,9 +5,9 @@
 
 In order:
 
-- **Image tests** (`image/`, every `test_*.py` there): the cramfs and tar codecs and overlays (`test_fstree.py`), the key's real autorun run against a simulated Karotz (`test_usbkey.py`), the core's boot files and the configuration `inetd.sh` makes for httpd (`test_core_boot.py`), the generated time-zone list (`test_tzlist.py`) and the web API's programs (`test_web_api.py`); `python3 -I tests/image/run.py` runs them alone.
+- **Image tests** (`image/`, every `test_*.py` there): the cramfs and tar codecs and overlays (`test_fstree.py`), the key's real autorun run against a simulated Karotz (`test_usbkey.py`), the core's boot files and the configuration `inetd.sh` makes for httpd (`test_core_boot.py`), the generated time-zone list (`test_tzlist.py`), the web API's programs (`test_web_api.py`) and karotzVM's JavaScript API (`test_karotzvm_api.py`: every function karotzVM gives applications, read from its source, must be called by a test application, or be in its exceptions with the reason; `python3 -I -B tests/image/test_karotzvm_api.py --list` lists them); `python3 -I tests/image/run.py` runs them alone.
 - **App server tests** (`app_server/`): `tools/app-server` against a fake controller (the login, the commands, the messages, the HTTP endpoints, speech recognition and the REST API for external applications); `python3 -I tests/app_server/test_app_server.py <protoc>` runs them alone (the system build's `protoc-2.3.0`).
-- **Behaviour scenarios** (`scenarios/`, run by `harness.py`): each starts one program on a private D-Bus bus with fake devices, drives it (D-Bus calls, device input, fake servers), and records its replies, signals, device I/O and what the fake servers saw. They run under qemu-user against the test sysroot, in user, mount, network and PID namespaces with only no-op stubs on PATH. The record must equal `expected/<scenario>.txt`.
+- **Behaviour scenarios** (`scenarios/`, run by `harness.py`): each starts one program on a private D-Bus bus with fake devices, drives it (D-Bus calls, device input, fake servers), and records its replies, signals, device I/O and what the fake servers saw. They run under qemu-user against the test sysroot, in user, mount, network and PID namespaces with only no-op stubs on PATH. The record must equal `expected/<scenario>.txt`. The program's syslog messages (its `g_log` messages) go to the run's `syslog` file, through the preload `fakes/syslogfake-arm.c` (`devtrace.c` for host builds); a warning or worse that the module's `EXPECTED_WARNINGS` doesn't match fails the run, in the scenarios and the aggressive tests alike. karotzVM's log is in its record itself.
 - **Aggressive tests** (`aggressive/`): hostile and broken input (bad configuration and update files, short reads, a misbehaving controller, memory over a long run); each module's `check(record)` lists what went wrong.
 - **The system build's library and program tests** (`system/tests`): libmpd's retry on EINTR, and mpd-karotz's playback, tags and seek against host decodes.
 
@@ -59,9 +59,9 @@ These paths need the rabbit's hardware or its whole system, which the scenarios 
 
 What no test reaches yet:
 
-- k2k-daemon's call audio: the aggressive test `k2k_sip_peer` calls a SIP peer on the loopback interface and is called by it (an INVITE with SDP, busy, declined, answered and hung up), with regular files for the sound devices, but no audio is checked, and a call between two rabbits has not been made.
-- `power` (rootfs) is followed only up to its first `reboot` command, since everything after it assumes the machine is going down.
-- karotzVM's JavaScript API calls that neither the scenario's test applications nor the device test make.
-- The programs' log output (`g_log` messages): the scenarios record signals, replies and device I/O, not the log.
+- k2k-daemon calling another k2k-daemon: the aggressive test `k2k_sip_peer` calls a SIP peer on the loopback interface and is called by it, and checks the answered call's audio both ways (a tone from `/dev/dsp` in the RTP the peer receives, the peer's tone in what the daemon writes to `/dev/dsp`), but no two daemons have called each other, and no call between two rabbits has been made.
+- That the rabbit comes back after `power`'s reboot: the aggressive test `power_reads` follows `power` through its reboots (one a second while the button reads `'0'`, none after `'1'`, a failing reboot reported and tried again) with a stub for `reboot`.
+- `social.facebook` and `social.soundcloud` on an allowed URL: the tests have no network, so only the refused URL is tested.
+- Specific log messages as the only evidence of a behaviour: the log is checked for unexpected warnings, not for messages that must appear.
 
 `image/test_web_api.py` runs the web API's programs on the host (with the image's BusyBox under qemu when it can, including its httpd), and `image/test_core_boot.py` the configuration `inetd.sh` makes for httpd.

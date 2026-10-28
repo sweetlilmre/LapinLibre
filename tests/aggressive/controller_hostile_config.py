@@ -29,6 +29,14 @@ UNSAFE_KEYS = ["x;touch /tmp/pwned", "../../etc", "a b", "q" * 300, "$(touch /tm
 LONG_K2K = "k2k" + "b" * 300
 
 
+EXPECTED_WARNINGS = base.EXPECTED_WARNINGS + [
+    r"^download_app: unsafe application key ignored: ",
+    r"^language name rejected: ",
+    r"^unsafe application key or instance: not started$",
+    r"^k2k application key too long: call not passed on$",
+]
+
+
 def _quote(text):
     return text.replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n")
 

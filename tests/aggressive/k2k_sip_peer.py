@@ -11,15 +11,23 @@ the rabbit is available (the daemon starts busy without one). Then:
 - declined: the peer calls the rabbit; the daemon signals incoming_call, k2k_answer(false)
   declines it with a final response of 400 or more, which the peer acknowledges;
 - answered: the peer calls again; k2k_answer(true) answers 200 OK with SDP, the peer acknowledges
-  it, the daemon signals beginning_call; the peer hangs up (BYE), which the daemon answers 200
-  and signals finished_call.
+  it, the daemon signals beginning_call. Then the call's audio, both ways: the test appends a
+  600 Hz tone to /dev/dsp (the microphone) and the peer sends a 1000 Hz tone as PCMU RTP to the
+  port of the daemon's SDP answer. The peer's RTP must carry the 600 Hz tone and what the daemon
+  writes to /dev/dsp the 1000 Hz one (compared by their share of the energy, not by bytes:
+  buffering and timing shift the samples). /dev/dsp is one regular file opened once for reading
+  and writing, so the daemon's writes overwrite part of the tone it hasn't read yet; what it
+  reads is still the tone. Last the peer hangs up (BYE), which the daemon answers 200 and
+  signals finished_call.
 
 What the peer received and sent is logged and kept in the record; check() lists what's missing.
 ARM only (the daemon's SIP threads need qemu-user's NPTL support).
 """
 
+import math
 import os
 import random
+import struct
 import re
 import shutil
 import socket
@@ -42,9 +50,62 @@ REGULAR_FILE_DEVICES = ["dsp", "mixer"]
 
 PEER = ("127.0.0.1", 5070)
 RABBIT = ("127.0.0.1", 5060)
+# The peer's RTP port: the daemon's own is 7078 (linphone.conf), on the same interface.
+PEER_RTP = 7080
 SDP = ("v=0\r\no=eve 1 1 IN IP4 127.0.0.1\r\ns=-\r\nc=IN IP4 127.0.0.1\r\nt=0 0\r\n"
-       "m=audio 7078 RTP/AVP 0\r\na=rtpmap:0 PCMU/8000\r\n")
+       f"m=audio {PEER_RTP} RTP/AVP 0\r\na=rtpmap:0 PCMU/8000\r\n")
 AVAILABLE = 16
+# The call's audio: the rabbit's microphone (/dev/dsp's input) plays RABBIT_TONE, the peer sends
+# PEER_TONE, each for TONE_SECONDS, at 8000 samples a second (PCMU's rate, and the OSS device's).
+RATE = 8000
+RABBIT_TONE = 600
+PEER_TONE = 1000
+TONE_SECONDS = 3
+# The share of a half-second window's energy a tone must reach somewhere to count as heard.
+MIN_SHARE = 0.5
+
+
+EXPECTED_WARNINGS = k2k.EXPECTED_WARNINGS
+
+
+# --- audio --------------------------------------------------------------------------------------
+
+def tone(freq, seconds, amplitude=8000):
+    """A sine tone as 16-bit samples."""
+    return [int(amplitude * math.sin(2 * math.pi * freq * i / RATE)) for i in range(int(seconds * RATE))]
+
+
+def ulaw_encode(sample):
+    """G.711 mu-law: one 16-bit sample to a byte."""
+    sign = 0x80 if sample < 0 else 0
+    magnitude = min(abs(sample), 32635) + 0x84
+    exponent = 7
+    while exponent > 0 and not magnitude & (0x4000 >> (7 - exponent)):
+        exponent -= 1
+    return ~(sign | exponent << 4 | (magnitude >> (exponent + 3)) & 0x0F) & 0xFF
+
+
+def ulaw_decode(byte):
+    """G.711 mu-law: one byte to a 16-bit sample."""
+    byte = ~byte & 0xFF
+    magnitude = (((byte & 0x0F) << 3) + 0x84) << ((byte >> 4) & 7)
+    return 0x84 - magnitude if byte & 0x80 else magnitude - 0x84
+
+
+def strongest(samples, freqs, window=RATE // 2):
+    """For each frequency, its largest share of a window's energy (0 to 1), over 0.5 s windows."""
+    best = {f: 0.0 for f in freqs}
+    for start in range(0, len(samples) - window + 1, window // 2):
+        part = samples[start:start + window]
+        energy = sum(x * x for x in part)
+        if energy == 0:
+            continue
+        for f in freqs:
+            w = 2 * math.pi * f / RATE
+            re_ = sum(x * math.cos(w * i) for i, x in enumerate(part))
+            im = sum(x * math.sin(w * i) for i, x in enumerate(part))
+            best[f] = max(best[f], 2 * (re_ * re_ + im * im) / len(part) / energy)
+    return best
 
 
 # --- the peer (runs inside the daemon's network namespace) ---------------------------------------
@@ -79,6 +140,30 @@ def peer(ctrl):
     sock.bind(PEER)
     log = open(os.path.join(ctrl, "sip.log"), "a", buffering=1)
     dialog = {}
+    rtp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    rtp.bind((PEER[0], PEER_RTP))
+
+    def receive_rtp():
+        """The PCMU payloads the daemon sends, appended to rtp-in."""
+        with open(os.path.join(ctrl, "rtp-in"), "ab", buffering=0) as out:
+            while True:
+                data, _ = rtp.recvfrom(65535)
+                if len(data) < 12 or data[0] >> 6 != 2 or data[1] & 0x7F != 0:
+                    continue
+                start = 12 + 4 * (data[0] & 0x0F)
+                if data[0] & 0x10 and len(data) >= start + 4:
+                    start += 4 + 4 * struct.unpack("!H", data[start + 2:start + 4])[0]
+                out.write(data[start:])
+
+    def send_tone():
+        """PEER_TONE as PCMU, 20 ms a packet, to the address of the daemon's SDP answer."""
+        payload = bytes(ulaw_encode(s) for s in tone(PEER_TONE, TONE_SECONDS))
+        ssrc, started = random.getrandbits(32), time.time()
+        for n, i in enumerate(range(0, len(payload), 160)):
+            header = struct.pack("!BBHII", 0x80, 0, n & 0xFFFF, (i & 0xFFFFFFFF), ssrc)
+            rtp.sendto(header + payload[i:i + 160], dialog["rtp"])
+            time.sleep(max(0.0, started + (n + 1) * 0.02 - time.time()))
+        log.write(f"== tone sent to port {dialog['rtp'][1]}\n")
 
     def send(text, address):
         sock.sendto(text.encode(), address)
@@ -110,6 +195,11 @@ def peer(ctrl):
             elif line.startswith("SIP/2.0 "):
                 code = int(line.split()[1])
                 cseq = fields.get("cseq", [""])[0]
+                if cseq.endswith("INVITE") and 200 <= code < 300:
+                    port = re.search(r"^m=audio (\d+)", body, re.M)
+                    address = re.search(r"^c=IN IP4 (\S+)", body, re.M)
+                    if port:
+                        dialog["rtp"] = (address.group(1) if address else PEER[0], int(port.group(1)))
                 if cseq.endswith("INVITE") and code >= 200:
                     to_tag = re.search(r";tag=([^;>\s]+)", fields["to"][0])
                     dialog["to_tag"] = to_tag.group(1) if to_tag else ""
@@ -119,6 +209,7 @@ def peer(ctrl):
                             dialog["to_tag"])
 
     threading.Thread(target=receive, daemon=True).start()
+    threading.Thread(target=receive_rtp, daemon=True).start()
     with open(os.path.join(ctrl, "ready"), "w") as f:
         f.write("ready\n")
     for command in sys.stdin:
@@ -130,6 +221,11 @@ def peer(ctrl):
         elif command == "bye":
             request("BYE", f"sip:rabbit@{RABBIT[0]}:{RABBIT[1]}", 2, "z9hG4bK" + str(random.getrandbits(40)),
                     dialog.get("to_tag", ""))
+        elif command == "tone":
+            if "rtp" in dialog:
+                threading.Thread(target=send_tone, daemon=True).start()
+            else:
+                log.write("== no RTP address in the daemon's answer\n")
         log.write(f"== {command}\n")
 
 
@@ -184,7 +280,10 @@ def drive(d, bus):
         record.append(f"incoming_call seen: {wait_signal(bus, 'incoming_call', 2)}")
         record.append(k2k.call(bus, "k2k_answer", "boolean:true"))
         record.append(f"beginning_call seen: {wait_signal(bus, 'beginning_call')}")
-        time.sleep(2)
+        time.sleep(1)
+        d.write("dsp", struct.pack(f"<{TONE_SECONDS * RATE}h", *tone(RABBIT_TONE, TONE_SECONDS)))
+        command("tone")
+        time.sleep(TONE_SECONDS + 1.5)
         command("bye")
         record.append(f"finished_call seen: {wait_signal(bus, 'finished_call', 3)}")
         time.sleep(1)
@@ -197,12 +296,35 @@ def drive(d, bus):
         log = os.path.join(ctrl, "sip.log")
         record.append("== the peer's SIP log")
         record.extend(open(log).read().splitlines() if os.path.exists(log) else ["(none)"])
+        record.extend(audio_lines(os.path.join(ctrl, "rtp-in"), d.fifos["dsp"]))
         err = open(os.path.join(ctrl, "err")).read().strip()
         if err:
             record.append("== the peer's errors")
             record.extend(err.splitlines()[-10:])
         shutil.rmtree(ctrl, ignore_errors=True)
     return record
+
+
+def audio_lines(rtp_in, dsp):
+    """How strongly each tone shows in what the peer received and in what the daemon wrote to /dev/dsp."""
+    lines = ["== audio"]
+    received = open(rtp_in, "rb").read() if os.path.exists(rtp_in) else b""
+    shares = strongest([ulaw_decode(b) for b in received], (RABBIT_TONE, PEER_TONE))
+    lines.append(f"RTP received: {len(received)} samples; rabbit tone {shares[RABBIT_TONE]:.2f}, "
+                 f"peer tone {shares[PEER_TONE]:.2f}")
+    # The device file also holds the rabbit's tone and the silence the daemon writes before the
+    # call's audio; all-zero windows are skipped before decoding, since there can be a lot of them.
+    raw = open(dsp, "rb").read() if os.path.exists(dsp) else b""
+    window = RATE  # bytes: 0.5 s of 16-bit samples
+    zero = bytes(window)
+    samples = []
+    for i in range(0, len(raw) - window + 1, window):
+        if raw[i:i + window] != zero:
+            samples.extend(struct.unpack(f"<{window // 2}h", raw[i:i + window]))
+    shares = strongest(samples, (RABBIT_TONE, PEER_TONE))
+    lines.append(f"/dev/dsp: {len(raw) // 2} samples, {len(samples)} outside silence; "
+                 f"rabbit tone {shares[RABBIT_TONE]:.2f}, peer tone {shares[PEER_TONE]:.2f}")
+    return lines
 
 
 def section(record, name):
@@ -243,13 +365,21 @@ def check(record):
         seen = text.count(f"KarotzInterface.{needle}(")
         if seen < count:
             problems.append(f"{needle} signalled {seen} time(s), expected {count} or more")
+    for line, label, tone_name in (("RTP received: ", "the RTP the peer received", "rabbit tone"),
+                                   ("/dev/dsp: ", "what the daemon wrote to /dev/dsp", "peer tone")):
+        found = [l for l in record if l.startswith(line)]
+        share = re.search(tone_name + r" ([0-9.]+)", found[0]) if found else None
+        if not share or float(share.group(1)) < MIN_SHARE:
+            problems.append(f"answered: the {tone_name} isn't in {label} "
+                            f"({found[0] if found else 'not measured'}; expected {MIN_SHARE} or more)")
     if "== daemon still running: True" not in text:
         problems.append("the daemon died")
     return problems
 
 
 def summary(record):
-    return "; ".join(l for l in record if l.endswith((": True", ": False")) or l.startswith("k2k_"))
+    return "; ".join(l for l in record if l.endswith((": True", ": False"))
+                     or l.startswith(("k2k_", "RTP received: ", "/dev/dsp: ")))
 
 
 if __name__ == "__main__" and len(sys.argv) == 3 and sys.argv[1] == "peer":

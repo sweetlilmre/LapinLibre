@@ -33,6 +33,12 @@ normalise_record = base.normalise_record
 CHOREOGRAPHIES = (("slash", "/tmp/dance.js"), ("noslash", "dance.js"), ("unsafe", "/tmp/da nce.js"))
 
 
+EXPECTED_WARNINGS = base.EXPECTED_WARNINGS + [
+    r"^malformed message \(\d+ bytes\) not handled: ",
+    r"^CHOREOGRAPHY: no script name, or an unsafe or too long command: not sent$",
+]
+
+
 def trigger(platform, p, fake, step):
     platform.send(p, 'id: "p-tts-noact" interactiveId: "ia-1" tts { text: "no action" }')
     step("tts without an action", 'correlationId: "p-tts-noact"', timeout=20)

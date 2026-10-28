@@ -41,6 +41,17 @@ from scenarios import conf_fixture
 DAEMON = "controller"
 
 
+# Syslog warnings the run is known to log (harness.py): no platform server, no karotzVM, no
+# interactive application to stop, and no update server.
+EXPECTED_WARNINGS = [
+    r"^nslookup failed on 'platform\.invalid': Unknown host$",
+    r"^Platform - cannot connect to: platform\.invalid:\d+$",
+    r"^controller_interactive_mode_stop failed$",
+    r"^Error occurred during downloading (rootfs|yaffs)_version file$",
+    r"^cannot run VM: No such file or directory$",
+]
+
+
 def sandbox_setup(workdir, sysroot):
     """The scenario's own karotz.conf (servers that don't resolve), whatever the sysroot has."""
     return conf_fixture.sandbox_setup(workdir, sysroot, karotz=conf_fixture.KAROTZ_CONF)

@@ -44,6 +44,12 @@ esac
 """
 
 
+EXPECTED_WARNINGS = md.EXPECTED_WARNINGS + [
+    r"^Multimedia: player \d+ had ended before its command$",
+    r"^Multimedia: send_player_cmd - no player reads /tmp/karotz-player\.ctrl: ",
+]
+
+
 def call(bus, record, method, *args, settle=0.5):
     started = time.time()
     out = bus.send("--reply-timeout=15000", f"--dest={md.SERVICE}", md.PATH, f"{md.IFACE}.{method}", *args)

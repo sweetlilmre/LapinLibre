@@ -35,6 +35,12 @@ normalise_record = base.normalise_record
 IDS = (("empty", ""), ("uuid", "u-1"))
 
 
+EXPECTED_WARNINGS = base.EXPECTED_WARNINGS + [
+    r"^interactive mode start refused: empty interactiveId$",
+    r"^controller_interactive_mode_stop failed$",
+]
+
+
 def trigger(platform, p, fake, step):
     platform.send(p, 'id: "p-stop" interactiveId: "ia-1" interactiveMode { action: STOP }')
     step("stop ia-1: the controller is available", 'correlationId: "p-stop"', "vm start", settle=2.0)

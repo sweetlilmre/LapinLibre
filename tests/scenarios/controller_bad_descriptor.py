@@ -23,6 +23,12 @@ BROKEN = {"app-corrupt": '<?xml version="1.0"?>\n<descriptor><version>1</vers',
           "app-noversion": '<?xml version="1.0"?>\n<descriptor><name>x</name></descriptor>\n'}
 
 
+# Syslog warnings the run is known to log (harness.py): the unreadable descriptor.
+EXPECTED_WARNINGS = [
+    r"^download_app: unreadable descriptor or no version: download again$",
+]
+
+
 def sandbox_setup(workdir, sysroot):
     setup = base.sandbox_setup(workdir, sysroot)
     w = Path(workdir)

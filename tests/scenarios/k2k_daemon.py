@@ -49,6 +49,20 @@ for line in sys.stdin:
 '''
 
 
+# Syslog warnings the run is known to log (harness.py): no account, no controller at first, no
+# STUN server or proxy, calls refused as busy, and the answering machine setting, not implemented.
+EXPECTED_WARNINGS = [
+    r"^Could not read /etc/conf/account\.conf file \(No such file or directory\)$",
+    r"^Could not get controller current status\. Assuming unavailable$",
+    r"^dbus, set answering machine TODO \(value: \d+\)$",
+    r"^Asked to hangup, but no active call\.$",
+    r"^No stun server configured$",
+    r"^No proxy information$",
+    r"^Could not start the call$",
+    r"^call error \(User is busy\.\)$",
+]
+
+
 def call(bus, method, *args):
     out = bus.send(f"--dest={SERVICE}", PATH, f"{IFACE}.{method}", *args)
     lines = [l.strip() for l in out.splitlines() if not l.startswith("method return")]

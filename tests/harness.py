@@ -20,8 +20,10 @@ EXPECTED/<scenario>.txt; with --record it is written there instead.
       --build BUILD --fakes FAKES [--expected DIR] [--label LABEL] NAME...
 
 FAKES is the directory holding the test preloads (devtrace.so for host
-builds; ioctlfake-arm.so and timeshift-arm.so for ARM builds), built by
-tests/run.sh. With --suite aggressive the modules come from tests/aggressive/
+builds; ioctlfake-arm.so, syslogfake-arm.so and timeshift-arm.so for ARM
+builds), built by tests/run.sh. The program's syslog messages go to the run's
+syslog file; a warning or worse (a GLib WARNING, CRITICAL or ERROR) that the
+module's EXPECTED_WARNINGS doesn't match fails the run in either suite. With --suite aggressive the modules come from tests/aggressive/
 and each is judged by its own check(record) instead of an expected record.
 
 A scenario module provides DAEMON, DEVICES and drive(daemon, bus) (which
@@ -34,6 +36,8 @@ returns the first part of the record), and optionally:
                         namespaces just before it starts
   raw_device_filter(lines)  sees the device I/O before repeats are collapsed
   normalise_record(record)  masks what changes from run to run
+  EXPECTED_WARNINGS     regular expressions for the syslog warnings the run
+                        is known to log (each matched with re.search)
 
 Linux only (WSL): needs qemu-arm, dbus-daemon, dbus-monitor, dbus-send, unshare.
 """
@@ -229,6 +233,7 @@ class Daemon:
         self.devdir.mkdir()
         self.log = open(workdir / "daemon.log", "w")
         self.trace = workdir / "daemon.devtrace"
+        self.syslog = workdir / "syslog"
         self.fifos = {}
         for dev in devices:
             if self.qemu:
@@ -252,8 +257,10 @@ class Daemon:
             # crashes and qemu dumps core.
             self.strace = workdir / "daemon.log"
             extra = ["-d", "strace"]
+            preloads = [FAKES / "syslogfake-arm.so"]
             if fake_ioctl_types:
-                extra += ["-E", f"LD_PRELOAD={FAKES / 'ioctlfake-arm.so'}"]
+                preloads.append(FAKES / "ioctlfake-arm.so")
+            extra += ["-E", "LD_PRELOAD=" + ":".join(map(str, preloads))]
             cmd = qemu_command(self.sysroot, self.build, name, extra)
             # No network: D-Bus is a Unix socket on the filesystem, so it still works.
             cmd = [*SANDBOX, "/bin/sh", "-c", LOOPBACK_UP + setup + '"$@"', "sh", *cmd]
@@ -274,6 +281,7 @@ class Daemon:
         cmd[0] = shutil.which(cmd[0])
         env = bus.daemon_env(stubs)
         env["KAROTZ_STUB_DIR"] = str(stubs)
+        env["KAROTZ_SYSLOG_FILE"] = str(self.syslog)
         if not self.qemu:
             env["KAROTZ_SYSROOT"] = str(self.sysroot)  # same file view as qemu -L
         if fake_ioctl_types:
@@ -478,6 +486,20 @@ def normalise_paths(record, workdir, build, sysroot):
     return out
 
 
+def unexpected_warnings(scenario, workdir):
+    """The run's syslog warnings and worse that the scenario's EXPECTED_WARNINGS doesn't match."""
+    path = Path(workdir) / "syslog"
+    if not path.exists():
+        return []
+    allowed = [re.compile(p) for p in getattr(scenario, "EXPECTED_WARNINGS", ())]
+    out = []
+    for line in path.read_text(errors="replace").splitlines():
+        level, _, message = line.partition(" ")
+        if level.isdigit() and int(level) <= 4 and not any(p.search(message) for p in allowed):
+            out.append(line)
+    return out
+
+
 def run(scenario, sysroot, build):
     """Run one scenario; returns its record and the run's working directory."""
     workdir = Path(tempfile.mkdtemp(prefix=f"lapinlibre-{scenario.DAEMON}-"))
@@ -534,6 +556,18 @@ def main():
                 print(f"      at {Path(frame.filename).name}:{frame.lineno} in {frame.name}: {frame.line}", flush=True)
             continue
         took = f"{time.time() - started:.0f} s"
+        warnings = unexpected_warnings(module, workdir)
+        if warnings:
+            failed += 1
+            print(f"FAIL  {label}: warnings in its log that EXPECTED_WARNINGS doesn't list (logs in {workdir})")
+            for line in warnings[:20]:
+                print(f"    {line}")
+            if len(warnings) > 20:
+                print(f"    ... {len(warnings) - 20} more")
+            sys.stdout.flush()
+            if not args.record or args.suite == "aggressive":
+                (workdir / "record.txt").write_text("\n".join(record) + "\n")
+                continue
         if args.suite == "aggressive":
             problems = module.check(record)
             if hasattr(module, "summary"):  # measurements worth seeing either way

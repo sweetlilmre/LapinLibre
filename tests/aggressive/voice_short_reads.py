@@ -21,6 +21,9 @@ for _name in ("sandbox_setup", "normalise_record"):
         globals()[_name] = getattr(vd, _name)
 
 
+EXPECTED_WARNINGS = vd.EXPECTED_WARNINGS
+
+
 def drive(d, bus):
     os.environ["KAROTZ_ASR_LOG_SILENCE"] = "1"
     try:

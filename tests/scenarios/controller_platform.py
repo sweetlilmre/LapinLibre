@@ -67,6 +67,16 @@ TOKEN = "t0k3n"
 UUID = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
 
 
+# Syslog warnings the run is known to log (harness.py): the platform's telnet and log commands,
+# which LapinLibre ignores, and the fake platform closing its connection at the end.
+EXPECTED_WARNINGS = [
+    r"^(Telnet|Log) (on|off) from the platform ignored: ",
+    r"^socket \d+: the other side closed the connection$",
+    r"^socket error on socket \d+$",
+    r"^Platform - Offline$",
+]
+
+
 def tool(name):
     path = shutil.which(name) or shutil.which(name, path="/usr/sbin:/sbin")
     if path is None:

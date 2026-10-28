@@ -40,6 +40,12 @@ F_GETPIPE_SZ = 1032
 IRQ_TIMER, IRQ_ERR, IRQ_RX = 0x01, 0x02, 0x20
 
 
+# Syslog warnings the run is known to log (harness.py): tags read with the fake reader's errors.
+EXPECTED_WARNINGS = [
+    r"^RFID: getTagInfo - SRI512_(SELECT|GET_UID) failed - abort$",
+]
+
+
 class Script:
     """The coupler's answers, and how many bytes the daemon writes meanwhile."""
 

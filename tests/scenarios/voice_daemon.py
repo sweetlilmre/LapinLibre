@@ -60,6 +60,15 @@ IFACE = "com.mindscape.karotz.KarotzInterface"
 SERVER_ADDRESSES = conf_fixture.SERVER_ADDRESSES
 
 
+# Syslog warnings the run is known to log (harness.py): speech servers that can't be reached or
+# answer badly.
+EXPECTED_WARNINGS = [
+    r"^connect failed on '[\d.]+:\d+': Network is unreachable$",
+    r"^ASR: the server's answer can't be read \(\d+ bytes\)$",
+    r"^Failed to receive bytes from server: Resource temporarily unavailable$",
+]
+
+
 def sandbox_setup(workdir, sysroot):
     return conf_fixture.sandbox_setup(workdir, sysroot, voice=conf_fixture.VOICE_CONF)
 
