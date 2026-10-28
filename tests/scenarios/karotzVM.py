@@ -663,6 +663,8 @@ TIMESHIFT_LATER = None
 # key file)], each serving what 127.0.0.1:8088 serves (tests/aggressive).
 EXTRA_ENV = {}
 HTTPS = []
+# Shell commands run in the helper's namespaces before it starts (tests/aggressive).
+SANDBOX_SETUP = ""
 
 LAUNCHES = [
     ("basic normal inst-1", 90),
@@ -778,7 +780,7 @@ def drive(d, bus):
     (work / "config.json").write_text(json.dumps(config))
     env = {**os.environ, "PATH": f"{make_stub_dir(work)}:/usr/bin:/bin", "TZ": "UTC0"}
     helper = HERE / "karotzvm_controller.py"
-    script = LOOPBACK_UP + f'exec python3 -I -B {helper} {work / "config.json"}'
+    script = LOOPBACK_UP + SANDBOX_SETUP + f'exec python3 -I -B {helper} {work / "config.json"}'
     later = None
     if TIMESHIFT and TIMESHIFT_LATER is not None:
         later = threading.Timer(TIMESHIFT_LATER[0], (work / "timeshift").write_text, [str(TIMESHIFT_LATER[1])])

@@ -61,7 +61,6 @@ What no test reaches yet:
 
 - k2k-daemon calling another k2k-daemon: the aggressive test `k2k_sip_peer` calls a SIP peer on the loopback interface and is called by it, and checks the answered call's audio both ways (a tone from `/dev/dsp` in the RTP the peer receives, the peer's tone in what the daemon writes to `/dev/dsp`), but no two daemons have called each other, and no call between two rabbits has been made.
 - That the rabbit comes back after `power`'s reboot: the aggressive test `power_reads` follows `power` through its reboots (one a second while the button reads `'0'`, none after `'1'`, a failing reboot reported and tried again) with a stub for `reboot`.
-- `social.facebook` and `social.soundcloud` on an allowed URL: the tests have no network, so only the refused URL is tested.
 - Specific log messages as the only evidence of a behaviour: the log is checked for unexpected warnings, not for messages that must appear.
 
 `image/test_web_api.py` runs the web API's programs on the host (with the image's BusyBox under qemu when it can, including its httpd), and `image/test_core_boot.py` the configuration `inetd.sh` makes for httpd.

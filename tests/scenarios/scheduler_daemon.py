@@ -6,11 +6,16 @@ Each step that expects a fire waits for that signal itself (a slow run under
 load only takes longer), then acts at once, before the entry could fire
 again; only the order of signals is recorded, never times. The dates are
 taken on one UTC day: a run that would cross midnight waits until it's past.
+
+The daemon's time() and the dates here both come from CLOCK_MONOTONIC plus
+the wall clock's offset when this module loaded (CLOCK_BASE, the harness's
+timeshift-arm.so), so a step of the host's wall clock (WSL corrects its
+clock by seconds at a time) doesn't move a date entry early or late.
 """
 
 import os
 import time
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 
 import harness
 
@@ -32,6 +37,15 @@ os.environ["TZ"] = "UTC0"
 # at once; with this period, a step must be about as long to fire one twice before the delete.
 PERIOD = 10
 
+# The wall clock minus CLOCK_MONOTONIC, fixed for the run: the daemon's clock and wall() below.
+_BASE = time.time() - time.monotonic()
+CLOCK_BASE = f"{_BASE:.9f}"
+
+
+def wall():
+    """The run's wall clock (seconds since the epoch), as the daemon sees it."""
+    return _BASE + time.monotonic()
+
 
 def call(bus, method, *args, timed=False):
     """Call a method; return its reply without the header that carries times and serials.
@@ -49,8 +63,8 @@ def call(bus, method, *args, timed=False):
 def wait_for(bus, ident, count=1, timeout=30):
     """Wait until schedule_event for ident has been seen count times (or the timeout)."""
     needle = f'schedule_event(string "{ident}"'
-    deadline = time.time() + timeout
-    while time.time() < deadline:
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
         if sum(needle in line for line in bus.signals()) >= count:
             return
         time.sleep(0.1)
@@ -58,14 +72,14 @@ def wait_for(bus, ident, count=1, timeout=30):
 
 def clear_of_midnight():
     """Wait, if needed, so the run's dates (a minute back to a minute ahead) stay on one UTC day."""
-    now = datetime.now(timezone.utc)
+    now = datetime.fromtimestamp(wall(), timezone.utc)
     since = now.hour * 3600 + now.minute * 60 + now.second
     if since < 70 or since > 86400 - 120:
         time.sleep((86400 + 70 - since) % 86400)
 
 
 def utc_in(seconds):
-    return datetime.now(timezone.utc) + timedelta(seconds=seconds)
+    return datetime.fromtimestamp(wall() + seconds, timezone.utc)
 
 
 def date_args(t, year=None, month=None, day=None, hour=None):

@@ -38,6 +38,9 @@ returns the first part of the record), and optionally:
   normalise_record(record)  masks what changes from run to run
   EXPECTED_WARNINGS     regular expressions for the syslog warnings the run
                         is known to log (each matched with re.search)
+  CLOCK_BASE            "SECONDS.NANOSECONDS": an ARM program's time() is this
+                        plus CLOCK_MONOTONIC (timeshift-arm.so), so a step of
+                        the host's wall clock doesn't reach it
 
 Linux only (WSL): needs qemu-arm, dbus-daemon, dbus-monitor, dbus-send, unshare.
 """
@@ -222,7 +225,7 @@ class Daemon:
     (against the sysroot's C library and GLib), natively for a host build."""
 
     def __init__(self, name, sysroot, build, workdir, devices, bus, fake_ioctl_types=(), regular_devices=(),
-                 setup=""):
+                 setup="", clock_base=None):
         self.name, self.bus = name, bus
         self.sysroot, self.build = Path(sysroot).resolve(), Path(build).resolve()
         self.workdir = workdir
@@ -260,6 +263,9 @@ class Daemon:
             preloads = [FAKES / "syslogfake-arm.so"]
             if fake_ioctl_types:
                 preloads.append(FAKES / "ioctlfake-arm.so")
+            if clock_base is not None:
+                preloads.append(FAKES / "timeshift-arm.so")
+                extra += ["-E", f"KAROTZ_CLOCK_BASE={clock_base}"]
             extra += ["-E", "LD_PRELOAD=" + ":".join(map(str, preloads))]
             cmd = qemu_command(self.sysroot, self.build, name, extra)
             # No network: D-Bus is a Unix socket on the filesystem, so it still works.
@@ -509,7 +515,7 @@ def run(scenario, sysroot, build):
         setup = scenario.sandbox_setup(workdir, sysroot) if hasattr(scenario, "sandbox_setup") else ""
         daemon = Daemon(scenario.DAEMON, sysroot, build, workdir, scenario.DEVICES, bus,
                         getattr(scenario, "FAKE_IOCTL_TYPES", ()), getattr(scenario, "REGULAR_FILE_DEVICES", ()),
-                        setup)
+                        setup, getattr(scenario, "CLOCK_BASE", None))
         record = scenario.drive(daemon, bus)
         record.append("== signals")
         record.extend(bus.signals())
