@@ -19,10 +19,7 @@ INSTALLED_ROOTFS = "12.07.19.00"
 INSTALLED_SYS = "11.01.01.00"
 
 
-# The fake platform closes and the controller connects again, refused at times.
-EXPECTED_WARNINGS = base.EXPECTED_WARNINGS + [
-    r"^connectServer Error in delayed connection\(\) \d+ - Connection refused$",
-]
+EXPECTED_WARNINGS = base.EXPECTED_WARNINGS
 
 
 def published(version):

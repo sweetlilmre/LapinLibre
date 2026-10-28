@@ -15,6 +15,7 @@ DAEMON = "controller"
 DEVICES = []
 sandbox_setup = base.sandbox_setup
 normalise_record = base.normalise_record
+EXPECTED_WARNINGS = base.EXPECTED_WARNINGS
 
 
 def trigger(platform, p, fake, step):

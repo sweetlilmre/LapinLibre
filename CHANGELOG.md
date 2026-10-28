@@ -1,7 +1,7 @@
 <!-- SPDX-License-Identifier: MIT -->
 # Changelog
 
-## Unreleased
+## v0.2.0 (2026-10-28)
 
 ### Fixed
 

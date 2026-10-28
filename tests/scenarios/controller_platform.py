@@ -77,6 +77,8 @@ EXPECTED_WARNINGS = [
     # The platform closing at the end resets the controller, which moves the ears after the
     # test's fake daemons may have stopped.
     r"^earsMove returned FALSE$",
+    # After the platform closes, the controller connects again, refused at times.
+    r"^connectServer Error in delayed connection\(\) \d+ - Connection refused$",
 ]
 
 
