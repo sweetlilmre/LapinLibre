@@ -858,6 +858,10 @@ WEB_TONE_LEARN_START=/usr/karotz/sounds/button-long.wav
 WEB_TONE_LEARN_STOP=/usr/karotz/sounds/button-click.wav
 WEB_TONE_LEARNED=/usr/karotz/sounds/notify.mp3
 WEB_TONE_KNOWN=/usr/karotz/sounds/button-triple.wav
+# A tag laid outside learning: the tone before its action or application, and the error sound
+# before the phrase for a tag without an action or an unknown one.
+WEB_TONE_ACTION=/usr/karotz/sounds/notify.mp3
+WEB_TONE_ERROR=/usr/karotz/sounds/error.mp3
 
 # valid_tag VALUE: a tag's id, 16 hexadecimal digits, upper case in TG.
 valid_tag() {
@@ -951,4 +955,5 @@ learning() { web_area tags && learning "$@"; }
 learning_left() { web_area tags && learning_left "$@"; }
 led_learning() { web_area tags && led_learning "$@"; }
 tone() { web_area tags && tone "$@"; }
+lang_sound() { web_area tags && lang_sound "$@"; }
 learn_timer() { web_area tags && learn_timer "$@"; }

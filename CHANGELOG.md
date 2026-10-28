@@ -6,14 +6,19 @@
 ### Fixed
 
 - A tag whose action is an `https://` URL now works. The tag listener's curl checks certificates, but the system had no CA certificates, so every such request failed.
+- A tag laid on the nose gets the same feedback whether or not the app server is reachable, and only once. Before, the light, sound and ear move came from the controller, which reacts only once logged in to its app server: without it, a tag with an action got only a short green flash before its action, and an unknown tag got nothing at all; with it, a tag from the web page got the controller's reaction and the tag listener's flash at the same time.
+- Learning a new tag from the web page no longer makes the rabbit say it doesn't recognise the object.
 - The voice daemon answers other requests while it connects to a speech recognition server. It used to wait for the connection inside the call that started recognition, so a server that didn't answer held up speech and every other call for up to 5 s per server. Stopping recognition during the connection now ends the session.
 
 ### Added
 
+- The tag listener gives every tag's feedback, in the rabbit's language. The nose turns red as soon as a tag is read. A tag with an action, or an application's tag, then plays a tone before its action or application. A tag learned on the web page but without an action plays the error sound and "I know this object, but it hasn't been given an action yet". An unknown tag plays the error sound and "I don't recognise this object". Nothing shows or plays while the rabbit sleeps or an application has control. The new phrase is in English, French, German and Spanish; other languages use the English one.
 - The device test application also takes a photo directly and streams video for 5 s, then stops it. The device test procedure in `docs/app-server.md` ends by removing the application from the rabbit.
 
 ### Changed
 
+- The controller no longer reacts to a tag itself: no orange and green pulses, no `notify.mp3`, no "tag unknown" sound and no ear move. It still passes the tag to an interactive application and to the app server. The tag listener starts an application's tag through two new controller methods, `has_tag_app` and `start_tag_app`.
+- One error sound for the whole system: the install's error sound is now `error.mp3`, on the stick and in `/usr/karotz/sounds`.
 - Applications' HTTPS requests (`http` in karotzVM, and the `social` posts) now check the server's certificate against the CA certificates in `/etc/ssl/certs`, from the ca-certificates package. A request to a server whose certificate is self-signed, expired or for another name gets `"curl error"`, and the log says why. The check adds about 0.2 s of CPU per request on the rabbit; a whole request to a site such as example.com or github.com takes 0.7 to 2.6 s. An HTTPS request made before `ntpd` has set the clock after a boot waits for it, for up to 60 s. The checks can't be turned off.
 
 ## v0.1.1 (2026-10-26)

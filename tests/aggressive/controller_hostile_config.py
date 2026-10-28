@@ -8,8 +8,9 @@ After controller_platform's set-up
     newline, and a 200-character language name;
   - schedules whose time zone matches many lines of /etc/timezone.list, none,
     or is 300 characters of shell syntax;
-then the fake daemons send an RFID tag whose content has spaces and a
-newline, a tag for the instance with the newline, and an incoming k2k call.
+then an RFID tag whose content has spaces and a newline, and a tag for the
+instance with the newline (each the signal, then the tag listener's
+has_tag_app and start_tag_app), and an incoming k2k call.
 What must hold: the controller keeps running and answers a ping; no unsafe
 key reaches a download, an unzip or a VM command; every VM command line is
 one well-formed line.
@@ -52,8 +53,10 @@ def trigger(platform, p, fake, step):
     platform.send(p, 'id: "p-stop" interactiveId: "ia-1" interactiveMode { action: STOP }')
     step("interactive mode stopped (available)", 'correlationId: "p-stop"', settle=3.0)
     fake.emit("Rfid", "tag_in", "ssiiii", "e0040100c0ffee42", "con tent\nwith newline", 3, 1, 4, 2)
+    base.ask_tag(fake.bus, "e0040100c0ffee42", content="con tent\nwith newline")
     step("a tag whose content has spaces and a newline", settle=3.0)
     fake.emit("Rfid", "tag_in", "ssiiii", "d002000000000001", "c", 3, 1, 4, 2)
+    base.ask_tag(fake.bus, "d002000000000001", content="c")
     step("a tag for the instance with a newline", settle=3.0)
     fake.emit("K2k", "incoming_call", "s", "sip:bob@example")
     step("an incoming k2k call (300-character key)", settle=3.0)

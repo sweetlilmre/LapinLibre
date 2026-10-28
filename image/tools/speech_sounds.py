@@ -1,8 +1,8 @@
 # SPDX-License-Identifier: MIT
 """The rabbit's spoken sounds (image/core/usr/karotz/sounds/*.mp3) and the key's spoken install prompts
-(image/usbkey/sound/*.mp3), made once and kept in the repo: the controller plays the first when a tag
-isn't known, when speech isn't understood, and when the speech recognition server doesn't answer; the
-key's install plays the prompts (their texts are install_prompts.py's PROMPTS), in the English voice.
+(image/usbkey/sound/*.mp3), made once and kept in the repo: the tag listener plays the first when a tag
+isn't known or has no action, the controller when speech isn't understood and when the speech
+recognition server doesn't answer; the key's install plays the prompts (their texts are install_prompts.py's PROMPTS), in the English voice.
 
     tools/qwen-tts/.venv/Scripts/python -I -B image/tools/speech_sounds.py [--models DIR] [--voices DIR] [NAME.mp3 ...]
 
@@ -58,9 +58,9 @@ VOICES = {
     "es": ("Spanish", "a native Spanish speaker from Spain",
            "¡Hola! Soy tu conejo. Acerca un objeto a mi nariz o pulsa mi cabeza para hablarme."),
 }
-# The files the controller plays, by language: an unknown tag, speech not understood, and the speech
-# recognition server not answering (en-GB and fr-FR only: the controller plays en-GB's for the
-# other languages).
+# The files played by language: an unknown tag and a stored tag without an action (the tag
+# listener), speech not understood, and the speech recognition server not answering (en-GB and
+# fr-FR only: the controller plays en-GB's for the other languages).
 SOUNDS = {
     "en_tag_unknown.mp3": ("en", "Sorry, I don't recognise this object, because it hasn't been set up yet."),
     "en_speech_not_understood.mp3": ("en", "Sorry, I didn't understand you. Please try again."),
@@ -74,6 +74,10 @@ SOUNDS = {
     "de_speech_not_understood.mp3": ("de", "Ich habe Sie nicht verstanden. Würden Sie das bitte wiederholen?"),
     "es_tag_unknown.mp3": ("es", "Lo siento, pero no reconozco este objeto porque no está configurado."),
     "es_speech_not_understood.mp3": ("es", "Lo siento, pero no lo he entendido. ¿Puede repetirlo?"),
+    "en_tag_no_action.mp3": ("en", "I know this object, but it hasn't been given an action yet."),
+    "fr_tag_no_action.mp3": ("fr", "Je connais cet objet, mais il n'a pas encore d'action."),
+    "de_tag_no_action.mp3": ("de", "Ich kenne dieses Objekt, aber es hat noch keine Aktion."),
+    "es_tag_no_action.mp3": ("es", "Conozco este objeto, pero todavía no tiene ninguna acción."),
 }
 # The key's install prompts, in English: their texts and file names are install_prompts.py's.
 INSTALL = {name: ("en", text) for name, text in PROMPTS.items()}

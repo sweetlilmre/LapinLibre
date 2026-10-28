@@ -10,20 +10,25 @@ The web API's `sound_list` and `sound?id=NAME` take a sound's id as its file nam
 | File | Played by | When |
 |---|---|---|
 | `acknowledge.mp3` | controller | New settings arrive from the app server; speech recognition matches an application's command, just before the application starts. |
-| `notify.mp3` | controller, web API | A tag that belongs to an application is laid on the nose (before the application runs); the connection to the app server drops; a new tag is learned through the web API. |
+| `notify.mp3` | controller, web API | A tag with an action, or an application's tag, is laid on the nose (the LED red, before the action or the application runs); the connection to the app server drops; a new tag is learned through the web API. |
 | `wakeup.mp3` | controller, web API | Waking up: the scheduled wake-up, a triple click while asleep, the API's `wakeup`. |
 | `shutter.mp3` | webcam-daemon | Every snapshot. |
+| `error.mp3` | tag listener; the key's install | Before the phrase for a tag without an action or an unknown tag; the install stopped on an error (the same sound, `ERROR_SOUND` in `image.py`, also on the key). |
 
 ## Spoken (Qwen3-TTS: a native female voice per language, English cloned from Kokoro's British bf_emma)
 
-The controller finds the two `*_not_recognized` files through the language files (`/usr/karotz/res/lang/<language>`), so each language plays its own.
+The controller and the tag listener find these files through the language files (`/usr/karotz/res/lang/<language>`), so each language plays its own; a language without its own file plays en-US's.
 
-| File | Language | When the controller plays it |
+| File | Language | When it plays |
 |---|---|---|
-| `en_tag_unknown.mp3` | English | A tag that no application knows is laid on the nose. |
+| `en_tag_unknown.mp3` | English | The tag listener, after `error.mp3`: a tag that neither an application nor the web API knows is laid on the nose. |
 | `fr_tag_unknown.mp3` | French | The same. |
 | `de_tag_unknown.mp3` | German | The same. |
 | `es_tag_unknown.mp3` | Spanish | The same. |
+| `en_tag_no_action.mp3` | English | The tag listener, after `error.mp3`: a tag the web API knows but that has no action is laid on the nose. |
+| `fr_tag_no_action.mp3` | French | The same. |
+| `de_tag_no_action.mp3` | German | The same. |
+| `es_tag_no_action.mp3` | Spanish | The same. |
 | `en_speech_not_understood.mp3` | English | Speech recognition didn't understand what was said. |
 | `fr_speech_not_understood.mp3` | French | The same. |
 | `de_speech_not_understood.mp3` | German | The same. |
@@ -53,7 +58,7 @@ The button watcher plays its tones only while `/etc/conf/playsounds` exists (on 
 | `checks-failed.mp3` | Kokoro | A check failed. |
 | `install-start.mp3` | Kokoro | The install begins. |
 | `install-busy.mp3` | tone | Over and over while the checks run and the flash is written. |
-| `install-error.mp3` | tone | The install stopped on an error (other than a failed check). |
+| `error.mp3` | tone (`ERROR_SOUND`, also in `/usr/karotz/sounds`) | The install stopped on an error; before `checks-failed.mp3` when a check failed. |
 | `install-done.mp3` | Kokoro | The install is done, before the rabbit restarts. |
 
 ## Speech

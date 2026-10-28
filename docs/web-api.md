@@ -401,12 +401,17 @@ For `cmd` 3, the three action fields are the URL, the user and the password. For
 The tag listener, `/usr/scripts/tag_listener`, does the tags' work. `immortaldog` keeps it running (`/usr/etc/init.d/S40lapinlibre`). It listens only for the `tag_in` signal of `rfid-daemon` (`/com/mindscape/karotz/Rfid`), and for the controller's state: the controller's `karotz_status_changed` signal, and the bus's `NameOwnerChanged` for `com.mindscape.karotz.Controller`. It writes the state to `/var/run/lapinlibre-web/controller`: the number, or an empty line while the controller isn't on the bus. When it starts, and when the controller comes onto the bus, it removes the file and asks the controller in the background (6 s at most). The file goes when the listener stops. For each tag on the nose:
 
 - While learning is on, it adds a new tag to the store with the type and colour codes from `rfid-daemon`. The LED flashes green and `notify.mp3` plays. A known tag gets a yellow flash and `button-triple.wav`. Then the orange pulse comes back.
-- Outside learning, for a stored tag with an action, the LED flashes green (not while the rabbit sleeps or an application owns it). Then the listener does the action and sets the API's LED state again.
+- Outside learning, the listener gives every tag's feedback; the controller gives none. The LED turns red as soon as the tag is read. Then the first case that fits:
+  - A stored tag with an action: `notify.mp3` plays, the API's LED state comes back, then the listener does the action and sets the API's LED state again.
+  - A tag that an application's instance has: the listener asks the controller's `has_tag_app`, only while the controller is available (state 16). The same tone and LED, then the controller's `start_tag_app` starts the application.
+  - A stored tag without an action: `error.mp3`, the API's LED state, then the language's "no action" phrase (`tag_no_action` in `/usr/karotz/res/lang/<lang>`).
+  - Any other tag: the same with the language's "unknown object" phrase (`tag_unknown`).
+  - Each sound is waited for (its `multi_playfinished` signal, at most 4 s) before what follows, so the next sound or the action has the sound device.
+  - The language is `karotz.conf`'s `lang`. A language without its own file, or a file without the key, takes en-US's.
+  - No light or sound while the rabbit sleeps, or while an application owns it (the controller gives an interactive application the tag itself).
 - A URL request is an HTTP `GET` with `curl`: 15 s at most, 3 redirects at most, `http` and `https` only, certificates checked, the answer's body discarded. The log shows only the host and the result.
 - An endpoint action runs the endpoint's program on the rabbit with the stored query, as user `admin` from `127.0.0.1`, for 30 s at most. The endpoint applies all its own checks, also the sleep rule.
-- It does one action at a time. It ignores a tag that comes while an action runs.
-
-The controller also reads the store (`web_api_has_tag` in `userland/src/usr/controller/dbus_listeners.cc`). When no application owns a tag but the store has it, the controller does not play the "tag unknown" sound, so the tag listener acts on the tag alone.
+- It handles one tag at a time. It ignores a tag that comes while one is handled.
 
 #### Snapshots
 

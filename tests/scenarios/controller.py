@@ -117,6 +117,7 @@ loop.run()
 
 class FakeDaemons:
     def __init__(self, bus):
+        self.bus = bus
         fd, self.log = tempfile.mkstemp(prefix="karotz-controller-calls-")
         os.close(fd)
         self.read = 0
@@ -233,6 +234,11 @@ def drive(d, bus):
         record.append(call(bus, "release_control", "string:wrong-id"))
         record.append(call(bus, "get_status"))
         step("still not interactive")
+        # Not logged in: no application has a tag, and none is started.
+        record.append(call(bus, "has_tag_app", "string:e0040100c0ffee42"))
+        record.append(call(bus, "start_tag_app", "string:e0040100c0ffee42", "string:content", "int32:3", "int32:1",
+                           "int32:4", "int32:2"))
+        step("the tag listener's questions while not logged in")
 
         fake.emit("Voice", "asr_event", "sssi", "asr-uuid", "hello", "<app>x</app>", 50)
         fake.emit("Button", "lclick_start")

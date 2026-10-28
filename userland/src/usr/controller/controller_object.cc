@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: MIT
 /*
  * The ControllerObject: its D-Bus methods (get_status, take_control,
- * release_control), the configuration and language files, the status
- * values and their listeners, interactive mode and application launching.
+ * release_control, has_tag_app, start_tag_app), the configuration and
+ * language files, the status values and their listeners, interactive mode and
+ * application launching.
  */
 #include <signal.h>
+#include <sstream>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -25,10 +27,15 @@ gboolean controller_get_status(ControllerObject *controller, int *karotz, int *n
 gboolean controller_take_control(ControllerObject *controller, gboolean *success, gchar **interactive_id,
                                  GError **error);
 gboolean controller_release_control(ControllerObject *controller, const gchar *interactive_id, GError **error);
+gboolean controller_has_tag_app(ControllerObject *controller, const gchar *id, gboolean *owned, GError **error);
+gboolean controller_start_tag_app(ControllerObject *controller, const gchar *id, const gchar *content, int app_id,
+                                  int type, int pict, int color, gboolean *started, GError **error);
 }
 #define controller_object_get_status controller_get_status
 #define controller_object_take_control controller_take_control
 #define controller_object_release_control controller_release_control
+#define controller_object_has_tag_app controller_has_tag_app
+#define controller_object_start_tag_app controller_start_tag_app
 
 G_DEFINE_TYPE(ControllerObject, controller_object, G_TYPE_OBJECT)
 
@@ -540,6 +547,53 @@ gboolean controller_release_control(ControllerObject *controller, const gchar *i
     g_assert(IS_CONTROLLEROBJ(controller));
     if (!controller_interactive_mode_stop(controller, interactive_id))
         g_log(NULL, G_LOG_LEVEL_WARNING, "controller_interactive_mode_stop failed");
+    return TRUE;
+}
+
+/*
+ * The tag listener's questions for a tag on the nose: whether an application's
+ * instance has the tag (only when logged in and available), and starting that
+ * application. The listener gives the tag's feedback between the two, so it
+ * comes before the application starts.
+ */
+gboolean controller_has_tag_app(ControllerObject *controller, const gchar *id, gboolean *owned, GError **error)
+{
+    std::string instance("");
+
+    (void)error;
+    g_assert(IS_CONTROLLEROBJ(controller));
+    *owned = controller->platform_authenticated && controller->status.karotz == E_STATUS_KAROTZ_AVAILABLE &&
+             controller_search_rfid(controller, id, instance) != NULL;
+    return TRUE;
+}
+
+/* A hosted application gets the trigger "RFID;<uid>;<app>;<type>;<pict>;<color>;<content>"; an
+ * external one gets the platform's rfidCallback, which rfid_tag_in sends. Either way, RFID and
+ * ASR start nothing for the next second. */
+gboolean controller_start_tag_app(ControllerObject *controller, const gchar *id, const gchar *content, int app_id,
+                                  int type, int pict, int color, gboolean *started, GError **error)
+{
+    std::string instance("");
+    const pm::ConfigApp *app = NULL;
+
+    (void)error;
+    g_assert(IS_CONTROLLEROBJ(controller));
+    *started = FALSE;
+    if (controller->platform_authenticated && controller->status.karotz == E_STATUS_KAROTZ_AVAILABLE &&
+        controller->rfid_asr_timer == 0)
+        app = controller_search_rfid(controller, id, instance);
+    if (app == NULL)
+        return TRUE;
+    if (strcmp(app->deployment().c_str(), "hosted") == 0) {
+        std::ostringstream trigger;
+        trigger << "RFID;" << id << ";" << app_id << ";" << pm::RfidCallback_Type_Name((pm::RfidCallback_Type)type)
+                << ";" << pict << ";" << pm::RfidCallback_Col_Name((pm::RfidCallback_Col)color) << ";" << content;
+        controller_run_app(controller, app->apikey().c_str(), trigger.str().c_str(), instance.c_str(), app);
+    } else {
+        g_log(NULL, G_LOG_LEVEL_DEBUG, "start_tag_app: deployment = external.");
+        controller->rfid_asr_timer = g_timeout_add_seconds(1, reenable_rfid_asr, NULL);
+    }
+    *started = TRUE;
     return TRUE;
 }
 

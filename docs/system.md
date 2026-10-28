@@ -553,7 +553,7 @@ The watcher does not act on the rabbit. The controller acts on the button itself
 
 ### The tag listener (tag_listener)
 
-`/usr/scripts/tag_listener` is a shell script that immortaldog keeps running. It reads rfid-daemon's `tag_in` signals. It does the web API's tag learning and runs the actions of the stored tags. It leaves unknown tags, and tags with no action, to the controller. See [web-api.md](web-api.md).
+`/usr/scripts/tag_listener` is a shell script that immortaldog keeps running. It reads rfid-daemon's `tag_in` signals. It does the web API's tag learning and gives every tag's feedback: the LED red as soon as the tag is read, then for a stored tag with an action a tone and the action; for an application's tag the same tone, then the controller's `start_tag_app`; for a stored tag without an action or an unknown tag, the error sound and the language's phrase. See [web-api.md](web-api.md).
 
 ### The controller
 
@@ -566,6 +566,8 @@ The controller (`/usr/karotz/bin/controller`, bus name `com.mindscape.karotz.Con
 | `get_status` | none | `karotz` i, `network` i, `platform` i | The three states (see the table below). |
 | `take_control` | none | `success` b, `interactive_id` s | When the state is AVAILABLE, it starts interactive mode for a new id. Otherwise `success` is false and the id is empty. |
 | `release_control` | `interactive_id` s | none | Stops interactive mode for this id. |
+| `has_tag_app` | `id` s | `owned` b | True when the controller is logged in and AVAILABLE and an application's instance has this tag. The tag listener asks it. |
+| `start_tag_app` | `id` s, `content` s, `app` i, `type` i, `pict` i, `color` i | `started` b | Starts the application of the tag's instance (see "Triggers" below). False when not AVAILABLE, when no instance has the tag, or for a second after an application started. |
 
 | Signal | Arguments | When |
 |---|---|---|
@@ -700,7 +702,8 @@ The controller starts a hosted application with one line to karotzVM: `<apiKey> 
 
 | Event | What the controller does |
 |---|---|
-| Tag on the nose (`tag_in`), when AVAILABLE | Pulses the nose orange. Looks for an instance whose `rfid` is the tag. If one is found, plays `notify.mp3` and, for a hosted application, starts it with the trigger `RFID;<uid>;<app>;<type>;<pict>;<color>;<content>`. If none is found and the web API knows the tag, it does nothing more. Else it plays the language's `tag_unknown` sound. Then it moves the ears 17 steps and pulses the nose green. It sends `rfidCallback`, unless it started an application. |
+| Tag on the nose (`tag_in`), when logged in | No light, sound or ear move: the tag listener gives every tag's feedback. It sends `rfidCallback` (in INTERACTIVE, to the application), unless the rabbit is AVAILABLE and a hosted application's instance has the tag. |
+| `start_tag_app`, from the tag listener | When AVAILABLE and no application started in the last second: for the instance whose `rfid` is the tag, starts a hosted application with the trigger `RFID;<uid>;<app>;<type>;<pict>;<color>;<content>`; an external one gets the `rfidCallback`. |
 | `click`, `dclick` | Sends `buttonCallback` `SIMPLE` or `DOUBLE`. |
 | `tclick` | Resets the rabbit. If it was asleep, plays `wakeup.mp3` and wakes up. Goes to AVAILABLE, ears to 14, nose green. |
 | `mclick` | With 4 clicks, writes the IP address, the MAC address and the flash use to the log. Sends `buttonCallback` `MULTIPLE`. |

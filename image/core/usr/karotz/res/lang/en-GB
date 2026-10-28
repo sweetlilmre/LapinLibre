@@ -1,8 +1,10 @@
 # SPDX-License-Identifier: MIT
-# The controller's sounds and sentences in British English.
+# The controller's and the tag listener's sounds and sentences in British English.
 [lang]
-# Played when a tag is shown that no application is set up for.
+# Played (after the error sound) when a tag is shown that neither an application nor the web API knows.
 tag_unknown=/usr/karotz/sounds/en_tag_unknown.mp3
+# Played when a tag is known but has no action yet (after the error sound).
+tag_no_action=/usr/karotz/sounds/en_tag_no_action.mp3
 # Played when speech recognition understood nothing, or named no application.
 speech_no_match=/usr/karotz/sounds/en_speech_not_understood.mp3
 speech_not_understood=/usr/karotz/sounds/en_speech_not_understood.mp3

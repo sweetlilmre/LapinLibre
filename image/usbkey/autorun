@@ -71,7 +71,7 @@ LOG "Checking the key before installing build ${BUILD_ID}"
 play checks-start.mp3
 start_loop
 # A failed check sounds the alarm, then says so in words.
-ERROR_SOUND="install-error.mp3 checks-failed.mp3"
+ERROR_SOUND="error.mp3 checks-failed.mp3"
 cp "${KEY}/zImage" /tmp/zImage || ERROR "can't copy zImage to /tmp"
 cp "${KEY}/rootfs.img.gz" /tmp/rootfs.img.gz || ERROR "can't copy rootfs.img.gz to /tmp"
 check_md5 /tmp/zImage "${KERNEL_MD5}" zImage
@@ -103,7 +103,7 @@ case "${sectors}" in
     ;;
 esac
 ERROR_SOUND=none bash /mnt/usbkey/applysettings.sh --check || ERROR "lapinlibre.txt's settings failed their check"
-ERROR_SOUND=install-error.mp3
+ERROR_SOUND=error.mp3
 LOG "Checks passed"
 stop_loop
 play checks-passed.mp3

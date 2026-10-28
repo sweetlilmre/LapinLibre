@@ -48,7 +48,7 @@ import zipfile
 from pathlib import Path
 
 from scenarios import conf_fixture
-from scenarios.controller import SERVICE, FakeDaemons
+from scenarios.controller import SERVICE, FakeDaemons, call
 
 DAEMON = "controller"
 DEVICES = []
@@ -318,6 +318,16 @@ def end_vm(root_pid):
     return ended
 
 
+def ask_tag(bus, uid, content="content", app=3, type_=1, pict=4, color=2):
+    """What the tag listener asks the controller for a tag laid on the nose: has_tag_app, then
+    start_tag_app when an application has it. Their answers, as one line."""
+    owned = call(bus, "has_tag_app", f"string:{uid}")
+    if "boolean true" not in owned:
+        return owned
+    return owned + " ; " + call(bus, "start_tag_app", f"string:{uid}", f"string:{content}", f"int32:{app}",
+                                f"int32:{type_}", f"int32:{pict}", f"int32:{color}")
+
+
 def drive(d, bus, trigger=None, when="interactive"):
     """The scenario. With a trigger (see controller_bad_descriptor.py and
     the like), run only up to `when` ("connected": the platform's
@@ -470,12 +480,19 @@ def drive(d, bus, trigger=None, when="interactive"):
         platform.send(app, 'id: "a-ping2" interactiveId: "ia-1" ping { }')
         step("a ping once stopped", 'correlationId: "a-ping2"')
 
+        # A tag laid on the nose: the signal (the controller only passes it on, here to the
+        # platform unless a hosted application has it) and the tag listener's questions. Starting
+        # the application blocks RFID for a second (a g_timeout_add_seconds, so up to 2 s, later
+        # under load): the second start is refused. Leave it well past that.
         fake.emit("Rfid", "tag_in", "ssiiii", "e0040100c0ffee42", "content", 3, 1, 4, 2)
-        # Starting the application blocks RFID for a second (a g_timeout_add_seconds, so up to 2 s,
-        # later under load); a tag laid before it ends gets no orange pulse. Leave it well past that.
+        record.append("== the tag listener asks: " + ask_tag(bus, "e0040100c0ffee42"))
+        record.append("== at once again: " + ask_tag(bus, "e0040100c0ffee42"))
         step("the configured RFID tag while available", "vm command", settle=5.0)
         fake.emit("Rfid", "tag_in", "ssiiii", "d002ffffffffffff", "content", 3, 1, 4, 2)
-        step("an unknown RFID tag while available", "rfidCallback", "tag_unknown", settle=2.5)
+        record.append("== the tag listener asks: " + ask_tag(bus, "d002ffffffffffff"))
+        record.append("== start_tag_app for it anyway: " + call(bus, "start_tag_app", "string:d002ffffffffffff",
+                                                                 "string:c", "int32:0", "int32:0", "int32:0", "int32:0"))
+        step("an unknown RFID tag while available", "rfidCallback", settle=2.5)
         fake.emit("Button", "click")
         fake.emit("Button", "dclick")
         step("button while available", "type: DOUBLE", settle=2.5)

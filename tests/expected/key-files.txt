@@ -592,12 +592,17 @@ usr:karotz/sounds/button-double.wav f 0644 0:0
 usr:karotz/sounds/button-long.wav f 0644 0:0
 usr:karotz/sounds/button-triple.wav f 0644 0:0
 usr:karotz/sounds/de_speech_not_understood.mp3 f 0644 0:0
+usr:karotz/sounds/de_tag_no_action.mp3 f 0644 0:0
 usr:karotz/sounds/de_tag_unknown.mp3 f 0644 0:0
 usr:karotz/sounds/en_speech_not_understood.mp3 f 0644 0:0
+usr:karotz/sounds/en_tag_no_action.mp3 f 0644 0:0
 usr:karotz/sounds/en_tag_unknown.mp3 f 0644 0:0
+usr:karotz/sounds/error.mp3 f 0644 0:0
 usr:karotz/sounds/es_speech_not_understood.mp3 f 0644 0:0
+usr:karotz/sounds/es_tag_no_action.mp3 f 0644 0:0
 usr:karotz/sounds/es_tag_unknown.mp3 f 0644 0:0
 usr:karotz/sounds/fr_speech_not_understood.mp3 f 0644 0:0
+usr:karotz/sounds/fr_tag_no_action.mp3 f 0644 0:0
 usr:karotz/sounds/fr_tag_unknown.mp3 f 0644 0:0
 usr:karotz/sounds/notify.mp3 f 0644 0:0
 usr:karotz/sounds/shutter.mp3 f 0644 0:0

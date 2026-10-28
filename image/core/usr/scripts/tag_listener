@@ -6,13 +6,20 @@
 #   know is added to it, with the type and colour codes rfid-daemon read, and the LED flashes
 #   green and a tone plays; a known tag gets a yellow flash and another tone. The learning pulse
 #   comes back after each flash. No tone while the rabbit sleeps.
-# - otherwise, for a stored tag with an action: a short green flash (not while the rabbit sleeps or
-#   an application owns it), then the action, then the API's LED state again. A URL request is
-#   sent with curl (url_request: 15 s, 3 redirects, the body thrown away; only the host and the
-#   outcome are logged); one of the API's endpoints is run here with its stored query
-#   (api_run), so it applies all its own checks and its sleeping rule. One action at a time: a tag
-#   laid while one runs is ignored. Unknown tags and tags without an action are left to the
-#   controller.
+# - otherwise it gives every tag's feedback (the controller gives none): the LED red as soon as
+#   the tag is read, then, first match wins:
+#   - a stored tag with an action: a tone, the API's LED state again, then the action. A URL request is sent with curl (url_request: 15 s, 3 redirects, the body
+#     thrown away; only the host and the outcome are logged); one of the API's endpoints is run
+#     here with its stored query (api_run), so it applies all its own checks and its sleeping
+#     rule;
+#   - a tag an application's instance has (the controller's has_tag_app, asked only while it is
+#     available): the same tone and LED, then the controller's start_tag_app starts it;
+#   - a stored tag without an action: the error sound, the API's LED state again, then the
+#     language's tag_no_action phrase;
+#   - any other tag: the same with the language's tag_unknown phrase.
+#   No light or sound while the rabbit sleeps or an application owns it (an interactive
+#   application gets the tag from the controller). One tag at a time: a tag laid while one is
+#   handled is ignored.
 # The store's actions are data only: each is checked again when read (tags_read), and none is ever
 # run as a shell command.
 # It also follows the controller's state for the web API, so that no request has to ask the
@@ -54,8 +61,9 @@ action_running() {
 
 # feedback COLOR AFTER [TONE]: the LED COLOR for a moment (none when COLOR is empty), then AFTER:
 # "learn" (the learning pulse) or "state" (the API's LED state); the TONE meanwhile, unless the
-# rabbit sleeps. Under the API's hardware lock (waited for at most 5 s, else skipped); nothing
-# while an application owns the rabbit, and while it sleeps only the learning pulse.
+# rabbit sleeps, waited for (at most 4 s) so that what follows has the sound device. Under the
+# API's hardware lock (waited for at most 5 s, else skipped); nothing while an application owns
+# the rabbit, and while it sleeps only the learning pulse.
 feedback() {
     read_controller
     case $CONTROLLER_STATE in 21 | 22) return 0 ;; esac
@@ -67,10 +75,24 @@ feedback() {
         return 0
     fi
     new_id
+    _tone=""
+    [ -n "${3:-}" ] && [ "$SLEEP" = 0 ] && [ -f "$3" ] && _tone=$3
+    # The watch starts during the flash, so the flash isn't held back for it.
+    [ -n "$_tone" ] && signal_watch Multimedia multi_playfinished nowait
     if [ -n "$1" ] && { [ "$SLEEP" = 0 ] || [ "$2" = learn ]; }; then
         led_set "$1" 0 && usleep 400000
     fi
-    [ -n "${3:-}" ] && tone "$3"
+    if [ -n "$_tone" ]; then
+        # The watch in place first (dbus-monitor writes its own first lines then), at most 2 s.
+        _w=0
+        while [ $_w -lt 100 ] && [ ! -s "$WEB_MONITOR_OUT" ]; do
+            usleep 20000
+            _w=$((_w + 1))
+        done
+        tone "$_tone"
+        signal_wait "$WEB_ID" 4 || log warning "the tone didn't end within 4 s"
+        signal_stop
+    fi
     if [ "$2" = learn ]; then
         led_learning
     else
@@ -81,11 +103,93 @@ feedback() {
     return 0
 }
 
-# One tag's action, in its own process (the stored tag's fields from tag_get).
+# seen: the LED red at once, the sign that a tag was read, before the controller is asked or
+# anything is played; feedback or say_error sets the LED back. Under the API's hardware lock
+# (waited for at most 5 s, else skipped); nothing while the rabbit sleeps or an application owns
+# it.
+seen() {
+    read_controller
+    case $CONTROLLER_STATE in 21 | 22) return 0 ;; esac
+    read_api_state
+    [ "$SLEEP" = 1 ] && return 0
+    exec 9>> "$WEB_LOCK" || return 0
+    if ! timeout 5 flock -x 9; then
+        exec 9>&-
+        return 0
+    fi
+    new_id
+    led_set FF0000 0
+    flock -u 9
+    exec 9>&-
+    return 0
+}
+
+# say_error KEY: the error sound, then the API's LED state again and the KEY phrase of the rabbit's
+# language when its file has one. Under the API's hardware lock (waited for at most 5 s, else
+# skipped); nothing while the rabbit sleeps or an application owns it.
+say_error() {
+    read_controller
+    case $CONTROLLER_STATE in 21 | 22) return 0 ;; esac
+    read_api_state
+    [ "$SLEEP" = 1 ] && return 0
+    lang_sound "$1"
+    exec 9>> "$WEB_LOCK" || return 0
+    if ! timeout 5 flock -x 9; then
+        exec 9>&-
+        log warning "the rabbit is busy: no sound"
+        return 0
+    fi
+    new_id
+    signal_watch Multimedia multi_playfinished
+    tone "$WEB_TONE_ERROR"
+    # The phrase only once the error sound has let go of the sound device.
+    signal_wait "$WEB_ID" 4 || log warning "the error sound didn't end within 4 s"
+    signal_stop
+    led_restore
+    [ -n "$LS" ] && tone "$LS"
+    flock -u 9
+    exec 9>&-
+    return 0
+}
+
+# app_tag UID CONTENT APP TYPE PICT COLOR: true when an application's instance has the tag; its
+# feedback is given, then the controller starts it. Only asked while the controller is
+# available (it answers no one while it connects to its app server).
+app_tag() {
+    read_controller
+    [ "$CONTROLLER_STATE" = 16 ] || return 1
+    dbus_call Controller has_tag_app "string:$1" || return 1
+    feedback "" state "$WEB_TONE_ACTION"
+    if dbus_call Controller start_tag_app "string:$1" "string:$2" "int32:$3" "int32:$4" "int32:$5" "int32:$6"; then
+        log info "tag $TG: its application started"
+    else
+        log warning "tag $TG: its application wasn't started"
+    fi
+    return 0
+}
+
+# One tag, in its own process (UID CONTENT APP TYPE PICT COLOR, and the stored tag's fields from
+# tag_get; T_CMD empty for a tag that isn't stored).
 run_action() {
     exec 3<&-
     trap - TERM INT HUP
-    feedback 00FF00 state
+    seen
+    case $T_CMD in
+    3 | 5) feedback "" state "$WEB_TONE_ACTION" ;;
+    *)
+        if ! app_tag "$@"; then
+            if [ -n "$T_CMD" ]; then
+                log info "tag $TG: no action"
+                say_error tag_no_action
+            else
+                log info "tag $TG: unknown"
+                say_error tag_unknown
+            fi
+        fi
+        rm -f "$ACTION_MARK"
+        exit 0
+        ;;
+    esac
     case $T_CMD in
     3)
         url_host "$T_A1"
@@ -110,13 +214,14 @@ run_action() {
     exit 0
 }
 
-# on_tag ID TYPE COLOR: a tag laid on the nose, with rfid-daemon's type and colour codes.
+# on_tag UID CONTENT APP TYPE PICT COLOR: a tag laid on the nose, with rfid-daemon's blocks and
+# codes.
 on_tag() {
     valid_tag "$1" || return 0
     if learning; then
         TAG_ID=$TG TAG_TYPE=-1 TAG_COLOR=-1
-        case $2 in [0-9] | [0-9][0-9] | [0-9][0-9][0-9]) TAG_TYPE=$2 ;; esac
-        case $3 in [0-9] | [0-9][0-9] | [0-9][0-9][0-9]) TAG_COLOR=$3 ;; esac
+        case $4 in [0-9] | [0-9][0-9] | [0-9][0-9][0-9]) TAG_TYPE=$4 ;; esac
+        case $6 in [0-9] | [0-9][0-9] | [0-9][0-9][0-9]) TAG_COLOR=$6 ;; esac
         tags_change add
         case $? in
         0)
@@ -132,10 +237,20 @@ on_tag() {
         log info "tag $TG: an action is still running: ignored"
         return 0
     fi
-    tag_get "$TG" || return 0
-    case $T_CMD in 3 | 5) ;; *) return 0 ;; esac
+    if tag_get "$TG"; then
+        case $T_CMD in 3 | 5) ;; *) T_CMD=0 ;; esac
+    else
+        T_CMD=""
+    fi
+    # The codes go to the controller as int32 and the blocks as a string: anything else is
+    # dropped.
+    set -- "$1" "$2" "$3" "$4" "$5" "$6"
+    case $2 in *[!0-9A-Fa-f:\;]*) set -- "$1" "" "$3" "$4" "$5" "$6" ;; esac
+    for _c in "$3" "$4" "$5" "$6"; do
+        case $_c in '' | *[!0-9-]* | ?*-*) return 0 ;; esac
+    done
     : > "$ACTION_MARK"
-    run_action &
+    run_action "$@" &
     ACTION=$!
 }
 
@@ -195,11 +310,11 @@ controller_unknown
 # one indented line per argument: tag_in's uid, blocks, app, type, picture and colour codes;
 # karotz_status_changed's state; NameOwnerChanged's name, old owner and new owner.
 kind= n=0
-uid= type=
+uid= blocks= app= type= pict=
 while IFS= read -r line <&3; do
     case $line in
     "signal "*" path=$RFID_PATH; interface=$RFID_INTERFACE; member=tag_in")
-        kind=tag n=1 uid= type=
+        kind=tag n=1 uid= blocks= app= type= pict=
         ;;
     "signal "*" path=$CONTROLLER_PATH; interface=$RFID_INTERFACE; member=karotz_status_changed")
         kind=state n=1
@@ -213,11 +328,14 @@ while IFS= read -r line <&3; do
         value=${line#"${line%%[! ]*}"}
         case $kind:$n:$value in
         tag:2:"string \""*\") value=${value#string \"}; uid=${value%\"} ;;
-        tag:3:"string "*) ;;
-        tag:[456]:"int32 "*) [ $n = 5 ] && type=${value#int32 } ;;
+        tag:3:"string \""*\") value=${value#string \"}; blocks=${value%\"} ;;
+        tag:3:"string "*) blocks= ;;
+        tag:4:"int32 "*) app=${value#int32 } ;;
+        tag:5:"int32 "*) type=${value#int32 } ;;
+        tag:6:"int32 "*) pict=${value#int32 } ;;
         tag:7:"int32 "*)
             n=0
-            on_tag "$uid" "$type" "${value#int32 }"
+            on_tag "$uid" "$blocks" "$app" "$type" "$pict" "${value#int32 }"
             ;;
         state:2:"int32 "*)
             n=0

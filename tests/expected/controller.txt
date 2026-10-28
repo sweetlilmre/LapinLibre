@@ -1,7 +1,9 @@
 == registered: True
 == introspection
 method com.mindscape.karotz.KarotzInterface.get_status(out:i,out:i,out:i)
+method com.mindscape.karotz.KarotzInterface.has_tag_app(in:s,out:b)
 method com.mindscape.karotz.KarotzInterface.release_control(in:s)
+method com.mindscape.karotz.KarotzInterface.start_tag_app(in:s,in:s,in:i,in:i,in:i,in:i,out:b)
 method com.mindscape.karotz.KarotzInterface.take_control(out:b,out:s)
 signal com.mindscape.karotz.KarotzInterface.karotz_status_changed(out:i)
 signal com.mindscape.karotz.KarotzInterface.registered()
@@ -23,6 +25,9 @@ take_control(): boolean false | string ""
 release_control('string:wrong-id',): 
 get_status(): int32 0 | int32 2 | int32 0
 == still not interactive
+has_tag_app('string:e0040100c0ffee42',): boolean false
+start_tag_app('string:e0040100c0ffee42', 'string:content', 'int32:3', 'int32:1', 'int32:4', 'int32:2'): boolean false
+== the tag listener's questions while not logged in
 == signals while not interactive
 call Led fade("", "000000", 100)
 == sleep schedule

@@ -15,6 +15,19 @@
     <method name="release_control">
       <arg name="interactive_id" type="s" direction="in"/>
     </method>
+    <method name="has_tag_app">
+      <arg name="id" type="s" direction="in"/>
+      <arg name="owned" type="b" direction="out"/>
+    </method>
+    <method name="start_tag_app">
+      <arg name="id" type="s" direction="in"/>
+      <arg name="content" type="s" direction="in"/>
+      <arg name="app" type="i" direction="in"/>
+      <arg name="type" type="i" direction="in"/>
+      <arg name="pict" type="i" direction="in"/>
+      <arg name="color" type="i" direction="in"/>
+      <arg name="started" type="b" direction="out"/>
+    </method>
     <signal name="registered"/>
     <signal name="karotz_status_changed"/>
   </interface>

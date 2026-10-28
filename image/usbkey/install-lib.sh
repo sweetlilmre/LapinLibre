@@ -27,8 +27,8 @@ ERROR() {
     stop_loop
     # ERROR_SOUND: the sounds to play, one after another (the error tones by default); none for a
     # script whose caller announces the failure itself.
-    if [ "${ERROR_SOUND:-install-error.mp3}" != none ]; then
-        for sound in ${ERROR_SOUND:-install-error.mp3}; do
+    if [ "${ERROR_SOUND:-error.mp3}" != none ]; then
+        for sound in ${ERROR_SOUND:-error.mp3}; do
             play "${sound}"
         done
     fi

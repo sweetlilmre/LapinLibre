@@ -102,7 +102,7 @@ The rabbit starts the key's `autorun` file at boot when the key also has `autoru
 8. It applies `lapinlibre.txt` and copies `build_id` to `/usr/etc/conf/lapinlibre_build_id`.
 9. It plays `install-done.mp3` and restarts the rabbit.
 
-The install writes to the flash only after all the checks pass. An error stops the install: the nose is solid red, the loop sound stops and the error sound plays. In the checks, the error sound is `install-error.mp3` and then `checks-failed.mp3`. The log gets a line that starts with `ERROR:`. The log also goes to the console and to syslog with the tag `lapinlibre-install`.
+The install writes to the flash only after all the checks pass. An error stops the install: the nose is solid red, the loop sound stops and the error sound plays. In the checks, the error sound is `error.mp3` and then `checks-failed.mp3`. The log gets a line that starts with `ERROR:`. The log also goes to the console and to syslog with the tag `lapinlibre-install`.
 
 ### What the install keeps
 

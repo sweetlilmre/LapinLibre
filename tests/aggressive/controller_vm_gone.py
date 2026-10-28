@@ -24,6 +24,7 @@ def drive(d, bus):
         step("interactive mode stopped (available, reset)", 'correlationId: "p-stop"', "vm start", settle=2.0)
         step(f"{KILLED[3:]}: {base.end_vm(d.proc.pid)} ended", settle=2.0)
         fake.emit("Rfid", "tag_in", "ssiiii", "e0040100c0ffee42", "content", 3, 1, 4, 2)
+        base.ask_tag(fake.bus, "e0040100c0ffee42")
         step("the configured RFID tag", "vm start", "vm command", settle=2.5, timeout=30)
         platform.send(p, 'id: "p-ping-after" ping { }')
         step("still answering", 'correlationId: "p-ping-after"', timeout=20)

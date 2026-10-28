@@ -532,29 +532,10 @@ static void rfid_tag_out(DBusGProxy *proxy, const char *id, gpointer data)
 }
 
 /*
- * Whether the web API's tag store (/usr/etc/conf/web/tags: one line per tag,
- * its id then a tab) has the tag: the web API's tag listener acts on it, so
- * the controller doesn't say it doesn't know it.
- */
-static gboolean web_api_has_tag(const char *id)
-{
-    FILE *store = fopen("/usr/etc/conf/web/tags", "r");
-    if (store == NULL)
-        return FALSE;
-    size_t n = strlen(id);
-    char line[512];
-    gboolean known = FALSE;
-    while (!known && n > 0 && fgets(line, sizeof line, store) != NULL)
-        known = strncmp(line, id, n) == 0 && line[n] == '\t';
-    fclose(store);
-    return known;
-}
-
-/*
- * A tag on the nose. When available, the application configured for the tag
- * is started (hosted ones through the VM, with a "RFID;..." trigger), or the
- * "not recognised" sound played, unless the web API knows the tag; either way
- * the platform is told, unless the VM started the application.
+ * A tag on the nose. The tag listener gives every tag's feedback and asks
+ * has_tag_app and start_tag_app to start an application's; here the tag is
+ * only passed on: to an interactive application, or to the platform, unless
+ * a hosted application's instance has the tag (start_tag_app starts it).
  */
 static void rfid_tag_in(DBusGProxy *proxy, const char *id, const char *content, int app_id, int type, int pict,
                         int color, gpointer data)
@@ -569,48 +550,9 @@ static void rfid_tag_in(DBusGProxy *proxy, const char *id, const char *content, 
         return;
     }
     if (global_controller->status.karotz == E_STATUS_KAROTZ_AVAILABLE) {
-        if (global_controller->rfid_asr_timer == 0)
-            ledPulse(global_controller->led, NULL, LED_ORANGE, LED_OFF, SHORT_PULSE_PERIOD, SHORT_PULSE_LENGTH);
         std::string instance("");
         const pm::ConfigApp *app = controller_search_rfid(global_controller, id, instance);
-        if (app == NULL && web_api_has_tag(id)) {
-            g_log(NULL, G_LOG_LEVEL_DEBUG, "tag %s: the web API's", id);
-        } else if (app == NULL) {
-            char *sound = NULL; /* a missing key leaves it unwritten */
-            gboolean found = controller_get_lang_value(global_controller, "tag_unknown", &sound);
-            char *lang = controller_get_config(global_controller, "lang", "en-US");
-            g_log(NULL, G_LOG_LEVEL_DEBUG, "langue = %s, tts_text = %s", lang, sound);
-            if (found)
-                multimediaPlay(global_controller->multimedia, NULL, sound, 1);
-            free(lang);
-            free(sound);
-        } else {
-            multimediaPlay(global_controller->multimedia, NULL, "/usr/karotz/sounds/notify.mp3", 1);
-            if (strcmp(app->deployment().c_str(), "hosted") == 0) {
-                if (global_controller->rfid_asr_timer == 0) {
-                    char buffer[255];
-                    g_log(NULL, G_LOG_LEVEL_DEBUG, "rfid listener controller_run_app");
-                    snprintf(buffer, sizeof buffer, "%s %s\n", app->apikey().c_str(), app->name().c_str());
-                    g_log(NULL, G_LOG_LEVEL_DEBUG, "rfid listener controller_run_app buffer: %s", buffer);
-                    g_log(NULL, G_LOG_LEVEL_DEBUG, "rfid listener controller_run_app instanceName: %s",
-                          instance.c_str());
-                    handled = TRUE;
-                    std::ostringstream trigger;
-                    trigger << "RFID;" << id << ";" << app_id << ";" << pm::RfidCallback_Type_Name((pm::RfidCallback_Type)type) << ";"
-                            << pict << ";" << pm::RfidCallback_Col_Name((pm::RfidCallback_Col)color) << ";" << content;
-                    controller_run_app(global_controller, app->apikey().c_str(), trigger.str().c_str(),
-                                       instance.c_str(), app);
-                }
-            } else {
-                g_log(NULL, G_LOG_LEVEL_DEBUG, "controller_search_rfid: deployment = external.");
-                if (global_controller->rfid_asr_timer == 0)
-                    global_controller->rfid_asr_timer = g_timeout_add_seconds(1, reenable_rfid_asr, NULL);
-                else
-                    handled = TRUE;
-            }
-        }
-        earsMoveStep(global_controller->ears, NULL, 17, 30, 17, 30);
-        pulse_available();
+        handled = app != NULL && strcmp(app->deployment().c_str(), "hosted") == 0;
     }
 
     pm::PlatformMessage *msg = new_callback();

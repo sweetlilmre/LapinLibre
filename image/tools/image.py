@@ -106,21 +106,26 @@ SOUNDS = {"boot-ready.wav": [(523.25, 0.18), (659.25, 0.18), (783.99, 0.45)],
           "button-double.wav": [(880.0, 0.1), (1046.5, 0.12)],
           "button-triple.wav": [(880.0, 0.1), (987.77, 0.1), (1174.66, 0.14)],
           "button-long.wav": [(440.0, 0.5)]}
-# The effects the controller and webcam-daemon play (MP3, by their paths in /usr/karotz/sounds):
-# waking up, a known tag or the platform gone, new settings or a recognised command, the shutter.
+# The error sound, one for the whole system: the install's error on the key, and a tag the tag
+# listener can't run (unknown, or without an action) in /usr/karotz/sounds.
+ERROR_SOUND = {"error.mp3": [(392.0, 0.3), (311.13, 0.3), (261.63, 0.6)]}
+# The effects the controller, webcam-daemon and the tag listener play (MP3, by their paths in
+# /usr/karotz/sounds): waking up, a known tag or the platform gone, new settings or a recognised
+# command, the shutter, an error.
 EFFECTS = {"wakeup.mp3": [(523.25, 0.2), (659.25, 0.2), (783.99, 0.2), (1046.5, 0.9)],
            "notify.mp3": [(1318.51, 0.07), (1760.0, 0.12)],
            "acknowledge.mp3": [(783.99, 0.12), (1174.66, 0.3)],
-           "shutter.mp3": [(2093.0, 0.04), (1567.98, 0.08)]}
+           "shutter.mp3": [(2093.0, 0.04), (1567.98, 0.08)],
+           **ERROR_SOUND}
 
 
 # The key's install sounds, played by the install's madplay (so MP3). Generated tones: the stick
-# seen, the loop while the install runs, and an error. Spoken (image/usbkey/sound, made by
+# seen, the loop while the install runs, and the error sound. Spoken (image/usbkey/sound, made by
 # image/tools/install_prompts.py): the checks starting, passed or failed, the install starting,
 # and done.
 INSTALL_SOUNDS = {"key-found.mp3": [(659.25, 0.12), (987.77, 0.2)],
                   "install-busy.mp3": [(440.0, 0.1)],
-                  "install-error.mp3": [(392.0, 0.3), (311.13, 0.3), (261.63, 0.6)]}
+                  **ERROR_SOUND}
 SPOKEN = ["checks-start.mp3", "checks-passed.mp3", "checks-failed.mp3", "install-start.mp3", "install-done.mp3"]
 
 

@@ -542,7 +542,7 @@ An overlay folder (`image/tools/fstree.py`) can have `files/`, which is copied o
 | `rootfs:lib/firmware/rt73.bin` and `LICENCE.ralink-firmware.txt` | The pinned downloads `rt73-firmware` and `rt73-licence`. |
 | `usr:etc/timezone.list` | `image/tools/tzlist.py`: one `<zone>;<POSIX TZ>` line for each zone and link of the pinned tzdata, compiled with the pinned tzcode's `zic`. Rules that uClibc-ng cannot read are replaced. The reference date is the release date of tzdata, so the list depends only on the pins. |
 | `usr:karotz/sounds/boot-ready.wav`, `button-click.wav`, `button-double.wav`, `button-triple.wav`, `button-long.wav` | Tones (`SOUNDS`): 16-bit mono WAV at 22050 Hz, each note a sine that fades. |
-| `usr:karotz/sounds/wakeup.mp3`, `notify.mp3`, `acknowledge.mp3`, `shutter.mp3` | Tones (`EFFECTS`), encoded to MP3 by the host's `ffmpeg` (64 kbit/s, no tags, bit-exact). |
+| `usr:karotz/sounds/wakeup.mp3`, `notify.mp3`, `acknowledge.mp3`, `shutter.mp3`, `error.mp3` | Tones (`EFFECTS`; `error.mp3` is `ERROR_SOUND`, also the key's), encoded to MP3 by the host's `ffmpeg` (64 kbit/s, no tags, bit-exact). |
 
 The spoken sounds are not made by the build. They are kept in the repository (`image/core/usr/karotz/sounds/*.mp3` and `image/usbkey/sound/*.mp3`). `image/tools/speech_sounds.py` and `image/tools/install_prompts.py` made them one time, with their own virtual environments.
 
@@ -575,7 +575,7 @@ A larger image stops the build. The gzip time stamps are `SOURCE_DATE_EPOCH`, or
 | `autorun`, `install-lib.sh`, `applysettings.sh`, `lapinlibre.txt` | Copied from `image/usbkey`. A file with CRLF stops the build. `autorun` and the `.sh` files get mode 0755. |
 | `autorun.sig` | Copied from `image/usbkey` without change. Its MD5 must agree with `config.toml` `[key.md5]`, because the rabbit's factory system runs a key's `autorun` only when `gpg --verify autorun.sig` passes. |
 | `install-tools.tar` | From `out/install-tools/`. |
-| `sound/key-found.mp3`, `sound/install-busy.mp3`, `sound/install-error.mp3` | Tones (`INSTALL_SOUNDS`), encoded to MP3. |
+| `sound/key-found.mp3`, `sound/install-busy.mp3`, `sound/error.mp3` | Tones (`INSTALL_SOUNDS`; `error.mp3` is the same as `/usr`'s), encoded to MP3. |
 | `sound/checks-start.mp3`, `checks-passed.mp3`, `checks-failed.mp3`, `install-start.mp3`, `install-done.mp3` | Spoken prompts, copied from `image/usbkey/sound`. |
 
 At the end, `image.py` prints the build id, the size and MD5 of each image, and notes on the core (libraries that it added, the time-zone report, overlay changes).

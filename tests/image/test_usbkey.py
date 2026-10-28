@@ -561,7 +561,7 @@ class UsbKeyTest(unittest.TestCase):
         r.boot()
         self.assert_flashed(r)
         sounds = sorted((ROOT / "image/core/usr/karotz/sounds").glob("*.mp3"))
-        self.assertEqual(len(sounds), 10)
+        self.assertEqual(len(sounds), 14)
         for f in sounds:
             self.assertEqual((r.sb / "usr/karotz/sounds" / f.name).read_bytes(), f.read_bytes(), f.name)
 
@@ -604,12 +604,12 @@ class UsbKeyTest(unittest.TestCase):
                         f.write(b"corrupt")
                 bad.boot()
                 self.assert_untouched(bad)
-                self.assertEqual(sounds(bad), ["key-found.mp3", "checks-start.mp3", "install-error.mp3", "checks-failed.mp3"])
+                self.assertEqual(sounds(bad), ["key-found.mp3", "checks-start.mp3", "error.mp3", "checks-failed.mp3"])
         # The same build with bad settings: the error tones once, nothing flashed.
         same = self.rabbit("announce-same-bad", build_id=self.build_id, settings=TEST_SETTINGS + "IP=1.2\n")
         same.boot()
         self.assertEqual((same.sb / "dev/mtd1").read_bytes(), b"old mtd1")
-        self.assertEqual(sounds(same), ["key-found.mp3", "install-error.mp3"])
+        self.assertEqual(sounds(same), ["key-found.mp3", "error.mp3"])
 
     def test_usr_archive_in_ram_when_it_fits(self):
         # With room in RAM the install checks and unpacks one copy of usr.tar.gz there; without, it

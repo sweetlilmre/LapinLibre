@@ -389,6 +389,25 @@ tone() {
     return 0
 }
 
+# lang_sound KEY: the sound file of KEY in the rabbit's language file (/usr/karotz/res/lang/<lang>),
+# or en-US's when that file has none, in LS; empty unless it is an MP3 in /usr/karotz/sounds that
+# is there.
+lang_sound() {
+    LS=""
+    rabbit_lang
+    for _lf in "/usr/karotz/res/lang/$RL" /usr/karotz/res/lang/en-US; do
+        ini_get "$_lf" lang "$1"
+        [ -n "$IV" ] && break
+    done
+    case $IV in
+    /usr/karotz/sounds/*.mp3) ;;
+    *) return 0 ;;
+    esac
+    case ${IV#/usr/karotz/sounds/} in */* | *..*) return 0 ;; esac
+    [ -f "$IV" ] && LS=$IV
+    return 0
+}
+
 # learn_timer STAMP: ends tag learning WEB_LEARN_TIME seconds after it started at STAMP, as
 # rfid_stop_record does, unless it was stopped or started again meanwhile. Run in the background:
 # it lets go of the request's input, output and locks first, so the answer isn't held back.
