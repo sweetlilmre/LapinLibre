@@ -11,7 +11,7 @@ The web API's `sound_list` and `sound?id=NAME` take a sound's id as its file nam
 |---|---|---|
 | `acknowledge.mp3` | controller | New settings arrive from the app server; speech recognition matches an application's command, just before the application starts. |
 | `wakeup.mp3` | controller, web API | Waking up: the scheduled wake-up, a triple click while asleep, the API's `wakeup`. |
-| `error.mp3` | tag listener; the key's install | Before the phrase for a tag without an action or an unknown tag; the install stopped on an error (the same sound, `ERROR_SOUND` in `image.py`, also on the key). |
+| `error.mp3` | tag listener; the key's install | Before the phrase for a tag without an action or an unknown tag; a tag's speech that couldn't be fetched from the speech server (with the LED pulsing red); the install stopped on an error (the same sound, `ERROR_SOUND` in `image.py`, also on the key). |
 
 ## Spoken (Qwen3-TTS: a native female voice per language, English cloned from Kokoro's British bf_emma)
 

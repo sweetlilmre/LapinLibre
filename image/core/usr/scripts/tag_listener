@@ -11,7 +11,9 @@
 #   - a stored tag with an action: a tone, the API's LED state again, then the action. A URL request is sent with curl (url_request: 15 s, 3 redirects, the body
 #     thrown away; only the host and the outcome are logged); one of the API's endpoints is run
 #     here with its stored query (api_run), so it applies all its own checks and its sleeping
-#     rule;
+#     rule. A speech action (tts) is logged once voice-daemon has played it or failed (its
+#     tts_event, waited for at most TTS_WAIT); when it failed, the LED pulses red while the error
+#     sound plays;
 #   - a tag an application's instance has (the controller's has_tag_app, asked only while it is
 #     available): the same tone and LED, then the controller's start_tag_app starts it;
 #   - a stored tag without an action: the error sound, the API's LED state again, then the
@@ -183,6 +185,120 @@ app_tag() {
     return 0
 }
 
+# How long a tag's speech may take, from its acceptance to voice-daemon's tts_event.
+TTS_WAIT=120
+TTS_OUT=""
+TTS_MONITOR=""
+
+# tts_watch: starts watching voice-daemon's tts_event signals (dbus-monitor, for at most
+# TTS_WAIT + 10 s, into TTS_OUT), and waits up to 2 s for the watch to be in place.
+tts_watch() {
+    [ -d "$WEB_RUN" ] || mkdir -p "$WEB_RUN" || return 1
+    TTS_OUT=$WEB_RUN/tts_events.$$
+    : > "$TTS_OUT"
+    timeout $((TTS_WAIT + 10)) dbus-monitor --system \
+        "type='signal',sender='com.mindscape.karotz.Voice',interface='com.mindscape.karotz.KarotzInterface',member='tts_event'" \
+        < /dev/null > "$TTS_OUT" 2> /dev/null 9>&- &
+    TTS_MONITOR=$!
+    _i=0
+    while [ $_i -lt 100 ] && [ ! -s "$TTS_OUT" ]; do
+        usleep 20000
+        _i=$((_i + 1))
+    done
+}
+
+# tts_unwatch: ends the tts_event watch.
+tts_unwatch() {
+    [ -n "$TTS_MONITOR" ] && kill "$TTS_MONITOR" 2> /dev/null
+    [ -n "$TTS_OUT" ] && rm -f "$TTS_OUT"
+    TTS_MONITOR="" TTS_OUT=""
+    return 0
+}
+
+# tts_count: the number of tts_event signals watched so far, in TC.
+tts_count() {
+    TC=$(awk '/member=tts_event/ { n++ } END { print n + 0 }' "$TTS_OUT" 2> /dev/null)
+    [ -n "$TC" ] || TC=0
+}
+
+# tts_outcome SEEN: waits at most TTS_WAIT seconds for a tts_event after the first SEEN; its code
+# in TTS_CODE (4 the speech ended, 2 it failed). Status 1 when none came. voice-daemon speaks one
+# text at a time and refuses another meanwhile, so once a text is accepted the next event is its
+# own (only a speech that ends between the count and the acceptance would be taken for it).
+tts_outcome() {
+    TTS_CODE=""
+    _n=$((TTS_WAIT * 5))
+    while :; do
+        TTS_CODE=$(awk -v seen="$1" '/member=tts_event/ { n++; next }
+            n == seen + 1 && $1 == "int32" { print $2; exit }' "$TTS_OUT" 2> /dev/null)
+        [ -n "$TTS_CODE" ] && return 0
+        [ "$_n" -gt 0 ] || return 1
+        usleep 200000
+        _n=$((_n - 1))
+    done
+}
+
+# tts_failed_sign: the LED pulsing red while the error sound plays (waited for, at most 4 s) and
+# 2 s more, then the API's LED state again. Under the API's hardware lock (waited for at most 5 s,
+# else skipped); nothing while the rabbit sleeps or an application owns it.
+tts_failed_sign() {
+    read_controller
+    case $CONTROLLER_STATE in 21 | 22) return 0 ;; esac
+    read_api_state
+    [ "$SLEEP" = 1 ] && return 0
+    exec 9>> "$WEB_LOCK" || return 0
+    if ! timeout 5 flock -x 9; then
+        exec 9>&-
+        log warning "the rabbit is busy: no sign of the failed speech"
+        return 0
+    fi
+    new_id
+    led_set FF0000 1 000000 300
+    signal_watch Multimedia multi_playfinished
+    tone "$WEB_TONE_ERROR"
+    signal_wait "$WEB_ID" 4 || log warning "the error sound didn't end within 4 s"
+    signal_stop
+    sleep 2
+    led_restore
+    flock -u 9
+    exec 9>&-
+    return 0
+}
+
+# tts_action: the tag's speech (the API's tts endpoint with the stored query), logged once
+# voice-daemon has played it or failed; a failure is shown at the rabbit (tts_failed_sign).
+tts_action() {
+    trap 'tts_unwatch; exit 0' TERM INT HUP
+    tts_watch
+    # Counted before the text is sent: its own event can come before the endpoint has answered.
+    tts_count
+    if ! api_run tts "$T_A2"; then
+        tts_unwatch
+        log warning "tag $T_ID: tts failed: $AR_MSG"
+        return 0
+    fi
+    case $AR_BODY in
+    *'"played":false'*)
+        tts_unwatch
+        log info "tag $T_ID: tts done (muted)"
+        return 0
+        ;;
+    esac
+    if ! tts_outcome "$TC"; then
+        tts_unwatch
+        log warning "tag $T_ID: tts: voice-daemon gave no outcome within $TTS_WAIT s"
+        return 0
+    fi
+    tts_unwatch
+    if [ "$TTS_CODE" = 4 ]; then
+        log info "tag $T_ID: tts played"
+    else
+        log warning "tag $T_ID: tts failed: the speech couldn't be fetched from the speech server"
+        tts_failed_sign
+    fi
+    trap - TERM INT HUP
+}
+
 # the_action: the stored tag's action (its fields from tag_get).
 the_action() {
     case $T_CMD in
@@ -197,7 +313,9 @@ the_action() {
         fi
         ;;
     5)
-        if api_run "$T_A1" "$T_A2"; then
+        if [ "$T_A1" = tts ]; then
+            tts_action
+        elif api_run "$T_A1" "$T_A2"; then
             log info "tag $T_ID: $T_A1 done"
         else
             log warning "tag $T_ID: $T_A1 failed: $AR_MSG"

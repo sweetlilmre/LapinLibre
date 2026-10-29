@@ -179,7 +179,7 @@ class Sandbox:
              '    exit 0\n'
              'fi\n'
              'signal() {\n'
-             f'    {{ printf "signal time=1 sender=:1.4 -> destination=(null destination) serial=9 path=/com/mindscape/karotz/%s; interface=com.mindscape.karotz.KarotzInterface; member=%s\\n" "$dest" "$1"; printf "   string \\"%s\\"\\n   int32 4\\n" "$2"; }} > {sb}/signal.tmp\n'
+             f'    {{ printf "signal time=1 sender=:1.4 -> destination=(null destination) serial=9 path=/com/mindscape/karotz/%s; interface=com.mindscape.karotz.KarotzInterface; member=%s\\n" "$dest" "$1"; printf "   string \\"%s\\"\\n   int32 %s\\n" "$2" "${{3:-4}}"; }} > {sb}/signal.tmp\n'
              f'    mv {sb}/signal.tmp {sb}/signal.out\n'
              '}\n'
              'picture() {\n'
@@ -199,13 +199,15 @@ class Sandbox:
              'case $dest.$member in\n'
              f'Ears.reset) [ -f {sb}/dbus/nosignal ] || signal reset_finished "$id" ;;\n'
              f'Multimedia.play) [ -f {sb}/dbus/playfinished ] && signal multi_playfinished "$id" ;;\n'
+             f'Voice.tts_speak) [ "$r" = true ] && [ -f {sb}/dbus/tts_event ] && signal tts_event "$id" "$(cat {sb}/dbus/tts_event)" ;;\n'
              'Webcam.takeSnapshot) [ "$r" = true ] && picture ;;\n'
              'esac\n'
              'echo "method return time=1760000000.2 sender=:1.4 -> destination=:1.9 serial=7 reply_serial=2"\n'
              'echo "   boolean $r"')
         # dbus-monitor: records its match rule, writes its own first lines, then passes on the
-        # signals the daemons' stub sends. With the tag listener's rule, it plays tag.signals
-        # instead ("SLEEP s" lines pause), then ends.
+        # signals the daemons' stub sends, only those of the member its rule names, so two watches
+        # at once each get their own. With the tag listener's rule, it plays tag.signals instead
+        # ("SLEEP s" lines pause), then ends.
         stub(self.bin / "dbus-monitor",
              f'echo "dbus-monitor $*" >> {self.actions}\n'
              'case "$*" in *"member=\'tag_in\'"*)\n'
@@ -217,9 +219,12 @@ class Sandbox:
              'echo "signal time=1 sender=org.freedesktop.DBus -> destination=:1.20 serial=2 path=/org/freedesktop/DBus; '
              'interface=org.freedesktop.DBus; member=NameAcquired"\n'
              'echo \'   string ":1.20"\'\n'
+             'rule="$*"; member=${rule##*member=\\\'}; member=${member%%\\\'*}\n'
              'n=0\n'
              'while [ $n -lt 150 ]; do\n'
-             f'    if [ -f {sb}/signal.out ]; then cat {sb}/signal.out; rm -f {sb}/signal.out; fi\n'
+             f'    if [ -f {sb}/signal.out ] && grep -q "member=$member$" {sb}/signal.out; then\n'
+             f'        cat {sb}/signal.out; rm -f {sb}/signal.out\n'
+             '    fi\n'
              '    /bin/sleep 0.1\n'
              '    n=$((n + 1))\n'
              'done')
@@ -2089,9 +2094,11 @@ class TagListenerTest(TagCase):
 
     def setUp(self):
         super().setUp()
-        # No application has a tag unless a test says so; a play ends with its signal.
+        # No application has a tag unless a test says so; a play ends with its signal, and a
+        # speech with its tts_event (4: it was played).
         self.box.write("dbus/Controller.has_tag_app", "false")
         self.box.write("dbus/playfinished", "")
+        self.box.write("dbus/tts_event", "4")
 
     def phrases(self):
         """The tones, and the language files' phrases (British English and the en-US fallback)."""
@@ -2203,8 +2210,43 @@ class TagListenerTest(TagCase):
         # The endpoint ran as a local request, with its own log line.
         log = self.box.syslog.read_text()
         self.assertIn("lapinlibre-web tts 127.0.0.1 ok", log)
-        self.assertIn(f"tag {TAG_A}: tts done", log)
+        self.assertIn(f"tag {TAG_A}: tts played", log)
         self.assertNotIn("touch", log)
+
+    def test_tts_failed(self):
+        # voice-daemon couldn't fetch the speech (tts_event 2): logged as failed, and the LED
+        # pulses red while the error sound plays, then the API's LED state comes back.
+        self.tones()
+        self.box.write("dbus/tts_event", "2")
+        self.store(tag_line(TAG_A, cmd="5", a1="tts", a2="text=hi"))
+        self.listen(tag_in(TAG_A))
+        log = "\n".join(self.listener_log())
+        self.assertIn(f"tag {TAG_A}: tts failed: the speech couldn't be fetched from the speech server", log)
+        self.assertNotIn("tts played", log)
+        calls = self.calls()
+        pulse = ("Led", "pulse", ["string:FF0000", "string:000000", "int32:300", "int32:-1"])
+        speak = next(i for i, c in enumerate(calls) if c[1] == "tts_speak")
+        self.assertEqual(calls[speak + 1:], [pulse, self.play("error.mp3"), GREEN, GREEN])
+
+    def test_tts_played_no_sign(self):
+        # A speech that was played gives no error sign.
+        self.tones()
+        self.store(tag_line(TAG_A, cmd="5", a1="tts", a2="text=hi"))
+        self.listen(tag_in(TAG_A))
+        calls = self.calls()
+        self.assertNotIn(self.play("error.mp3"), calls)
+        self.assertNotIn("pulse", [m for _, m, _ in calls])
+        self.assertIn(f"tag {TAG_A}: tts played", "\n".join(self.listener_log()))
+
+    def test_tts_muted(self):
+        # mute=1 says nothing, so there is no tts_event to wait for.
+        (self.sb / "dbus/tts_event").unlink()
+        self.store(tag_line(TAG_A, cmd="5", a1="tts", a2="text=hi&mute=1"))
+        started = time.time()
+        self.listen(tag_in(TAG_A))
+        self.assertLess(time.time() - started, 30)
+        self.assertNotIn("tts_speak", [m for _, m, _ in self.calls()])
+        self.assertIn(f"tag {TAG_A}: tts done (muted)", "\n".join(self.listener_log()))
 
     def test_asleep(self):
         self.store(tag_line(TAG_A, cmd="5", a1="tts", a2="text=hi"), tag_line(TAG_B, cmd="3", a1="http://h.example/x"))

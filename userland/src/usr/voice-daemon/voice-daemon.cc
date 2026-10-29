@@ -7,7 +7,8 @@
  * in SSML-style breaks, to the speech server configured for the language in
  * /usr/etc/conf/voice.conf ([tts] <lang>=<url>) and pipes the answer (MP3)
  * into "madplay -a 1.5 -". When the child ends, or tts_stop kills it,
- * tts_event(id, 4) is signalled. Only one text is spoken at a time.
+ * tts_event(id, 4) is signalled, or tts_event(id, 2) when the child failed
+ * (the speech couldn't be fetched). Only one text is spoken at a time.
  *
  * ASR: asr_start_string(uid, grammar, lang) and asr_start_file(uid, file)
  * connect over TCP to one of the recognition servers in [asr] (server<n>,
@@ -64,9 +65,12 @@ using lapinlibre::asr::Response;
  * packets, rather than refusing) is given up only when the kernel stops
  * retrying, about 189 s later. TTS connects in its child, ASR from the main
  * loop (the asr_start_* call is answered once the session has started), so
- * the daemon keeps answering while either waits.
+ * the daemon keeps answering while either waits. The speech server is
+ * normally on the local network, so a TTS connection that takes more than
+ * a few seconds won't come; the rabbit counts as speaking until it is
+ * given up.
  */
-#define TTS_CONNECT_TIMEOUT_S 10L
+#define TTS_CONNECT_TIMEOUT_S 3L
 #define ASR_CONNECT_TIMEOUT_S 5
 #define AUDIO_DEVICE "/dev/audio"
 

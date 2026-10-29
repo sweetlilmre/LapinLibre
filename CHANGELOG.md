@@ -1,6 +1,13 @@
 <!-- SPDX-License-Identifier: MIT -->
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- A tag's speech that fails no longer passes for done. The tag listener used to log `tts done` as soon as the text was taken, and a speech server that couldn't be reached gave silence. It now waits for the speech to be played and logs `tts played` or `tts failed`; when it failed, the nose pulses red while the error sound plays. The web API's `tts` still answers at once.
+- A speech server that doesn't answer is given up after 3 s instead of 10 s, so the rabbit stops counting as speaking sooner.
+
 ## v0.2.0 (2026-10-28)
 
 ### Fixed

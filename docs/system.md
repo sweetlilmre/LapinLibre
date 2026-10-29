@@ -460,7 +460,7 @@ multimedia-daemon plays music and records from the microphone. It has two back e
 
 voice-daemon speaks text (TTS) and recognises speech (ASR). It reads `/usr/etc/conf/voice.conf`.
 
-- TTS: `tts_speak` starts a child process. The child sends the text with an HTTP POST to the server for the language in `[tts]` (the key is the first two letters of `lang`, in lower case). It sends the answer (MP3) to `madplay -a 1.5 -`. Only one text is spoken at a time.
+- TTS: `tts_speak` starts a child process. The child sends the text with an HTTP POST to the server for the language in `[tts]` (the key is the first two letters of `lang`, in lower case). It sends the answer (MP3) to `madplay -a 1.5 -`. Only one text is spoken at a time. The connection to the speech server must be made within 3 s; until it fails, the rabbit counts as speaking.
 - ASR: `asr_start_string` and `asr_start_file` connect over TCP to a server in `[asr]` (`server0` and up, `nbserver`, `port`). The first server is chosen at random, the next ones in turn when a connection fails. The daemon sends the grammar, then the microphone (`/dev/audio`, mu-law, 16 kHz, mono) until the server answers. Each message on the socket is a 4-byte big-endian length and a `lapinlibre.asr.AsrMsg` (`userland/proto/asr-message.proto`). A connection to a TTS or an ASR server has a time limit.
 
 | Method | Arguments (in) | Out | What it does |
@@ -473,7 +473,7 @@ voice-daemon speaks text (TTS) and recognises speech (ASR). It reads `/usr/etc/c
 
 | Signal | Arguments | When |
 |---|---|---|
-| `tts_event` | `id` s, `code` i | 4 when the speech ends or is stopped. |
+| `tts_event` | `id` s, `code` i | 4 when the speech ends or is stopped; 2 when it failed (the speech couldn't be fetched from the server, or curl or madplay couldn't be started). |
 | `asr_event` | `uid` s, `words` s, `semantic` s, `score` i | The result. `words` is `<nomatch>` when the server recognised nothing. `asr_event(uid, "<error_server_timeout>", "cancel", 2)` tells that the session could not start. |
 
 #### webcam-daemon
@@ -553,7 +553,7 @@ The watcher does not act on the rabbit. The controller acts on the button itself
 
 ### The tag listener (tag_listener)
 
-`/usr/scripts/tag_listener` is a shell script that immortaldog keeps running. It reads rfid-daemon's `tag_in` signals. It does the web API's tag learning and gives every tag's feedback: the LED red as soon as the tag is read, then for a stored tag with an action a tone and the action; for an application's tag the same tone, then the controller's `start_tag_app`; for a stored tag without an action or an unknown tag, the error sound and the language's phrase. See [web-api.md](web-api.md).
+`/usr/scripts/tag_listener` is a shell script that immortaldog keeps running. It reads rfid-daemon's `tag_in` signals. It does the web API's tag learning and gives every tag's feedback: the LED red as soon as the tag is read, then for a stored tag with an action a tone and the action (a speech action is logged once voice-daemon has played it or failed, and a failure makes the LED pulse red while the error sound plays); for an application's tag the same tone, then the controller's `start_tag_app`; for a stored tag without an action or an unknown tag, the error sound and the language's phrase. See [web-api.md](web-api.md).
 
 ### The controller
 
