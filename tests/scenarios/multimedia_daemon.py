@@ -368,8 +368,7 @@ def normalise_record(record):
     adds the pump that reads /dev/audio. On the rabbit vfork suspends the
     parent until the execve, but qemu-user turns vfork into fork: the child
     and the parent then run at once and both write qemu's strace, so the
-    child's execve line can land among the parent's reads, or be split by
-    one of the parent's writes and not be recognised at all. That made the
+    child's execve line can land among the parent's reads. That made the
     end of the record differ in about one run in five. The
     command flac is started with is still compared.
     """

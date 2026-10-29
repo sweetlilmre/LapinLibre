@@ -46,7 +46,9 @@ Linux only (WSL): needs qemu-arm, dbus-daemon, dbus-monitor, dbus-send, unshare.
 """
 
 import argparse
+import bisect
 import difflib
+import itertools
 import os
 import re
 import shutil
@@ -423,28 +425,39 @@ IOCTL_NAMES = {"TCGETS": 0x5401, "TCSETS": 0x5402, "TCSETSW": 0x5403, "TCSETSF":
                "SOUND_MIXER_READ_STEREODEVS": 0x80044DFB, "SOUND_MIXER_READ_CAPS": 0x80044DFC}
 
 
+# uClibc's system() and popen() are vfork + execve("/bin/sh", {"sh", "-c", cmd});
+# uClibc-ng's (the system build's) pass "/bin/sh" as argv[0]. Matched on the
+# argv alone, across lines: qemu writes each argument separately, and the
+# parent's own strace output, in the same log, can land between them (seen as
+# '{"/bin/sh",57 "-c",wait4(114,0x4080022c,0,(nil))"/sbin/ifconfig ...",NULL})'
+# and 'execve(<parent output>\n"/bin/sh", = {44\n"sh","-c","madplay -a 1.5 -",NULL})').
+# What lies between the arguments has no quotes in it and is bounded.
+SHELL_ARGV = re.compile(r'"(?:/bin/)?sh",[^"]{0,400}?"-c",[^"]{0,400}?"((?:[^"\\]|\\.)*)",')
+
+
 def parse_qemu_strace(path):
     """Turn qemu-arm -d strace output into devtrace lines."""
     if not path.exists():
         return []
+    text = path.read_text(errors="replace")
+    lines = text.splitlines(keepends=True)
+    ends = list(itertools.accumulate(len(line) for line in lines))
+    commands = {}  # the index of the line each command's argv starts on -> commands
+    for m in SHELL_ARGV.finditer(text):
+        commands.setdefault(bisect.bisect_right(ends, m.start()), []).append(m.group(1))
     fds, out = {}, []
     num = r"(-?(?:0x[0-9a-fA-F]+|\d+))"
-    for line in path.read_text(errors="replace").splitlines():
+    for i, line in enumerate(lines):
+        line = line.rstrip("\r\n\x0b\x0c\x1c\x1d\x1e\x85  ")
+        if i in commands:
+            out.extend(f"system {c}" for c in commands[i])
+            continue
         m = re.search(r'(?:open|openat)\((?:[^,]*,)?"(/dev/[^"]+)",[^)]*\) = (\d+)', line)
         if m:
             dev, fd = m.group(1), int(m.group(2))
             if dev not in SKIP_DEVICES:
                 fds[fd] = dev
                 out.append(f"open {dev}")
-            continue
-        # uClibc's system() is vfork + execve("/bin/sh", {"sh", "-c", cmd});
-        # uClibc-ng's (the system build's) passes "/bin/sh" as argv[0].
-        # Matched on its argv alone: the child's strace line can be split by
-        # the parent's, which qemu writes to the same log (seen as
-        # 'execve(<parent output>\n"/bin/sh", = {44\n"sh","-c","madplay -a 1.5 -",NULL})').
-        m = re.search(r'"(?:/bin/)?sh","-c","((?:[^"\\]|\\.)*)"', line)
-        if m:
-            out.append(f"system {m.group(1)}")
             continue
         m = re.search(r"close\((\d+)\)", line)
         if m:
