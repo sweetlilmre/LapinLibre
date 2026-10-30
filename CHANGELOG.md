@@ -14,6 +14,8 @@
 ### Changed
 
 - The web server, its programs and the tag listener run as the user `web`, not as root. A fault in them no longer gives root on the rabbit. Only `reboot` keeps root for them, through BusyBox's setuid rules in `/etc/busybox.conf`. `setclock` now waits (28 s at most) for the clock that ntpd keeps set, with the same answer. The SSH page reads the keys' public parts that `sshd.sh` writes, and `sshd.sh` makes missing host keys before Dropbear starts. immortaldog passes the arguments after the program on to it.
+- At boot the start-up stops its own LED tool as soon as led-daemon is on the bus, and led-daemon goes on pulsing the nose cyan until the clock is set and the rabbit is ready.
+- A snapshot copies the camera's picture and leaves `/tmp/picture.jpg` in place: `/tmp` stays root's.
 
 ## v0.2.0 (2026-10-28)
 
