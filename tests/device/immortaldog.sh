@@ -18,7 +18,7 @@
 # file, every time (<runs> times: the child's SIGTERM could once overtake
 # the parent recording the child); a program that exits at once is relaunched
 # at most once every 5 s; SIGTERM stops the child and removes the pid file; a
-# child killed from outside is relaunched; an existing pid file is refused
+# child killed from outside is relaunched (with the arguments given after the program); an existing pid file is refused
 # and left alone; the program starts with SIGTERM unblocked. Everything lives
 # in <work dir>, and every immortaldog and child started here is stopped at
 # the end. Prints PASS/FAIL per check; exits 1 if any failed.
@@ -44,9 +44,7 @@ psall() { ps axww 2>/dev/null || ps w; }
 printf '#!/bin/sh\necho start >> %s/quick.log\n' "$W" > "$W/quick"
 printf '#!/bin/sh\necho "$$" >> %s/long-$1.log\nexec sleep 60\n' "$W" > "$W/long"
 printf '#!/bin/sh\ngrep SigBlk /proc/$$/status > %s/mask.txt\nexec sleep 60\n' "$W" > "$W/mask"
-# immortaldog passes no arguments: a wrapper per run gives each its own log.
-for n in 3 4; do printf '#!/bin/sh\nexec %s/long %s\n' "$W" "$n" > "$W/long$n"; done
-chmod 755 "$W/quick" "$W/long" "$W/mask" "$W/long3" "$W/long4"
+chmod 755 "$W/quick" "$W/long" "$W/mask"
 
 # 1. A program that can't be run.
 left=0
@@ -78,7 +76,7 @@ check "quick program: pid file after SIGTERM" "$(present "$P")" removed
 
 # 3. A running program, then SIGTERM to immortaldog.
 P=$W/t3.pid
-$IMM "$P" "$W/long3"
+$IMM "$P" "$W/long" 3
 sleep 2
 IPID=$(cat "$P" 2>/dev/null)
 CPID=$(head -n1 "$W/long-3.log" 2>/dev/null)
@@ -91,7 +89,7 @@ check "running program: pid file after SIGTERM" "$(present "$P")" removed
 
 # 4. The child killed from outside: relaunched (at least 5 s after its start).
 P=$W/t4.pid
-$IMM "$P" "$W/long4"
+$IMM "$P" "$W/long" 4
 sleep 2
 IPID=$(cat "$P" 2>/dev/null)
 kill -KILL "$(head -n1 "$W/long-4.log" 2>/dev/null)" 2>/dev/null

@@ -59,7 +59,7 @@ mount -t yaffs /dev/mtdblock6 /usr
 mkdir -p /usr/etc/conf
 
 # --- /etc (= /usr/etc): the root's own files, so a new install's are always the ones used ---
-for name in fstab group hosts ld.so.conf profile motd shells mdev.conf; do
+for name in fstab group hosts ld.so.conf profile motd shells mdev.conf busybox.conf; do
     rm -f "/etc/$name"
     ln -s "/karotz/etc/$name" "/etc/$name"
 done

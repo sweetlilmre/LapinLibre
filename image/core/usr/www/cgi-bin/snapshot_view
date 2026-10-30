@@ -9,7 +9,7 @@ web_hardware asleep
 take_picture
 mkdir -p "$WEB_RUN" || web_fail "the picture couldn't be kept for the answer"
 WEB_TEMP=$WEB_RUN/view.$$.jpg
-mv -f "$WEB_PICTURE" "$WEB_TEMP" || web_fail "the picture couldn't be kept for the answer"
+cp "$WEB_PICTURE" "$WEB_TEMP" || web_fail "the picture couldn't be kept for the answer"
 web_unlock
 web_ok
 reply_file "$WEB_TEMP" image/jpeg

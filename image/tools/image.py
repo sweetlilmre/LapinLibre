@@ -186,12 +186,12 @@ def ca_certificates(changes):
 
 def core_generated(changes):
     """{(part, path): data} of the files system/core-files.txt marks generated. The core's inetd.conf
-    serves the rabbit's web page (BusyBox httpd on port 80, IPv4, at most 60 connections a minute)
+    serves the rabbit's web page (BusyBox httpd on port 80 as the user web, IPv4, at most 60 connections a minute)
     with the configuration inetd.sh makes in RAM at boot (the password and the local-network rules);
     inetd.sh adds telnet when the install set it."""
     inetd = ("# inetd's services (written by the image build; inetd.sh makes httpd's configuration and adds telnet\n"
              "# when the install set it).\n"
-             "80 stream tcp nowait.60 root /bin/busybox httpd -i -c /var/run/httpd.conf -h /usr/www\n")
+             "80 stream tcp nowait.60 web /bin/busybox httpd -i -c /var/run/httpd.conf -h /usr/www\n")
     r = subprocess.run([sys.executable, "-I", "-B", str(ROOT / "scripts" / "fetch.py"), "rt73-firmware", "rt73-licence"],
                        capture_output=True, text=True, timeout=900)
     if r.returncode != 0:

@@ -270,13 +270,14 @@ read_network() {
     MAC=$FL
 }
 
-# ssh_enabled: true when authorized_keys holds a key (sshd takes logins only then).
+# ssh_enabled: true when authorized_keys holds a key (sshd takes logins only then), as sshd.sh's
+# public copy shows it.
 ssh_enabled() {
-    [ -f /usr/karotz/.ssh/authorized_keys ] && [ -r /usr/karotz/.ssh/authorized_keys ] || return 1
+    [ -f "$WEB_SSH_PUBLIC/authorized_keys" ] && [ -r "$WEB_SSH_PUBLIC/authorized_keys" ] || return 1
     while IFS= read -r _l || [ -n "$_l" ]; do
         _l=${_l#"${_l%%[![:space:]]*}"}
         case $_l in [a-z]*) return 0 ;; esac
-    done < /usr/karotz/.ssh/authorized_keys
+    done < "$WEB_SSH_PUBLIC/authorized_keys"
     return 1
 }
 

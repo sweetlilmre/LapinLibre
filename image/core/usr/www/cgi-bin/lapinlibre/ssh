@@ -2,13 +2,14 @@
 # SPDX-License-Identifier: MIT
 # lapinlibre/ssh (read-only): what the web page's SSH help shows: whether SSH logins are possible,
 # each authorised key's type, comment and fingerprint (never the key itself), the rabbit's own
-# host key fingerprints, and the name and address to connect to. The fingerprints are kept in RAM
-# (the API's state) until a key file changes.
+# host key fingerprints, and the name and address to connect to. The keys are read from the public
+# parts that sshd.sh writes at each start (the key files are root's). The fingerprints are kept in
+# RAM (the API's state) until a key file changes.
 . /usr/share/lapinlibre/web.sh
 web_begin read
 
-AUTHORIZED=/usr/karotz/.ssh/authorized_keys
-HOST_KEYS=/usr/etc/conf/dropbear
+AUTHORIZED=$WEB_SSH_PUBLIC/authorized_keys
+HOST_KEYS=$WEB_SSH_PUBLIC/host_keys
 
 # Base64 of a SHA-256 digest given in hex, without padding, as OpenSSH shows fingerprints.
 HEX_B64_AWK='{
@@ -81,49 +82,29 @@ read_keys() {
         done < "$AUTHORIZED"
     fi
 
+    # Each host key's public line: its type, its key and a comment.
     host_keys=""
-    for f in "$HOST_KEYS/"dropbear_*_host_key; do
-        [ -f "$f" ] || continue
-        out=$(timeout 10 dropbearkey -y -f "$f" 2> /dev/null) || continue
-        # dropbearkey prints the public key line, then its own fingerprint line.
-        type="" fp="" own_fp=""
-        _ifs=$IFS
-        IFS=$NL
-        set -f
-        # shellcheck disable=SC2086
-        set -- $out
-        set +f
-        IFS=$_ifs
-        for l; do
-            l=${l%"$CR"}
-            case $l in
-            ssh-* | ecdsa-*)
-                if [ -z "$type" ]; then
-                    type=${l%% *}
-                    blob=${l#* }
-                    fingerprint "${blob%% *}"
-                    fp=$FP
-                fi
-                ;;
-            "Fingerprint: "*) own_fp=${l#Fingerprint: } ;;
-            esac
-        done
-        [ -n "$type" ] || continue
-        [ -n "$fp" ] || fp=$own_fp
-        jo_begin
-        jo_str type "$type"
-        jo_str fingerprint "$fp"
-        host_keys="$host_keys${host_keys:+,}{$JO}"
-    done
+    if [ -f "$HOST_KEYS" ]; then
+        while IFS= read -r line || [ -n "$line" ]; do
+            line=${line%"$CR"}
+            case $line in ssh-*' '* | ecdsa-*' '*) ;; *) continue ;; esac
+            type=${line%% *}
+            blob=${line#* }
+            fingerprint "${blob%% *}"
+            jo_begin
+            jo_str type "$type"
+            jo_str fingerprint "$FP"
+            host_keys="$host_keys${host_keys:+,}{$JO}"
+        done < "$HOST_KEYS"
+    fi
 }
 
 # The keys' JSON is kept in RAM with the list of key files it was made from, and made again when
 # a key file comes, goes or is newer than it.
 CACHE=$WEB_RUN/ssh_keys
 sources=""
-[ -e "$AUTHORIZED" ] && sources=$AUTHORIZED
-for f in "$HOST_KEYS/"dropbear_*_host_key; do
-    [ -f "$f" ] && sources="$sources${sources:+ }$f"
+for f in "$AUTHORIZED" "$HOST_KEYS"; do
+    [ -e "$f" ] && sources="$sources${sources:+ }$f"
 done
 fresh=""
 if [ -f "$CACHE" ]; then

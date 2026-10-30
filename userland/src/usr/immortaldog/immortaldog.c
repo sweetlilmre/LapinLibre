@@ -1,9 +1,10 @@
 /* SPDX-License-Identifier: MIT */
 /*
  * immortaldog: daemonize, write a pid file and keep a program running,
- * relaunching it whenever it exits (at most once every 5 seconds).
+ * relaunching it whenever it exits (at most once every 5 seconds). The
+ * arguments after the program are passed to it.
  *
- *   immortaldog <path_to_pidfile> <path_to_executable>
+ *   immortaldog <path_to_pidfile> <path_to_executable> [<argument>...]
  *
  * SIGTERM stops the child and removes the pid file.
  */
@@ -24,7 +25,7 @@ static const char *pid_file_name;
 
 static void usage(const char *prog)
 {
-    fprintf(stderr, "Usage: %s <path_to_pidfile> <path_to_executable>\n", prog);
+    fprintf(stderr, "Usage: %s <path_to_pidfile> <path_to_executable> [<argument>...]\n", prog);
 }
 
 static void forkAndExit(void)
@@ -91,9 +92,19 @@ static int write_my_pid(const char *path)
     return 0;
 }
 
+/* Seconds on the monotonic clock: a change of the wall clock (ntpd setting
+ * it) doesn't change the time between two starts. */
+static time_t now_monotonic(void)
+{
+    struct timespec ts;
+
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return ts.tv_sec;
+}
+
 static void wait_before_run(time_t started)
 {
-    int elapsed = time(NULL) - started;
+    int elapsed = now_monotonic() - started;
 
     syslog(LOG_DEBUG, "elapsed: %d\n", elapsed);
     if (elapsed < 5)
@@ -109,7 +120,7 @@ static void launch_immortal(const char *path, char **argv)
     sigemptyset(&term);
     sigaddset(&term, SIGTERM);
     for (;;) {
-        started = time(NULL);
+        started = now_monotonic();
         /* SIGTERM waits until child_pid is set: the handler needs it to stop
          * the child and remove the pid file, and a child whose exec fails
          * sends SIGTERM at once. */
@@ -150,10 +161,6 @@ int main(int argc, char **argv)
         usage(argv[0]);
         syslog(LOG_WARNING, "bad commandline, need at least 3 args");
         return 1;
-    }
-    if (argc > 3) {
-        syslog(LOG_WARNING, "args are not supported yet, exiting\n");
-        return -1;
     }
 
     forkAndExit();

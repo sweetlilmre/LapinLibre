@@ -35,7 +35,7 @@ class CoreGeneratedTest(unittest.TestCase):
         # (inetd.sh).
         conf = generated()[("rootfs", "karotz/etc/inetd.conf")]
         lines = [line for line in conf.decode().splitlines() if line and not line.startswith("#")]
-        self.assertEqual(lines, ["80 stream tcp nowait.60 root /bin/busybox httpd -i -c /var/run/httpd.conf -h /usr/www"])
+        self.assertEqual(lines, ["80 stream tcp nowait.60 web /bin/busybox httpd -i -c /var/run/httpd.conf -h /usr/www"])
         for service in (b"telnetd", b"ftpd", b"/karotz/etc/httpd.conf"):
             self.assertNotIn(service, conf)
 
@@ -78,7 +78,8 @@ FAKE_CRYPTPW = ('[ "$1" = cryptpw ] || exit 1\n'
                 'h=$(sha512sum | cut -c1-86)\n'
                 'printf \'$6$fakesalt$%s\\n\' "$h"')
 
-INETD_PATHS = ("/var/run/", "/etc/inetd.conf", "/usr/etc/conf/", "/sbin/inetd", "/karotz/etc/httpd.conf")
+INETD_PATHS = ("/var/run/", "/etc/inetd.conf", "/usr/etc/conf/", "/sbin/inetd", "/karotz/etc/httpd.conf",
+               "/karotz/scripts/web-files.sh")
 LAN_RULES = ["A:127.0.0.1", "A:10.0.0.0/8", "A:172.16.0.0/12", "A:192.168.0.0/16", "A:169.254.0.0/16", "D:*"]
 
 
@@ -101,6 +102,10 @@ class InetdTest(unittest.TestCase):
         shutil.copy(ROOT / "image/core/rootfs/karotz/etc/httpd.conf", sb / "karotz/etc/httpd.conf")
         stub(sb / "sbin/inetd", 'echo "inetd $1"; cat "$2"')
         stub(sb / "bin/logger", f'echo "$*" >> {sb}/syslog.log')
+        # web-files.sh and chgrp are recorded: this machine has no user web.
+        self.actions = sb / "actions.log"
+        stub(sb / "karotz/scripts/web-files.sh", f'echo web-files >> {self.actions}')
+        stub(sb / "bin/chgrp", f'echo "chgrp $1 $(basename "$2")" >> {self.actions}')
         if self.busybox:
             stub(sb / "bin/busybox", f'exec {self.busybox} "$@"')
         else:
@@ -155,7 +160,7 @@ class InetdTest(unittest.TestCase):
 
     # --- the web server's configuration ---
 
-    PAGE = "80 stream tcp nowait.60 root /bin/busybox httpd -i -c /var/run/httpd.conf -h /usr/www\n"
+    PAGE = "80 stream tcp nowait.60 web /bin/busybox httpd -i -c /var/run/httpd.conf -h /usr/www\n"
 
     def test_no_password_no_login(self):
         # No WEB_PASSWORD (the default): the local network only, no login, and the boot says so.
@@ -165,8 +170,10 @@ class InetdTest(unittest.TestCase):
         self.assertEqual(rules[:6], ["A:127.0.0.1", "A:10.0.0.0/8", "A:172.16.0.0/12", "A:192.168.0.0/16",
                                      "A:169.254.0.0/16", "D:*"])
         self.assertFalse([r for r in rules if r.startswith("/")])
-        self.assertEqual(self.mode(self.httpd_conf), "0o600")
+        self.assertEqual(self.mode(self.httpd_conf), "0o640")
         self.assertIn("no web password is set", self.syslog())
+        # httpd runs as web: the web user's files come first, and the configuration is the group web's.
+        self.assertEqual(self.actions.read_text().splitlines(), ["web-files", "chgrp web httpd.conf.new"])
 
     def test_new_password_hashed_once_and_removed(self):
         plain = self.conf / "web_password"
@@ -180,7 +187,7 @@ class InetdTest(unittest.TestCase):
         self.assertRegex(digest, r"^\$6\$[./0-9A-Za-z]{1,16}\$[./0-9A-Za-z]{86}$")
         # The local network, then deny-all, the fixed part's index, and the password for every path.
         self.assertEqual(self.rules(), LAN_RULES + ["I:index.html", f"/:admin:{digest}"])
-        self.assertEqual(self.mode(self.httpd_conf), "0o600")
+        self.assertEqual(self.mode(self.httpd_conf), "0o640")
         for text in (self.httpd_conf.read_text(), self.syslog(), hash_file.read_text()):
             self.assertNotIn("secretpass1", text)
         if self.busybox:
@@ -730,8 +737,11 @@ class S40Test(unittest.TestCase):
         for d in ("bin", "usr/karotz/bin", "usr/etc/conf", "usr/scripts", "usr/sbin", "var/run/karotz"):
             (sb / d).mkdir(parents=True)
         self.log = sb / "actions.log"
+        # immortaldog: records the program's name (its last argument) and how it is started.
         stub(sb / "usr/karotz/bin/immortaldog",
-             f'echo "immortaldog ${{2##*/}}" >> {self.log}\nsleep 30 > /dev/null 2>&1 &\necho $! > "$1"')
+             f'p=$1; shift; for a; do last=$a; done\necho "immortaldog ${{last##*/}} $*" >> {self.log}\n'
+             'sleep 30 > /dev/null 2>&1 &\necho $! > "$p"')
+        stub(sb / "karotz/scripts/web-files.sh", f'echo "web-files" >> {self.log}')
         stub(sb / "bin/dbus-send", 'echo "   boolean true"')
         stub(sb / "bin/uuidgen", "echo 1234")
         stub(sb / "bin/start-stop-daemon", f'echo "start-stop-daemon $*" >> {self.log}')
@@ -740,7 +750,7 @@ class S40Test(unittest.TestCase):
             stub(sb / "usr/scripts" / name, "exit 0")
         script = S40.read_text(encoding="utf-8")
         for path in ("/usr/karotz/uuid.conf", "/usr/etc/conf/playsounds", "/usr/karotz/bin", "/var/run/karotz",
-                     "/usr/sbin/mdnsd", "/var/run/mdnsd.pid", "/usr/scripts/"):
+                     "/usr/sbin/mdnsd", "/var/run/mdnsd.pid", "/usr/scripts/", "/karotz/scripts/web-files.sh"):
             script = script.replace(path, f"{sb}{path}")
         self.script = sb / "S40lapinlibre"
         self.script.write_text(script, newline="\n")
@@ -766,6 +776,13 @@ class S40Test(unittest.TestCase):
         self.assertLess(started.index("dbus_watcher"), started.index("tag_listener"))
         self.assertLess(started.index("tag_listener"), started.index("controller"))
         self.assertTrue((self.sb / "var/run/karotz/tag_listener.pid").is_file())
+        # The listener runs as the user web, after its files are made; the watcher stays root's.
+        lines = self.log.read_text().splitlines()
+        listener = [line for line in lines if line.startswith("immortaldog tag_listener ")]
+        self.assertEqual(listener, [f"immortaldog tag_listener /bin/busybox setuidgid web {self.sb}/usr/scripts/tag_listener"])
+        self.assertLess(lines.index("web-files"), lines.index(listener[0]))
+        self.assertEqual([line for line in lines if line.startswith("immortaldog dbus_watcher ")],
+                         [f"immortaldog dbus_watcher {self.sb}/usr/scripts/dbus_watcher"])
         # Started again: not a second listener or watcher while the first live.
         self.log.unlink()
         self.run_s40("start")

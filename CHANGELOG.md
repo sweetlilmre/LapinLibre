@@ -7,6 +7,13 @@
 
 - A tag's speech that fails no longer passes for done. The tag listener used to log `tts done` as soon as the text was taken, and a speech server that couldn't be reached gave silence. It now waits for the speech to be played and logs `tts played` or `tts failed`; when it failed, the nose pulses red while the error sound plays. The web API's `tts` still answers at once.
 - A speech server that doesn't answer is given up after 3 s instead of 10 s, so the rabbit stops counting as speaking sooner.
+- The clock is set again when the first try at boot fails. The start-up tried the time servers once, for 30 s, and a rabbit that got no answer kept a 1970 clock, so every HTTPS request failed, until the next boot. ntpd now runs all the time: it tries again until a time server answers, and keeps the clock right. The start-up logs whether the clock was set.
+- immortaldog no longer stops restarting a program after the clock is set back. It measured the 5 s between two starts on the wall clock, so a clock set back by a year made it wait for a year; it now uses the monotonic clock.
+- `/dev/null`, `/dev/zero`, `/dev/random`, `/dev/urandom`, `/dev/full`, `/dev/ptmx` and `/dev/tty` are usable by every user again. linuxrc made them mode 0666, but mdev's second scan gave them its default, 0660 root.
+
+### Changed
+
+- The web server, its programs and the tag listener run as the user `web`, not as root. A fault in them no longer gives root on the rabbit. Only `reboot` keeps root for them, through BusyBox's setuid rules in `/etc/busybox.conf`. `setclock` now waits (28 s at most) for the clock that ntpd keeps set, with the same answer. The SSH page reads the keys' public parts that `sshd.sh` writes, and `sshd.sh` makes missing host keys before Dropbear starts. immortaldog passes the arguments after the program on to it.
 
 ## v0.2.0 (2026-10-28)
 

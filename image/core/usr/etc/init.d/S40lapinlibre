@@ -6,7 +6,8 @@
 # later, and that stays); then the hardware and service daemons, each kept running by immortaldog
 # (it restarts a daemon that dies and writes its own pid file), and the head button's watcher
 # (/usr/scripts/dbus_watcher: tones and /etc/button.d hooks) and the web API's tag listener
-# (/usr/scripts/tag_listener: tag learning and the tags' actions), each also under immortaldog and
+# (/usr/scripts/tag_listener: tag learning and the tags' actions, as the user web, like the web API
+# whose programs it runs; web-files.sh makes its files first), each also under immortaldog and
 # never twice; then, once the daemons it talks to are on the bus (at most 15 s), the controller,
 # which connects to the app server karotz.conf names and starts karotzVM for the applications; then
 # mDNS: mdnsd answers to the host name (<name>.local) on wlan0 and advertises the services in
@@ -22,14 +23,19 @@ MDNSD_ARGS="-i wlan0"
 WATCHER=/usr/scripts/dbus_watcher
 LISTENER=/usr/scripts/tag_listener
 PLAYSOUNDS=/usr/etc/conf/playsounds
+WEB_FILES=/karotz/scripts/web-files.sh
 
-# once NAME PROGRAM: PROGRAM under immortaldog with the pid file NAME.pid, unless a live process
-# holds that file already.
+# once NAME PROGRAM [USER]: PROGRAM under immortaldog with the pid file NAME.pid (as USER, when
+# given), unless a live process holds that file already.
 once() {
     pid=$(cat "$RUN/$1.pid" 2> /dev/null)
     if [ -z "$pid" ] || ! kill -0 "$pid" 2> /dev/null; then
         rm -f "$RUN/$1.pid"
-        [ -x "$2" ] && $BIN/immortaldog "$RUN/$1.pid" "$2"
+        if [ -x "$2" ] && [ -n "${3:-}" ]; then
+            $BIN/immortaldog "$RUN/$1.pid" /bin/busybox setuidgid "$3" "$2"
+        elif [ -x "$2" ]; then
+            $BIN/immortaldog "$RUN/$1.pid" "$2"
+        fi
     fi
     return 0
 }
@@ -46,7 +52,8 @@ start() {
     done
     # The watcher and the listener, each only when no live process holds its pid file.
     once dbus_watcher $WATCHER
-    once tag_listener $LISTENER
+    $WEB_FILES
+    once tag_listener $LISTENER web
     for i in $(seq 1 15); do
         missing=""
         for n in $NEEDS; do

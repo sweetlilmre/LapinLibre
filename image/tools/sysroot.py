@@ -72,7 +72,8 @@ def finish_etc(dest):
     """
     etc = dest / "usr" / "etc"
     etc.mkdir(parents=True, exist_ok=True)
-    for name in ("fstab", "group", "hosts", "ld.so.conf", "mdev.conf", "modules.conf", "motd", "profile", "services", "shells"):
+    for name in ("fstab", "group", "hosts", "ld.so.conf", "mdev.conf", "modules.conf", "motd", "profile", "services", "shells",
+                 "busybox.conf"):
         link = etc / name
         if link.is_symlink() or link.exists():
             link.unlink()

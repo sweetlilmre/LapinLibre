@@ -64,9 +64,10 @@ picture_ready() {
 
 # take_picture: a new picture from webcam-daemon in WEB_PICTURE, waited for at most 10 s; then the
 # API's LED state is restored (the daemon flashes the LED itself). Fails the request when no
-# picture comes. Needs web_hardware first.
+# picture comes. Needs web_hardware first. The file is root's, in root's /tmp: the API only reads
+# it, and an earlier picture there is never taken for this one, as the file is read only after the
+# daemon's answer or its event.
 take_picture() {
-    rm -f "$WEB_PICTURE"
     # The event only counts when the call gets no answer, and it comes long after the watch is in
     # place, so the call isn't held back for it.
     signal_watch Webcam event nowait
@@ -112,7 +113,7 @@ valid_snapshot_file() {
     return 1
 }
 
-# store_picture: moves the picture into the stored snapshots, named by the local time (a second
+# store_picture: copies the picture into the stored snapshots, named by the local time (a second
 # later when that name is taken), with a quarter-size GIF thumbnail when djpeg makes one; the
 # oldest beyond WEB_SNAPSHOT_MAX go. SNAP_NAME, and SNAP_THUMB (empty without a thumbnail).
 store_picture() {
@@ -124,7 +125,7 @@ store_picture() {
     done
     SNAP_NAME=snapshot_$_stamp.jpg
     SNAP_THUMB=snapshot_$_stamp.thumb.gif
-    mv -f "$WEB_PICTURE" "$WEB_SNAPSHOTS/$SNAP_NAME" || web_fail "the snapshot couldn't be stored"
+    cp "$WEB_PICTURE" "$WEB_SNAPSHOTS/$SNAP_NAME" || web_fail "the snapshot couldn't be stored"
     if ! timeout 10 djpeg -scale 1/4 -gif -outfile "$WEB_SNAPSHOTS/$SNAP_THUMB" "$WEB_SNAPSHOTS/$SNAP_NAME" \
         > /dev/null 2>&1 9>&- || [ ! -s "$WEB_SNAPSHOTS/$SNAP_THUMB" ]; then
         rm -f "$WEB_SNAPSHOTS/$SNAP_THUMB"

@@ -42,6 +42,8 @@ WEB_LIB=/usr/share/lapinlibre
 # The API's own state: in RAM (lost on reboot), and the data it keeps on the flash.
 WEB_RUN=/var/run/lapinlibre-web
 WEB_DATA=/usr/etc/conf/web
+# The SSH keys' public parts, which sshd.sh writes (the key files themselves are root's).
+WEB_SSH_PUBLIC=/var/run/ssh
 # The controller's state as the tag listener follows it (its number, or empty while the controller
 # isn't on the bus); no file while the listener doesn't know it.
 WEB_CONTROLLER=$WEB_RUN/controller
@@ -661,8 +663,6 @@ WEB_EARS_ASLEEP=4
 WEB_PICTURE=/tmp/picture.jpg
 WEB_SNAPSHOTS=$WEB_RUN/snapshots
 WEB_SNAPSHOT_MAX=10
-# The flag that says the start-up's own LED tool was looked for since the boot (in RAM).
-WEB_LED_CHECKED=/var/run/lapinlibre-web.led-checked
 WEB_MONITOR=""
 WEB_MONITOR_OUT=""
 WEB_ID=""
@@ -807,29 +807,14 @@ state_write() {
     printf '%s\n' "$2" > "$WEB_RUN/$1"
 }
 
-# led_set COLOR PULSE [COLOR2 SPEED]: the LED fixed, or pulsing between the colours for ever. The
-# start-up's own LED tool, if it still runs, is stopped first; once led-daemon has taken a
-# setting it is never looked for again until the next boot (the start-up stops it itself once
-# led-daemon runs). dbus_call's status.
+# led_set COLOR PULSE [COLOR2 SPEED]: the LED fixed, or pulsing between the colours for ever (the
+# start-up stops its own LED tool as soon as led-daemon is on the bus). dbus_call's status.
 led_set() {
-    _ls_look=""
-    if [ ! -e "$WEB_LED_CHECKED" ]; then
-        _ls_look=1
-        read_programs
-        if running led; then
-            killall led 2> /dev/null
-        fi
-    fi
     if [ "$2" = 1 ]; then
         dbus_call Led pulse "string:$WEB_ID" "string:$1" "string:$3" "int32:$4" int32:-1
     else
         dbus_call Led light "string:$WEB_ID" "string:$1"
     fi
-    _ls_r=$?
-    if [ $_ls_r = 0 ] && [ -n "$_ls_look" ]; then
-        printf '' 2> /dev/null > "$WEB_LED_CHECKED"
-    fi
-    return $_ls_r
 }
 
 # led_restore: the LED as the API last set it, or off while the rabbit sleeps. Needs

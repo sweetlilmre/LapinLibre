@@ -11,8 +11,11 @@
 # (SHA-512 crypt) into web_password.hash and the plain file removed, so the flash is written once
 # per new password. The configuration takes clients from the local network only, and with a hash
 # asks every request for the user admin and the password; without one there is no login. If it
-# can't be written, it refuses everything, or is missing, which stops httpd answering.
+# can't be written, it refuses everything, or is missing, which stops httpd answering. httpd runs as
+# the user web (inetd.conf), so the configuration is root's and readable by the group web only
+# (0640); web-files.sh makes the web user's files first.
 RUN=/var/run/inetd.conf
+WEB_FILES=/karotz/scripts/web-files.sh
 HTTPD_CONF=/var/run/httpd.conf
 HTTPD_FIXED=/karotz/etc/httpd.conf
 PASSWORD=/usr/etc/conf/web_password
@@ -21,6 +24,13 @@ WEB_USER=admin
 
 log() {
     logger -t inetd.sh "$*" 2> /dev/null
+}
+
+$WEB_FILES
+
+# web_readable FILE: FILE for the group web to read (httpd's configuration).
+web_readable() {
+    chgrp web "$1" && chmod 640 "$1"
 }
 
 # A SHA-512 crypt hash, as cryptpw makes it.
@@ -78,11 +88,11 @@ web_conf() {
                 echo "/:$WEB_USER:$hash"
             fi
         } > $HTTPD_CONF.new
-    ) && mv -f $HTTPD_CONF.new $HTTPD_CONF
+    ) && web_readable $HTTPD_CONF.new && mv -f $HTTPD_CONF.new $HTTPD_CONF
 }
 if ! web_conf; then
     rm -f $HTTPD_CONF.new
-    (umask 077 && echo "D:*" > $HTTPD_CONF) || rm -f $HTTPD_CONF
+    (umask 077 && echo "D:*" > $HTTPD_CONF) && web_readable $HTTPD_CONF || rm -f $HTTPD_CONF
     log "the web server's configuration couldn't be written: the web page is locked"
 elif [ -z "$hash" ] && [ -z "$locked" ]; then
     log "no web password is set (WEB_PASSWORD in lapinlibre.txt): the web page has no login"

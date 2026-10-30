@@ -27,7 +27,7 @@ rootfs:bin/awk l /bin/busybox
 rootfs:bin/basename l /bin/busybox
 rootfs:bin/bash f 0755 0:0 target
 rootfs:bin/bunzip2 l /bin/busybox
-rootfs:bin/busybox f 0755 0:0 target
+rootfs:bin/busybox f 4755 0:0 target  # setuid: /etc/busybox.conf lets only reboot keep root, for the group web
 rootfs:bin/bzcat l /bin/busybox
 rootfs:bin/cat l busybox
 rootfs:bin/catv l busybox
@@ -1287,6 +1287,7 @@ rootfs:karotz/etc/mdev.conf f 0644 0:0 core  # mdev's rules: the USB stick, USB 
 rootfs:karotz/etc/shells f 0644 0:0 core
 rootfs:karotz/etc/passwd f 0644 0:0 core  # every account locked: SSH is by key only
 rootfs:karotz/etc/group f 0644 0:0 core
+rootfs:karotz/etc/busybox.conf f 0644 0:0 core  # BusyBox's setuid rules: reboot for the group web, every other applet as its caller
 rootfs:karotz/etc/profile f 0644 0:0 core
 rootfs:karotz/etc/hosts f 0644 0:0 core
 rootfs:karotz/etc/ld.so.conf f 0644 0:0 core
@@ -1300,6 +1301,7 @@ rootfs:karotz/scripts/usbkey.sh f 0755 0:0 core  # mounts and unmounts the USB s
 rootfs:karotz/scripts/udhcpc_script.sh f 0755 0:0 target:usr/share/udhcpc/default.script  # Buildroot's; the path is the mini-USB set-up's
 rootfs:karotz/scripts/sshd.sh f 0755 0:0 core
 rootfs:karotz/scripts/inetd.sh f 0755 0:0 core
+rootfs:karotz/scripts/web-files.sh f 0755 0:0 core  # the web user's folders and locks, for inetd.sh and S40lapinlibre
 rootfs:lib/firmware/rt73.bin f 0644 0:0 generated  # the Wi-Fi's firmware, linux-firmware 20260916
 rootfs:lib/firmware/LICENCE.ralink-firmware.txt f 0644 0:0 generated  # its licence, which must travel with it
 

@@ -53,7 +53,7 @@ LISTENER = ROOT / "image/core/usr/scripts/tag_listener"
 # The tools the programs use, besides the stubs.
 APPLETS = ["sh", "awk", "sed", "grep", "tail", "head", "cat", "tr", "sort", "uniq", "wc", "date", "sha256sum",
            "timeout", "setsid", "kill", "sleep", "cut", "printf", "rm", "mv", "mkdir", "chmod", "ls", "od",
-           "flock", "usleep", "md5sum", "env", "mkfifo"]
+           "flock", "usleep", "md5sum", "env", "mkfifo", "cp"]
 # Absolute paths the programs use, moved into the sandbox (not /dev, not the PATH line).
 SANDBOXED = re.compile(r"(?<![\w.$/-])/(usr|var|karotz|etc|proc|sys|mnt|tmp)(?=/)")
 # A JPEG as the camera's stub writes it: the start and end markers around some bytes.
@@ -526,7 +526,7 @@ class EndpointTest(WebApiCase):
         self.box.write("usr/etc/conf/network.conf", 'IP="192.168.1.20"\nNETMASK="255.255.255.0"\n')
         self.box.write("usr/etc/conf/telnet", "yes\n")
         self.box.write("usr/etc/conf/authorized_keys", f"ssh-ed25519 {fake_key('a')} me@pc\n")
-        self.box.write("usr/karotz/.ssh/authorized_keys", f"ssh-ed25519 {fake_key('a')} me@pc\n")
+        self.box.write("var/run/ssh/authorized_keys", f"ssh-ed25519 {fake_key('a')} me@pc\n")
         self.box.mount_stick()
         (self.sb / "controller.state").unlink()
         reply = self.json("lapinlibre/status")
@@ -646,14 +646,13 @@ class EndpointTest(WebApiCase):
 
     def test_ssh(self):
         k1, k2 = fake_key("one"), fake_key("two")
-        self.box.write("usr/karotz/.ssh/authorized_keys",
+        self.box.write("var/run/ssh/authorized_keys",
                        f"# a comment\n\nssh-ed25519 {k1} me@pc\r\n"
                        f'no-pty,command="x y" ssh-rsa {k2} work laptop\n'
                        "not a key line\nssh-ed25519 !!notbase64 broken\n")
-        self.box.write("usr/etc/conf/dropbear/dropbear_ed25519_host_key",
-                       f"Public key portion is:\nssh-ed25519 {k1} root@kitchen\nFingerprint: sha1!! aa:bb\n")
-        self.box.write("usr/etc/conf/dropbear/dropbear_rsa_host_key",
-                       "Public key portion is:\nssh-rsa AAAA%%%% root@kitchen\nFingerprint: sha1!! cc:dd\n")
+        # The host keys' public lines, as sshd.sh writes them (a damaged key has no fingerprint).
+        self.box.write("var/run/ssh/host_keys",
+                       f"ssh-ed25519 {k1} root@kitchen\r\nnot a key\nssh-rsa AAAA%%%% root@kitchen\n")
         status, headers, body = self.box.run("lapinlibre/ssh")
         self.assertEqual(status, 200)
         self.assertReplyHeaders(headers)
@@ -665,7 +664,7 @@ class EndpointTest(WebApiCase):
             {"type": "ssh-rsa", "comment": "work laptop", "fingerprint": fingerprint(k2)},
             {"type": "ssh-ed25519", "comment": "broken", "fingerprint": ""}])
         self.assertEqual(reply["host_keys"], [{"type": "ssh-ed25519", "fingerprint": fingerprint(k1)},
-                                              {"type": "ssh-rsa", "fingerprint": "sha1!! cc:dd"}])
+                                              {"type": "ssh-rsa", "fingerprint": ""}])
         self.assertEqual((reply["hostname"], reply["ip"], reply["users"], reply["telnet"]),
                          ("kitchen", "192.168.1.20", ["root", "karotz"], "0"))
         # Never the keys themselves.
@@ -796,8 +795,8 @@ class CostTest(WebApiCase):
         procs, body = self.box.started("leds", "color=ff0000", method="POST")
         self.assertEqual(json.loads(body)["return"], "0")
         # The controller's state and the LED, each through timeout; the lock; the log line after the
-        # reply; and this boot's one look for the start-up's LED tool (ps).
-        self.assertEqual(sorted(procs), sorted(["sh", "timeout", "dbus-send", "flock", "ps", "timeout", "dbus-send", "logger"]))
+        # reply.
+        self.assertEqual(sorted(procs), sorted(["sh", "timeout", "dbus-send", "flock", "timeout", "dbus-send", "logger"]))
         procs, _ = self.box.started("leds", "color=00FF00&pulse=1&color2=000000&speed=500", method="POST")
         self.assertEqual(sorted(procs), sorted(["sh", "timeout", "dbus-send", "flock", "timeout", "dbus-send", "logger"]))
         # As the page sends it: a form body.
@@ -835,22 +834,22 @@ class CostTest(WebApiCase):
 
     def test_ssh_keys_are_read_once(self):
         k1, k2 = fake_key("one"), fake_key("two")
-        self.box.write("usr/karotz/.ssh/authorized_keys", f"ssh-ed25519 {k1} me@pc\n")
-        self.box.write("usr/etc/conf/dropbear/dropbear_ed25519_host_key",
-                       f"Public key portion is:\nssh-ed25519 {k2} root@kitchen\nFingerprint: sha1!! aa:bb\n")
+        self.box.write("var/run/ssh/authorized_keys", f"ssh-ed25519 {k1} me@pc\n")
+        self.box.write("var/run/ssh/host_keys", f"ssh-ed25519 {k2} root@kitchen\n")
         # (What is kept must be newer than the key files, by the second.)
         time.sleep(1.1)
         first, body = self.box.started("lapinlibre/ssh")
-        self.assertIn("dropbearkey", first)
+        self.assertIn("sha256sum", first)
+        self.assertEqual(len(json.loads(body)["host_keys"]), 1)
         # Later requests take the fingerprints from RAM, until a key file changes.
         procs, again = self.box.started("lapinlibre/ssh")
         self.assertEqual(again, body)
         self.assertEqual(sorted(procs), ["ifconfig", "sh"])
         k3 = fake_key("three")
-        self.box.write("usr/karotz/.ssh/authorized_keys", f"ssh-ed25519 {k3} other@pc\n")
+        self.box.write("var/run/ssh/authorized_keys", f"ssh-ed25519 {k3} other@pc\n")
         procs, changed = self.box.started("lapinlibre/ssh")
         self.assertIn(fingerprint(k3), json.loads(changed)["keys"][0]["fingerprint"])
-        self.assertIn("dropbearkey", procs)
+        self.assertIn("sha256sum", procs)
 
 
 class PolicyTest(WebApiCase):
@@ -1114,34 +1113,14 @@ class LedTest(HardwareCase):
         self.refused("leds", "", "busy")
         self.assertEqual(len(self.box.syslog_lines()), 3)
 
-    def test_led_tool_is_stopped_first(self):
-        # A refused setting leaves the next request to look again.
+    def test_led_tool_is_left_to_the_start_up(self):
+        # The API runs as the user web and can't stop the start-up's root LED tool: the start-up
+        # stops it as soon as led-daemon is on the bus. The API only talks to led-daemon.
         self.box.processes(["/karotz/bin/led -l 00FFFF -p 000000 -d 400", "/usr/karotz/bin/led-daemon"])
-        self.box.daemon("Led", "false")
-        self.refused("leds", "color=00ff00", "refused")
-        self.assertIn("killall led", self.box.actions_log())
-        self.clear()
-        (self.sb / "dbus/Led").unlink()
-        self.ok("leds", "color=00ff00")
-        log = self.box.actions_log()
-        self.assertIn("killall led", log)
-        self.assertLess(log.index("killall led"), log.index("Led"))
-        self.clear()
-        self.box.processes(["/usr/karotz/bin/led-daemon"])
         self.ok("leds", "color=00ff00")
         self.assertNotIn("killall", self.box.actions_log())
-        # Once led-daemon has taken a setting, the tool isn't looked for again until the next boot
-        # (the start-up stops it itself once led-daemon runs).
-        self.assertTrue((self.sb / "var/run/lapinlibre-web.led-checked").exists())
-        self.box.processes(["/karotz/bin/led -l 00FFFF", "/usr/karotz/bin/led-daemon"])
-        self.ok("leds", "color=00ff00")
-        self.assertNotIn("killall", self.box.actions_log())
-
-    def test_no_led_tool(self):
-        self.box.processes(["/usr/karotz/bin/led-daemon"])
-        self.ok("leds", "color=00ff00")
-        self.assertNotIn("killall", self.box.actions_log())
-        self.assertTrue((self.sb / "var/run/lapinlibre-web.led-checked").exists())
+        self.assertIn("Led", self.box.actions_log())
+        self.assertFalse((self.sb / "var/run/lapinlibre-web.led-checked").exists())
 
 
 class EarsTest(HardwareCase):
@@ -1569,7 +1548,9 @@ class CameraTest(HardwareCase):
                                         ("Led", "light", ["string:00FF00"])])
         self.assertIn("djpeg -scale 1/4 -gif -outfile", self.box.actions_log())
         self.assertEqual(self.stored(), [reply["filename"], reply["thumb"]])
-        self.assertFalse((self.sb / "tmp/picture.jpg").exists())
+        # The camera's file (root's, in root's /tmp) is only copied: the stored one is the new picture.
+        self.assertEqual((self.sb / "tmp/picture.jpg").read_bytes(), JPEG)
+        self.assertEqual((self.sb / "var/run/lapinlibre-web/snapshots" / reply["filename"]).read_bytes(), JPEG)
         self.assertEqual(self.json("snapshot_list"), {"snapshots": [{"id": reply["filename"]}], "return": "0"})
         # The API's LED state comes back after the camera's flash.
         self.ok("leds", "color=ffcc00&pulse=1&speed=500")
@@ -1675,11 +1656,20 @@ class ToolsTest(HardwareCase):
         self.assertIn(b"/usr/karotz/bin/led-daemon", body)
 
     def test_setclock(self):
+        # The clock is set (this machine's): the answer at once, and no ntpd of its own (the start-up's
+        # ntpd keeps the clock set).
         self.assertEqual(self.ok("setclock"), {"return": "0"})
-        self.assertIn("ntpd -q -p pool.ntp.org", self.box.actions_log())
-        (self.sb / "ntpd.fail").write_text("")
+        self.assertNotIn("ntpd", self.box.actions_log())
+        # A clock before 2026 isn't set: setclock waits for it, 28 s at most (each second at once here).
+        for name, body in (("date", f'[ "$1" = +%s ] && [ -f {self.sb}/clock.unset ] && {{ echo 1000; exit 0; }}\n'),
+                           ("sleep", f'[ -f {self.sb}/clock.unset ] && {{ echo sleep >> {self.sb}/sleeps.log; exit 0; }}\n')):
+            (self.box.bin / name).rename(self.box.bin / f"{name}.real")
+            stub(self.box.bin / name, body + f'exec {self.box.bin}/{name}.real "$@"')
+        (self.sb / "clock.unset").write_text("")
         self.refused("setclock", "", "clock")
         self.assertEqual(self.box.syslog_lines()[-1], f"-t lapinlibre-web setclock {CLIENT} the clock couldn't be set: no time server answered")
+        self.assertEqual(len((self.sb / "sleeps.log").read_text().splitlines()), 28)
+        self.assertNotIn("ntpd", self.box.actions_log())
 
 
 TAG_A = "D00213A4B5C6D7E8"
@@ -2531,8 +2521,12 @@ class HttpdTest(unittest.TestCase):
         if password:
             (sb / "usr/etc/conf/web_password").write_text(password + "\n", newline="\n")
         stub(sb / "sbin/inetd", "exit 0")
+        # web-files.sh and the group web are the rabbit's: here they do nothing.
+        stub(sb / "karotz/scripts/web-files.sh", "exit 0")
+        stub(sb / "bin/chgrp", "exit 0")
         script = (ROOT / "image/core/rootfs/karotz/scripts/inetd.sh").read_text(encoding="utf-8")
-        for path in ("/var/run/", "/etc/inetd.conf", "/usr/etc/conf/", "/sbin/inetd", "/karotz/etc/httpd.conf"):
+        for path in ("/var/run/", "/etc/inetd.conf", "/usr/etc/conf/", "/sbin/inetd", "/karotz/etc/httpd.conf",
+                     "/karotz/scripts/web-files.sh"):
             script = script.replace(path, f"{sb}{path}")
         script = script.replace("exec sleep 2147483647", "exit 0")
         subprocess.run(["sh", "-c", script], env={"PATH": f"{sb}/bin:/usr/bin:/bin"}, capture_output=True, timeout=120)

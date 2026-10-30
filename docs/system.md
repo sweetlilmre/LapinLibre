@@ -277,8 +277,8 @@ The boot has these steps:
 3. `linuxrc` makes the device nodes: the console, the USB stick (`uba`, `uba1`, `ubb`, `ubb1`), `rtc0`, `rabbit_ears`, `rabbit_button`, `rabbit_power` and the serial ports.
 4. `linuxrc` sets `/sbin/mdev` as the hotplug helper and runs `mdev -s`. This makes the nodes of the devices that are already there, the flash partitions among them.
 5. `linuxrc` mounts `/usr` (YAFFS, `/dev/mtdblock6`).
-6. `linuxrc` makes `/etc/fstab`, `group`, `hosts`, `ld.so.conf`, `profile`, `motd`, `shells` and `mdev.conf` links to the files in `/karotz/etc`. Thus a new install always uses its own copies. It copies `passwd`, `inittab` and `inetd.conf` to `/usr/etc` only when they are not there, so changes on the rabbit stay.
-7. `linuxrc` runs `mdev -s` again, now with the rules of `mdev.conf`. A USB stick that is in at power-on is mounted on `/mnt/usbkey` now.
+6. `linuxrc` makes `/etc/fstab`, `group`, `hosts`, `ld.so.conf`, `profile`, `motd`, `shells`, `mdev.conf` and `busybox.conf` links to the files in `/karotz/etc`. Thus a new install always uses its own copies. It copies `passwd`, `inittab` and `inetd.conf` to `/usr/etc` only when they are not there, so changes on the rabbit stay.
+7. `linuxrc` runs `mdev -s` again, now with the rules of `mdev.conf`. A USB stick that is in at power-on is mounted on `/mnt/usbkey` now. `null`, `zero`, `full`, `random`, `urandom`, `ptmx` and `tty` stay mode 0666 for every user; other devices without a rule get mdev's default, root's and 0660.
 8. `linuxrc` sets the host name from `/usr/etc/conf/hostname` (default `lapinlibre`), runs `ldconfig` if there is no `/etc/ld.so.cache`, runs `mount -a` and starts `syslogd`. It logs `[START] LapinLibre <build>`.
 9. If `/mnt/usbkey/autorun` exists, `linuxrc` runs it with bash. This is the USB key's install (see [install.md](install.md)). It can write the flash and restart the rabbit.
 10. `linuxrc` starts BusyBox `init`.
@@ -288,11 +288,12 @@ The boot has these steps:
 14. If the network does not come up, the nose is red. `startup.sh` tries `network.sh` again every 30 seconds in the background, and continues with the next step when the network is up.
 15. `startup.sh` runs each executable `/etc/init.d/S??*` with `start`, in name order: `S30dbus-daemon` (the D-Bus system bus), then `S40lapinlibre` (the core daemons), then any later scripts.
 16. `S40lapinlibre` makes `/usr/karotz/uuid.conf` with `uuidgen` if it is empty or missing. The first time only, it makes `/usr/etc/conf/playsounds` (and the marker `playsounds.default`).
-17. `S40lapinlibre` starts each daemon under immortaldog, in this order: led, rfid, webcam, button, ears, multimedia, voice, scheduler, serial, k2k. Then it starts `/usr/scripts/dbus_watcher` and `/usr/scripts/tag_listener`, each under immortaldog and only when no live process holds its pid file.
+17. `S40lapinlibre` starts each daemon under immortaldog, in this order: led, rfid, webcam, button, ears, multimedia, voice, scheduler, serial, k2k. Then it starts `/usr/scripts/dbus_watcher` and `/usr/scripts/tag_listener`, each under immortaldog and only when no live process holds its pid file. The tag listener runs as the user `web` (`setuidgid web`), like the web API; `/karotz/scripts/web-files.sh` makes its files first (see [The web user](#the-web-user)).
 18. `S40lapinlibre` waits at most 15 seconds until the bus names `com.mindscape.karotz.Led`, `Ears`, `Multimedia`, `Voice`, `Scheduler`, `Rfid` and `Button` have an owner. If some are missing, it logs `starting the controller without: <names>`. Then it starts the controller under immortaldog.
 19. `S40lapinlibre` starts `mdnsd -i wlan0`. The rabbit answers to `<name>.local` and advertises the services in `/etc/mdns.d` (SSH).
-20. `startup.sh` sets the clock with `ntpd -q -p pool.ntp.org` (30 seconds at most).
-21. `startup.sh` waits at most 30 seconds for `com.mindscape.karotz.Led`. Then it tells led-daemon to pulse the nose green, plays `/usr/karotz/sounds/boot-ready.wav` and logs `end`.
+20. `startup.sh` waits at most 30 seconds for `com.mindscape.karotz.Led`. Then it stops the `led` tool, and led-daemon pulses the nose cyan. From now on only led-daemon sets the nose.
+21. `startup.sh` starts `ntpd -n -p pool.ntp.org` under immortaldog (pid file `/var/run/karotz/ntpd.pid`). ntpd keeps the clock set for as long as the rabbit runs, and tries again until a time server answers. `startup.sh` waits at most 30 seconds until the clock is set (a time after 2026-01-01), and logs `the clock is set` or `the clock isn't set yet: ntpd keeps trying pool.ntp.org`.
+22. `startup.sh` tells led-daemon to pulse the nose green, plays `/usr/karotz/sounds/boot-ready.wav` and logs `end`.
 
 The controller then connects to the platform and sets the nose and the ears (see [The controller](#the-controller)).
 
@@ -303,21 +304,39 @@ At shutdown, `init` lights the nose red with the `led` tool, stops `wlan0` and r
 | Program | What it does |
 |---|---|
 | `/karotz/bin/power` | Reads `/dev/rabbit_power` once a second. When it reads `0` (the switch is off), it runs `reboot`. |
-| `/karotz/scripts/sshd.sh` | Runs Dropbear on port 22, public-key login only. Without `/usr/karotz/.ssh/authorized_keys` it waits and does not start Dropbear. The host keys are in `/usr/etc/conf/dropbear`. |
-| `/karotz/scripts/inetd.sh` | Writes the web server's configuration in `/var/run`, then runs `inetd` (the web page; telnet when `/usr/etc/conf/telnet` exists). See [web-api.md](web-api.md). |
+| `/karotz/scripts/sshd.sh` | Runs Dropbear on port 22, public-key login only. Without `/usr/karotz/.ssh/authorized_keys` it waits and does not start Dropbear. The host keys are in `/usr/etc/conf/dropbear`; it makes the missing ones (RSA, ECDSA, Ed25519) before Dropbear starts. At each start it writes the keys' public parts for the web API: `/var/run/ssh/authorized_keys` (a copy) and `/var/run/ssh/host_keys` (each host key's public line). |
+| `/karotz/scripts/inetd.sh` | Runs `web-files.sh`, writes the web server's configuration in `/var/run` (root's, readable by the group `web`), then runs `inetd` (the web page, as the user `web`; telnet when `/usr/etc/conf/telnet` exists). See [web-api.md](web-api.md). |
 
 ### The USB stick
 
 mdev runs `/karotz/scripts/usbkey.sh` for each `ub` disk or partition. On `add`, the script mounts the first partition (or the whole disk if it has no partition table) as vfat on `/mnt/usbkey`, only once. On `remove`, it unmounts it. The hooks in `/usr/etc/usbkey.d` run with `add` after the mount, with `remove` before the unmount and with `removed` after it. Each hook has 10 seconds at most. The core has one hook, `50mpd`, which makes mpd read the stick's music again.
+
+### The web user
+
+The web server (`httpd`, its CGI programs) and the tag listener run as the user `web` (uid and gid 80, no login), not as root. A fault in one of them thus does not give root.
+
+| What | How |
+|---|---|
+| `httpd` | `inetd.conf`'s user field is `web`. inetd (root) keeps port 80. |
+| The tag listener | `S40lapinlibre` starts it with `setuidgid web`. |
+| Its files | `/karotz/scripts/web-files.sh` (root, run by `inetd.sh` and `S40lapinlibre`) makes `/var/run/lapinlibre-web` and `/usr/etc/conf/web` (owner `web`, mode 0700) and the locks `/var/lock/lapinlibre-web.lock` and `/var/lock/lapinlibre-tags.lock` (owner `web`, 0600). A data folder that an earlier build left to root is given to `web`. |
+| httpd's configuration | `/var/run/httpd.conf` is root's, mode 0640, group `web`: `web` can read the password hash but not change it. |
+| D-Bus | `karotz.conf` lets the group `web` call the rabbit's services. Signal watches (`dbus-monitor`) work for any user. |
+| reboot | `/bin/busybox` is setuid root. `/etc/busybox.conf` (from `/karotz/etc`, read-only) lets only the applet `reboot` keep root, for root and the group `web`. Every other applet runs as its caller, the applets that BusyBox marks as needing setuid (`mount`, `su`, `passwd`, `login` and others) among them. |
+| The clock | ntpd (root, started by `startup.sh`) keeps it set. `setclock` only waits for it. |
+| The SSH keys | `sshd.sh` (root) writes the public parts to `/var/run/ssh`. The key files stay root's. |
+| The camera's picture | webcam-daemon (root) writes `/tmp/picture.jpg`. `/tmp` stays root's (0755): `web` reads the picture and copies it. A `/tmp` that `web` could write would let it put a link where root writes. |
+| The nose | Only led-daemon: `startup.sh` stops its `led` tool as soon as led-daemon is on the bus. |
 
 ### immortaldog
 
 immortaldog keeps one program running.
 
 ```
-immortaldog <path_to_pidfile> <path_to_executable>
+immortaldog <path_to_pidfile> <path_to_executable> [<argument>...]
 ```
 
+- The arguments after the program are passed to it, at each start (`S40lapinlibre` starts the tag listener as `/bin/busybox setuidgid web /usr/scripts/tag_listener`, `startup.sh` starts `/bin/busybox ntpd -n -p pool.ntp.org`).
 - It goes to the background (a new session, the working directory `/`), and closes its standard input.
 - If the pid file exists, it logs `daemon seems running` and stops. Otherwise it writes its own pid in the pid file.
 - It starts the program. When the program stops, it starts it again. There are at least 5 seconds between two starts.
@@ -332,7 +351,7 @@ To restart one program, stop the program's own process (`kill $(pidof <program>)
 
 ### D-Bus
 
-All the daemons are on the D-Bus system bus. Each daemon has the bus name `com.mindscape.karotz.<Name>`, the object path `/com/mindscape/karotz/<Name>` and the interface `com.mindscape.karotz.KarotzInterface`. These are the names of the Karotz's own system, kept so that scripts written for it (`dbus-send`, `dbus-monitor`) work unchanged. `/usr/etc/dbus-1/system.d/karotz.conf` lets root own any name that starts with `com.mindscape.karotz` and send to these names. The interfaces are in `userland/dbus/*.xml`. The XML files list only the names of the signals: the signal arguments below come from each daemon's `g_signal_new()`.
+All the daemons are on the D-Bus system bus. Each daemon has the bus name `com.mindscape.karotz.<Name>`, the object path `/com/mindscape/karotz/<Name>` and the interface `com.mindscape.karotz.KarotzInterface`. These are the names of the Karotz's own system, kept so that scripts written for it (`dbus-send`, `dbus-monitor`) work unchanged. `/usr/etc/dbus-1/system.d/karotz.conf` lets root own any name that starts with `com.mindscape.karotz` and send to these names. It lets the group `web` (the web API and the tag listener) send to these names, but own none. The interfaces are in `userland/dbus/*.xml`. The XML files list only the names of the signals: the signal arguments below come from each daemon's `g_signal_new()`.
 
 Each daemon emits `registered` (no arguments) when it has its name on the bus. The programs use the helpers in `libkarotz-common` (`userland/src/usr/libkarotz-common/karotz-common.h`) to call the daemons. These helpers also know the names `com.mindscape.karotz.Choreography_manager` and `com.mindscape.karotz.Dock`, but no program on the rabbit owns them.
 

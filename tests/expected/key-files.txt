@@ -10,7 +10,7 @@ rootfs:bin/awk l 0777 0:0 -> /bin/busybox
 rootfs:bin/basename l 0777 0:0 -> /bin/busybox
 rootfs:bin/bash f 0755 0:0
 rootfs:bin/bunzip2 l 0777 0:0 -> /bin/busybox
-rootfs:bin/busybox f 0755 0:0
+rootfs:bin/busybox f 4755 0:0
 rootfs:bin/bzcat l 0777 0:0 -> /bin/busybox
 rootfs:bin/cat l 0777 0:0 -> busybox
 rootfs:bin/catv l 0777 0:0 -> busybox
@@ -195,6 +195,7 @@ rootfs:karotz/bin/ears f 0755 0:0
 rootfs:karotz/bin/led f 0755 0:0
 rootfs:karotz/bin/power f 0755 0:0
 rootfs:karotz/etc d 0775 0:0
+rootfs:karotz/etc/busybox.conf f 0644 0:0
 rootfs:karotz/etc/fstab f 0644 0:0
 rootfs:karotz/etc/gpg d 0755 0:0
 rootfs:karotz/etc/gpg/pubring.gpg f 0644 0:0
@@ -218,6 +219,7 @@ rootfs:karotz/scripts/sshd.sh f 0755 0:0
 rootfs:karotz/scripts/startup.sh f 0755 0:0
 rootfs:karotz/scripts/udhcpc_script.sh f 0755 0:0
 rootfs:karotz/scripts/usbkey.sh f 0755 0:0
+rootfs:karotz/scripts/web-files.sh f 0755 0:0
 rootfs:karotz/scripts/www d 0755 0:0
 rootfs:karotz/sounds d 0775 0:0
 rootfs:lib d 0755 0:0

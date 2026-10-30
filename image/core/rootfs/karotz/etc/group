@@ -4,4 +4,5 @@ daemon:*:2:
 tty:*:5:
 disk:*:6:
 dbus:*:81:
+web:*:80:
 nogroup:*:99:

@@ -178,12 +178,12 @@ This section tells how the web server, the API and the web page work. It also gi
 BusyBox `httpd` serves the page and the API. `inetd` starts it for each connection on TCP port 80, IPv4 only, with at most 60 connections a minute. The service line is in `/etc/inetd.conf`, which the image build writes (`image/tools/image.py`):
 
 ```
-80 stream tcp nowait.60 root /bin/busybox httpd -i -c /var/run/httpd.conf -h /usr/www
+80 stream tcp nowait.60 web /bin/busybox httpd -i -c /var/run/httpd.conf -h /usr/www
 ```
 
-The web root is `/usr/www`. The programs under `/usr/www/cgi-bin` are the endpoints. Each one is a shell script that sources `/usr/share/lapinlibre/web.sh`, which is outside the web root.
+`httpd` and its programs run as the user `web`, not as root (see [system.md](system.md#the-web-user)). The web root is `/usr/www`. The programs under `/usr/www/cgi-bin` are the endpoints. Each one is a shell script that sources `/usr/share/lapinlibre/web.sh`, which is outside the web root.
 
-At each start, `/karotz/scripts/inetd.sh` writes the server's configuration in RAM, at `/var/run/httpd.conf`. The root file system is read-only, so the configuration cannot be on it. The configuration contains:
+At each start, `/karotz/scripts/inetd.sh` writes the server's configuration in RAM, at `/var/run/httpd.conf`. The root file system is read-only, so the configuration cannot be on it. The file is root's, mode 0640, group `web`: `httpd` can read it but not change it. The configuration contains:
 
 - `A:` lines for the local network only: `127.0.0.1`, `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16` and `169.254.0.0/16`. Then `D:*` refuses all other clients.
 - The index and type lines of the fixed file `/karotz/etc/httpd.conf` (`I:index.html`).
@@ -454,8 +454,8 @@ While the rabbit sleeps, the hardware endpoints refuse, except the snapshot endp
 | `status` (read) | `format`: `json` or `xml` (`json`) | The rabbit's state, with LapinLibre's own status in `lapinlibre`. | See below |
 | `get_version` (read) | none | The installed build and the root file system's version (`/karotz/etc/rootfs_version`). | `version`, `rootfs_version` (`Unknown` without the file), `patch_version` (always `N/A`), `return` |
 | `get_free_space` (read) | none | The used percentage of the `/usr` flash partition and of the USB key. | `karotz_percent_used_space`, `usb_percent_used_space` (`-1` without a USB key), `return` |
-| `setclock` (change) | none | Sets the clock one time from `pool.ntp.org` (`busybox ntpd -q`), 28 s at most. | `return` |
-| `reboot` (change) | none | Answers, then the rabbit restarts after about 10 s. | `return` |
+| `setclock` (change) | none | Answers when the clock is set (a time after 2026-01-01), 28 s at most. The start-up's ntpd sets the clock from `pool.ntp.org` and keeps it set; it tries again until a time server answers. | `return` |
+| `reboot` (change) | none | Answers, then the rabbit restarts after about 10 s (BusyBox's `reboot`, which `/etc/busybox.conf` lets the group `web` run as root). | `return` |
 | `tools_log` (read) | none | The newest 200 lines of `/var/log/messages`. | Plain text |
 | `tools_ps` (read) | none | The process list (`ps`). | Plain text |
 
@@ -487,7 +487,7 @@ With `format=xml`, the answer is `<?xml ...?><OPENKAROTZ>` with the elements `VE
 | `lapinlibre/logs` (read) | `lines` 1 to 1000 (200); `source`: `system`, `kernel` or `mpd` (`system`) | The newest lines of a log, oldest first. `system` is `/var/log/messages.0` and `/var/log/messages`; `kernel` is `dmesg`; `mpd` is `/var/log/mpd.log`. | Plain text; an error as JSON |
 | `lapinlibre/tag_action` (read) | `tag` (required) | A learned tag's action, for the page's tag editor. Never sends a stored password. | `return`, `tag`, `cmd` (`0` none, `3` a URL request, `5` one of the API's endpoints); for `5`: `endpoint` and `query`; for `3`: `url`, `user` and `password_set` (`1` when a password is stored) |
 | `lapinlibre/snapshot_delete` (change) | `filename` (required): a picture's name as `snapshot` gave it (`snapshot_<time>.jpg`) | Deletes that stored picture and its thumbnail. Any other name, or one not stored, is refused. | `return`, `filename` |
-| `lapinlibre/ssh` (read) | none | What the SSH section of the page shows. Never sends a key itself. | `return`, `enabled` (`1` when `/usr/karotz/.ssh/authorized_keys` has a key), `keys` (a list of `{"type", "comment", "fingerprint"}`), `host_keys` (a list of `{"type", "fingerprint"}` from `/usr/etc/conf/dropbear`), `hostname`, `ip`, `users` (`["root","karotz"]`), `telnet` |
+| `lapinlibre/ssh` (read) | none | What the SSH section of the page shows. Never sends a key itself. | `return`, `enabled` (`1` when `/usr/karotz/.ssh/authorized_keys` has a key, as `/var/run/ssh/authorized_keys` shows it), `keys` (a list of `{"type", "comment", "fingerprint"}`), `host_keys` (a list of `{"type", "fingerprint"}` of the keys in `/usr/etc/conf/dropbear`, from their public lines in `/var/run/ssh/host_keys`), `hostname`, `ip`, `users` (`["root","karotz"]`), `telnet` |
 
 The fingerprints are SHA-256, in the form `SHA256:<base64>`.
 

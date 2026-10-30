@@ -1,10 +1,16 @@
 #!/bin/sh
 # SPDX-License-Identifier: MIT
-# setclock: sets the clock once from the network's time servers (pool.ntp.org), as the start-up
-# does; at most 28 s.
+# setclock: answers once the clock is set, waiting at most 28 s. The start-up's ntpd sets the clock
+# from the network's time servers (pool.ntp.org) and keeps it set; it tries again until one answers.
+# Before 2026-01-01 the clock counts as not set, as the start-up and karotzVM count it.
 . /usr/share/lapinlibre/web.sh
 web_begin change
-timeout 28 busybox ntpd -q -p pool.ntp.org > /dev/null 2>&1 ||
-    web_fail "the clock couldn't be set: no time server answered"
+CLOCK_SET_AFTER=1767225600
+i=0
+while [ "$(date +%s)" -lt $CLOCK_SET_AFTER ]; do
+    [ $i -ge 28 ] && web_fail "the clock couldn't be set: no time server answered"
+    sleep 1
+    i=$((i + 1))
+done
 web_ok
 reply_json '{"return":"0"}'
