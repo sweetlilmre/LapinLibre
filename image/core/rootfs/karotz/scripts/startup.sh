@@ -93,6 +93,13 @@ mkdir -p /usr/spool/cron/crontabs
 [ -e /usr/spool/cron/crontabs/root ] || : > /usr/spool/cron/crontabs/root
 crond -c /usr/spool/cron/crontabs
 
+# /dev/urandom's seed, kept across boots. The kernel has no entropy source, and OpenSSL (WPA3's SAE,
+# HTTPS) reads /dev/urandom without waiting for /dev/random (system/patches/libopenssl). The old
+# seed and what varies from one boot to the next are mixed in, then the seed is replaced at once.
+SEED=/usr/etc/conf/random-seed
+{ cat $SEED; cat /proc/interrupts /proc/stat /sys/class/net/wlan0/address; } 2> /dev/null > /dev/urandom
+dd if=/dev/urandom of=$SEED.new bs=512 count=1 2> /dev/null && chmod 600 $SEED.new && mv $SEED.new $SEED
+
 nose_waiting
 if /karotz/scripts/network.sh $NETWORK_WAIT; then
     services

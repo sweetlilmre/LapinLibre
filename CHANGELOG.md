@@ -19,6 +19,8 @@
 
 ### Added
 
+- WPA3. Two kernel patches (system/kernel/patches/74 and 75) bring SAE through nl80211 and mac80211 to 2.6.32 and management frame protection (802.11w) to the RT73, done in software. wpa_supplicant is built with WPA3, starts with the nl80211 driver (wext as the fallback), and the install writes a network block that takes WPA2 or WPA3 with the same password. OpenSSL no longer waits for `/dev/random`, which on this kernel never fills; the start-up keeps a seed for `/dev/urandom` across boots instead. Proven in QEMU against a control kernel; not yet on a real Karotz. A WPA3 access point set to hash-to-element only is not supported.
+
 - The test speech-recognition server can recognise what is said (`asr_server.py --answer recognise`, `app_server.py --asr-answer recognise`): Parakeet TDT 0.6B v3 on the CPU, through sherpa-onnx (a new package of `tools/app-server`), in 25 European languages, with Silero VAD to find the end of the speech. It answers the grammar's alternative closest to what was said, or that nothing matched, or that nobody spoke. On the rabbit, a long press and "hello" starts the Hello application. `asr_server.py --fetch` gets the model files (about 640 MB).
 - The rabbit's recognition audio is now documented as it is: mu-law at 8000 samples a second (voice-daemon reads 16 kHz and sends every second byte), not 16 kHz.
 

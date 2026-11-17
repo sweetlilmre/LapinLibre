@@ -95,7 +95,9 @@ is_host() { [[ "$1" =~ ^[A-Za-z0-9]([A-Za-z0-9.-]*[A-Za-z0-9])?$ ]]; }
 
 mkdir -p "${CONF}"
 if [ -n "${WIFI_SSID}" ]; then
-    printf 'network={\nssid="%s"\npsk="%s"\nkey_mgmt=WPA-PSK\nscan_ssid=1\nproto=WPA RSN\n}\n' \
+    # WPA2 and WPA3 (SAE) with the same password; management frames protected when the
+    # network offers it (ieee80211w=1), as WPA3 requires.
+    printf 'network={\nssid="%s"\npsk="%s"\nkey_mgmt=WPA-PSK SAE\nieee80211w=1\nscan_ssid=1\nproto=WPA RSN\n}\n' \
         "${WIFI_SSID}" "${WIFI_PASSWORD}" > "${CONF}/wpa.conf"
     chmod 600 "${CONF}/wpa.conf"
     # The address settings, read by /usr/scripts/waitfornetwork.sh: empty IP means DHCP.

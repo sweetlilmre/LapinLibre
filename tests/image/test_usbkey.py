@@ -254,6 +254,8 @@ class UsbKeyTest(unittest.TestCase):
         conf = r.sb / "usr/etc/conf"
         wpa = (conf / "wpa.conf").read_text()
         self.assertIn('ssid="my net"\npsk="pa ss word"', wpa)
+        # WPA2 and WPA3 with the same password, management frames protected when offered
+        self.assertIn("key_mgmt=WPA-PSK SAE\nieee80211w=1", wpa)
         self.assertEqual(oct((conf / "wpa.conf").stat().st_mode & 0o777), "0o600")
         self.assertEqual((conf / "network.conf").read_text(),
                          'IP="192.168.1.20"\nNETMASK="255.255.255.0"\nGATEWAY="192.168.1.1"\nDNS="192.168.1.1"\n')

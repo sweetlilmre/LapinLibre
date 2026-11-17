@@ -124,7 +124,7 @@ The install does not change other files on the key, for example music folders.
 
 | Setting | Values | Written to |
 |---|---|---|
-| `WIFI_SSID`, `WIFI_PASSWORD` | The network name and its WPA or WPA2 password (8 to 63 characters). Set both or neither. They cannot contain `"` or `\`. | `/usr/etc/conf/wpa.conf` |
+| `WIFI_SSID`, `WIFI_PASSWORD` | The network name and its WPA, WPA2 or WPA3 password (8 to 63 characters). Set both or neither. They cannot contain `"` or `\`. | `/usr/etc/conf/wpa.conf` |
 | `IP`, `NETMASK`, `GATEWAY`, `DNS` | A fixed address, for example `192.168.1.10`. Leave `IP` empty to get an address by DHCP. With `IP`, the Wi-Fi values are necessary and all four must be addresses. | `/usr/etc/conf/network.conf` |
 | `SSH_PUBKEY` | One public key line: `ssh-ed25519`, `ssh-rsa` or `ecdsa-sha2-nistp…`. The rabbit accepts SSH logins with this key only. There is no password login. | `/usr/etc/conf/authorized_keys` |
 | `WEB_PASSWORD` | 8 to 64 printable characters, without spaces, `"`, `\` or `:`. With a password, the web page and the API ask for the user `admin` and this password. Empty removes the password. | `/usr/etc/conf/web_password` |

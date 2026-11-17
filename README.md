@@ -13,7 +13,7 @@ The technical documents are in [docs/index.md](docs/index.md): the build, the in
 
 - A Karotz rabbit with its power supply.
 - A USB stick formatted as FAT32.
-- A Wi-Fi network with WPA or WPA2.
+- A Wi-Fi network with WPA, WPA2 or WPA3 (WPA3 needs 2.4 GHz and SAE without hash-to-element only).
 - Only to build LapinLibre yourself: a computer with Ubuntu 24.04 or another Debian-like Linux, natively or in WSL 2.
 
 ## Get the USB key
@@ -41,7 +41,7 @@ An empty value keeps what the rabbit already has from an earlier install. A firs
 
 | Setting | What to type | What it does |
 |---|---|---|
-| `WIFI_SSID`, `WIFI_PASSWORD` | Your Wi-Fi network's name and its WPA or WPA2 password (8 to 63 characters). Set both or neither. | The network the rabbit joins. Needed for a first install. |
+| `WIFI_SSID`, `WIFI_PASSWORD` | Your Wi-Fi network's name and its WPA, WPA2 or WPA3 password (8 to 63 characters). Set both or neither. | The network the rabbit joins. Needed for a first install. |
 | `IP`, `NETMASK`, `GATEWAY`, `DNS` | Either nothing, or a fixed address for the rabbit (for example `192.168.1.10`), with your router's address in `GATEWAY` and a DNS server in `DNS` (`NETMASK` is already filled in with `255.255.255.0`). | How you find the rabbit on your network; see below. |
 | `SSH_PUBKEY` | Your SSH public key, all of it on one line (`ssh-ed25519 AAAA... you@pc`, or an `ssh-rsa` or `ecdsa` key). | Lets you log in with `ssh karotz@lapinlibre.local`, as root. Only this key is accepted: there is no password login. |
 | `WEB_PASSWORD` | 8 to 64 characters, without spaces, `"`, `\` or `:`. | The web page and its whole API, the OpenKarotz-compatible `cgi-bin` calls included, ask for the user `admin` and this password. Programs written for OpenKarotz (Home Assistant integrations, for example) send no login, so with a password they stop working unless they can be given one. Leave it empty for no password: this keeps the default OpenKarotz compatibility, but the page and the API are open to everyone on your network. Unlike the other settings, an empty value does not keep what the rabbit has: if the rabbit already has a password, leaving this empty removes it. |
