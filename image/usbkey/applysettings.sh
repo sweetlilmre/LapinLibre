@@ -18,7 +18,7 @@ FILE=/mnt/usbkey/lapinlibre.txt
 CONF=/usr/etc/conf
 BOM=$(printf '\357\273\277')
 
-WIFI_SSID= WIFI_PASSWORD= IP= NETMASK= GATEWAY= DNS= SSH_PUBKEY= TELNET= WEB_PASSWORD=
+WIFI_SSID= WIFI_PASSWORD= IP= NETMASK= GATEWAY= DNS= SSH_PUBKEY= TELNET= WEB_PASSWORD= MPD_PASSWORD=
 SERVER= TTS_SERVER= ASR_SERVER= LANGUAGE= HOSTNAME=
 problems=""
 problem() { problems="${problems}${problems:+; }$1"; }
@@ -40,7 +40,7 @@ if [ -f "${FILE}" ]; then
         value="${value#"${value%%[![:space:]]*}"}"
         case "${value}" in \"*\") value=${value#\"}; value=${value%\"} ;; \'*\') value=${value#\'}; value=${value%\'} ;; esac
         case "${key}" in
-        WIFI_SSID|WIFI_PASSWORD|IP|NETMASK|GATEWAY|DNS|SSH_PUBKEY|TELNET|WEB_PASSWORD|SERVER|TTS_SERVER|ASR_SERVER|LANGUAGE|HOSTNAME)
+        WIFI_SSID|WIFI_PASSWORD|IP|NETMASK|GATEWAY|DNS|SSH_PUBKEY|TELNET|WEB_PASSWORD|MPD_PASSWORD|SERVER|TTS_SERVER|ASR_SERVER|LANGUAGE|HOSTNAME)
             printf -v "${key}" '%s' "${value}" ;;
         *) problem "line ${n}: unknown setting ${key}" ;;
         esac
@@ -78,6 +78,8 @@ web_password_ok() {
 }
 [ -z "${WEB_PASSWORD}" ] || web_password_ok "${WEB_PASSWORD}" ||
     problem "WEB_PASSWORD must be 8 to 64 characters, without spaces, \", \\ or :"
+[ -z "${MPD_PASSWORD}" ] || web_password_ok "${MPD_PASSWORD}" ||
+    problem "MPD_PASSWORD must be 8 to 64 characters, without spaces, \", \\ or :"
 # The app server: a host name or address (SERVER), or a URL for speech and host:port for speech
 # recognition when those run elsewhere.
 is_host() { [[ "$1" =~ ^[A-Za-z0-9]([A-Za-z0-9.-]*[A-Za-z0-9])?$ ]]; }
@@ -124,6 +126,15 @@ if [ -n "${WEB_PASSWORD}" ]; then
 else
     rm -f "${CONF}/web_password" "${CONF}/web_password.new" "${CONF}/web_password.hash"
     LOG "Settings: no web password"
+fi
+# The music player's network password (S40lapinlibre reads it at each start). None given: mpd
+# answers the rabbit itself only.
+if [ -n "${MPD_PASSWORD}" ]; then
+    (umask 077 && printf '%s\n' "${MPD_PASSWORD}" > "${CONF}/mpd_password") || ERROR "can't write the MPD password"
+    LOG "Settings: music player open to the network, with a password"
+else
+    rm -f "${CONF}/mpd_password"
+    LOG "Settings: music player for the rabbit only"
 fi
 
 # KEY=VALUE in [SECTION] of an ini file, replacing the key's line or adding it (and the section).
