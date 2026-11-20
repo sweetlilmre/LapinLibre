@@ -25,6 +25,11 @@ SSH_PUBKEY=
 # any earlier password is removed.
 WEB_PASSWORD=
 
+# --- Music players on your network (MPD clients): with a password, they can reach the rabbit's
+# music player with it (port 6600). Same rules as WEB_PASSWORD. Empty (or no line): only the
+# rabbit itself reaches it.
+MPD_PASSWORD=
+
 # --- Telnet: yes gives anyone on your network a root shell with no password. For testing only.
 # yes or no; empty keeps the rabbit's setting (no, unless an earlier install said yes).
 TELNET=

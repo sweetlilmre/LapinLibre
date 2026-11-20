@@ -474,7 +474,15 @@ static void controller_init_config(ControllerObject *controller)
     if (port < 1 || port > PORT_MAX)
         port = DEFAULT_PORT_SERVER;
     g_free(port_text);
-    controller->server = platform_bind_server(port);
+    /* On the loopback unless an app server is set (SERVER= in lapinlibre.txt): the rabbit's own
+     * applications connect from karotzVM on 127.0.0.1, and with no app server nothing else has a
+     * reason to (a port audit on a real rabbit, 2026-11-20). Violet's platform, gone since 2015,
+     * counts as none. */
+    char *host = controller_get_config(controller, "ip_server", "127.0.0.1");
+    gboolean local = strncmp(host, "127.", 4) == 0 || strcmp(host, "localhost") == 0 || host[0] == 0 ||
+                     g_str_has_suffix(host, "karotz.com");
+    g_free(host);
+    controller->server = platform_bind_server(port, local);
 }
 
 /* ---- D-Bus ------------------------------------------------------------- */

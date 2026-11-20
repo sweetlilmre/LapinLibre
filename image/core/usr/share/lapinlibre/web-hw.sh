@@ -101,6 +101,7 @@ take_picture() {
 
 # snapshot_names: the stored snapshots' names, oldest first.
 snapshot_names() {
+    # shellcheck disable=SC2010 # names only, filtered by their exact shape
     ls "$WEB_SNAPSHOTS" 2> /dev/null | grep -E '^snapshot_[0-9]{4}(_[0-9]{2}){5}\.jpg$'
 }
 

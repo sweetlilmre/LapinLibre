@@ -23,6 +23,22 @@ MDNSD_ARGS="-i wlan0"
 WATCHER=/usr/scripts/dbus_watcher
 LISTENER=/usr/scripts/tag_listener
 PLAYSOUNDS=/usr/etc/conf/playsounds
+MPD_CONF=/usr/etc/mpd/mpd.conf
+MPD_PASSWORD=/usr/etc/conf/mpd_password
+KAROTZ_CONF=/usr/etc/conf/karotz.conf
+
+# mpd's two "network" lines from /usr/etc/conf/mpd_password (lapinlibre.txt's MPD_PASSWORD): with
+# one, any address and that password; without, 127.0.0.1 and the default. Written only when they
+# change, so the flash isn't written at every start.
+mpd_network() {
+    local pw bind new
+    pw=$(head -n 1 $MPD_PASSWORD 2> /dev/null)
+    if [ -n "$pw" ]; then bind=any; else bind=127.0.0.1; pw=lapinlibre; fi
+    new=$(sed -e 's/^bind_to_address .*# network$/bind_to_address         "'"$bind"'"             # network/' \
+              -e 's/^password .*@read,add,control" *# network$/password                "'"$pw"'@read,add,control"   # network/' $MPD_CONF) || return
+    [ "$new" = "$(cat $MPD_CONF)" ] && return
+    printf '%s\n' "$new" > $MPD_CONF.new && mv -f $MPD_CONF.new $MPD_CONF
+}
 WEB_FILES=/karotz/scripts/web-files.sh
 
 # once NAME PROGRAM [USER]: PROGRAM under immortaldog with the pid file NAME.pid (as USER, when
@@ -41,13 +57,20 @@ once() {
 }
 
 start() {
+    mpd_network
     [ -s /usr/karotz/uuid.conf ] || uuidgen > /usr/karotz/uuid.conf
     if [ ! -e $PLAYSOUNDS.default ]; then
         [ -e $PLAYSOUNDS ] || echo 1 > $PLAYSOUNDS
         [ -e $PLAYSOUNDS ] && touch $PLAYSOUNDS.default
     fi
     mkdir -p $RUN
-    for name in $DAEMONS; do
+    # k2k (rabbit-to-rabbit calls, SIP on UDP 5060 to the whole network) only with an app server
+    # to place the calls: without SERVER= in lapinlibre.txt (or with Violet's, gone since 2015) it
+    # listened for nothing it could use.
+    daemons=$DAEMONS
+    server=$(sed -n 's/^ip_server *= *//p' $KAROTZ_CONF 2> /dev/null | head -n 1)
+    case "$server" in ''|127.*|localhost|*karotz.com) daemons=$(echo "$DAEMONS" | sed 's/ k2k//') ;; esac
+    for name in $daemons; do
         $BIN/immortaldog "$RUN/$name.pid" "$BIN/$name-daemon"
     done
     # The watcher and the listener, each only when no live process holds its pid file.

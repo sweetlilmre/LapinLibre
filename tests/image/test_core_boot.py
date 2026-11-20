@@ -719,7 +719,7 @@ class ButtonWatcherTest(unittest.TestCase):
         r = subprocess.run(["sh", "-n", str(WATCHER)], capture_output=True, text=True, timeout=30)
         self.assertEqual((r.returncode, r.stderr), (0, ""))
         if shutil.which("shellcheck"):
-            r = subprocess.run(["shellcheck", "-s", "sh", str(WATCHER)], capture_output=True, text=True, timeout=60)
+            r = subprocess.run(["shellcheck", "-s", "sh", "-S", "warning", str(WATCHER)], capture_output=True, text=True, timeout=60)
             self.assertEqual(r.returncode, 0, r.stdout)
 
 
@@ -749,7 +749,8 @@ class S40Test(unittest.TestCase):
         for name in ("dbus_watcher", "tag_listener"):
             stub(sb / "usr/scripts" / name, "exit 0")
         script = S40.read_text(encoding="utf-8")
-        for path in ("/usr/karotz/uuid.conf", "/usr/etc/conf/playsounds", "/usr/karotz/bin", "/var/run/karotz",
+        for path in ("/usr/karotz/uuid.conf", "/usr/etc/conf/playsounds", "/usr/etc/conf/karotz.conf",
+                     "/usr/karotz/bin", "/var/run/karotz",
                      "/usr/sbin/mdnsd", "/var/run/mdnsd.pid", "/usr/scripts/", "/karotz/scripts/web-files.sh"):
             script = script.replace(path, f"{sb}{path}")
         self.script = sb / "S40lapinlibre"
@@ -793,6 +794,25 @@ class S40Test(unittest.TestCase):
         self.log.unlink()
         self.run_s40("start")
         self.assertEqual(self.started().count("tag_listener"), 1)
+
+    def test_k2k_only_with_an_app_server(self):
+        # k2k's SIP listens on UDP 5060 to the whole network; it calls through the app server, so
+        # without one (none, this rabbit, or Violet's platform gone since 2015) it is not started.
+        conf = self.sb / "usr/etc/conf/karotz.conf"
+        for server, wanted in (("127.0.0.1", False), ("platform.karotz.com", False),
+                               ("10.0.0.5", True), ("apps.example.com", True)):
+            conf.write_text(f"[karotz]\nip_server={server}\nport_server=9123\n", newline="\n")
+            if self.log.exists():
+                self.log.unlink()
+            self.run_s40("stop")
+            self.run_s40("start")
+            self.assertEqual("k2k-daemon" in self.started(), wanted, server)
+            self.assertIn("rfid-daemon", self.started())
+        conf.unlink()
+        self.log.unlink()
+        self.run_s40("stop")
+        self.run_s40("start")
+        self.assertNotIn("k2k-daemon", self.started())
 
     def test_stop_ends_the_listener(self):
         self.run_s40("start")

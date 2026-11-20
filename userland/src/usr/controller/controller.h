@@ -183,7 +183,7 @@ int platform_create_socket(void);
 gboolean platform_connect(ControllerObject *controller);
 void platform_close(ControllerObject *controller);
 gboolean connect_server(int sock, const char *host, uint16_t port);
-GSocketService *platform_bind_server(int port);
+GSocketService *platform_bind_server(int port, gboolean local);
 gboolean platform_watch_socket(gpointer data);
 void platform_send(int sock, const pm::PlatformMessage *msg);
 gboolean platform_receive_frame(int sock, std::string *bytes);
