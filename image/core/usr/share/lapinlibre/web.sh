@@ -32,7 +32,7 @@ LC_ALL=C
 export LC_ALL
 umask 077
 
-WEB_USER=admin
+WEB_USER="admin"
 # The web password's hash: with it, httpd asks every request for the web user and its password;
 # without it there is no login.
 WEB_HASH=/usr/etc/conf/web_password.hash
@@ -51,7 +51,7 @@ WEB_CONTROLLER=$WEB_RUN/controller
 WEB_MAX=4096
 # Parameters whose tabs and line ends become spaces instead of refusing the value.
 WEB_SPACE_PARAMS=""
-WEB_KIND=read
+WEB_KIND="read"
 WEB_HEAD=0
 WEB_PARAMS=""
 # The API's programs, which a tag's action and the learning timer run here.
@@ -310,9 +310,9 @@ web_begin() {
     WEB_KIND=$1
     [ $# -gt 1 ] && WEB_SPACE_PARAMS=$2
     WEB_ENDPOINT=${SCRIPT_NAME#/cgi-bin/}
-    case $WEB_ENDPOINT in '' | *[!A-Za-z0-9/_.-]*) WEB_ENDPOINT=? ;; esac
+    case $WEB_ENDPOINT in '' | *[!A-Za-z0-9/_.-]*) WEB_ENDPOINT='?' ;; esac
     WEB_CLIENT=${REMOTE_ADDR:-}
-    case $WEB_CLIENT in '' | *[!0-9.]*) WEB_CLIENT=? ;; esac
+    case $WEB_CLIENT in '' | *[!0-9.]*) WEB_CLIENT='?' ;; esac
     [ "${REQUEST_METHOD:-}" = HEAD ] && WEB_HEAD=1
     # 1. With a web password, the web user, set by httpd after it has checked the password.
     if [ -s "$WEB_HASH" ] && [ "${REMOTE_USER:-}" != "$WEB_USER" ]; then
@@ -869,6 +869,7 @@ web_area() {
     case " $WEB_AREAS " in *" $1 "*) return 1 ;; esac
     WEB_AREAS="$WEB_AREAS $1"
     [ -r "$WEB_LIB/web-$1.sh" ] || return 1
+    # shellcheck source=/dev/null
     . "$WEB_LIB/web-$1.sh"
 }
 
