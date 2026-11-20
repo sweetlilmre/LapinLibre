@@ -1,0 +1,24 @@
+#!/bin/sh
+# SPDX-License-Identifier: MIT
+# wifi_setup (POST ssid, password): the Wi-Fi settings from the setup page, only while the setup
+# network is open (/karotz/scripts/hotspot.sh). This runs as the user web, which can't write the
+# rabbit's settings: it leaves them in the setup network's drop folder (owned by web, made by
+# hotspot.sh), which checks them again, writes them as the key's install does and reboots.
+. /usr/share/lapinlibre/web.sh
+web_begin change
+IN=/var/run/hotspot/in
+[ -f /var/run/hotspot/active ] && [ -d $IN ] || web_refuse 403 "the setup network isn't open"
+[ "$REQUEST_METHOD" = POST ] || web_refuse 405 "send the settings with POST"
+param ssid || web_fail "give the network's name (ssid)"
+ssid=$PV
+param password || web_fail "give the network's password"
+psk=$PV
+[ ${#ssid} -ge 1 ] && [ ${#ssid} -le 32 ] || web_fail "the network's name has 1 to 32 characters"
+[ ${#psk} -ge 8 ] && [ ${#psk} -le 63 ] || web_fail "the password has 8 to 63 characters"
+# They go inside wpa_supplicant's quotes: no quote, no backslash, no control character.
+case "$ssid$psk" in *[\"\\]* | *[![:print:]]*) web_fail "no \" or \\ in the name or the password" ;; esac
+(umask 077 && printf '%s\n%s\n' "$ssid" "$psk" > $IN/settings.new && mv -f $IN/settings.new $IN/settings) ||
+    web_fail "the settings couldn't be handed over"
+web_log "Wi-Fi settings given on the setup network"
+web_ok
+reply_json '{"return":"0"}'

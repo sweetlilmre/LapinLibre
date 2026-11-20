@@ -46,7 +46,8 @@ IP= NETMASK= GATEWAY= DNS=
 
 ifconfig lo 127.0.0.1 up
 ifconfig wlan0 up
-running wpa_supplicant || wpa_supplicant -iwlan0 -Dwext -B -c$WPA_CONF
+# nl80211 first: WPA3's SAE needs it (system/kernel/patches/74); wext stays as the fallback.
+running wpa_supplicant || wpa_supplicant -iwlan0 -Dnl80211,wext -B -c$WPA_CONF
 
 if [ -n "$IP" ]; then
     ifconfig wlan0 "$IP" netmask "${NETMASK:-255.255.255.0}" up

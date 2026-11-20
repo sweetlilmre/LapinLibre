@@ -319,6 +319,7 @@ rootfs:sbin/sysctl l ../bin/busybox
 rootfs:sbin/syslogd l ../bin/busybox
 rootfs:sbin/telnetd l /bin/busybox
 rootfs:sbin/udhcpc l ../bin/busybox
+rootfs:usr/sbin/udhcpd l ../../bin/busybox  # the setup network's DHCP server (hotspot.sh)
 rootfs:sbin/vconfig l ../bin/busybox
 rootfs:sbin/watchdog l ../bin/busybox
 rootfs:sys d 0755 0:0
@@ -1301,6 +1302,7 @@ rootfs:karotz/scripts/usbkey.sh f 0755 0:0 core  # mounts and unmounts the USB s
 rootfs:karotz/scripts/udhcpc_script.sh f 0755 0:0 target:usr/share/udhcpc/default.script  # Buildroot's; the path is the mini-USB set-up's
 rootfs:karotz/scripts/sshd.sh f 0755 0:0 core
 rootfs:karotz/scripts/inetd.sh f 0755 0:0 core
+rootfs:karotz/scripts/hotspot.sh f 0755 0:0 core  # the setup network (a long press with no network)
 rootfs:karotz/scripts/web-files.sh f 0755 0:0 core  # the web user's folders and locks, for inetd.sh and S40lapinlibre
 rootfs:lib/firmware/rt73.bin f 0644 0:0 generated  # the Wi-Fi's firmware, linux-firmware 20260916
 rootfs:lib/firmware/LICENCE.ralink-firmware.txt f 0644 0:0 generated  # its licence, which must travel with it
@@ -1330,6 +1332,8 @@ usr:www/cgi-bin/ears_random f 0755 0:0 core
 usr:www/cgi-bin/ears_mode f 0755 0:0 core  # keeps its one setting in /usr/etc/conf/web
 usr:www/cgi-bin/sleep f 0755 0:0 core  # the API's own sleep flag, in RAM
 usr:www/cgi-bin/wakeup f 0755 0:0 core
+usr:www/setup.html f 0644 0:0 core  # the setup network's page
+usr:www/cgi-bin/wifi_setup f 0755 0:0 core  # the setup network's form, dropped for hotspot.sh
 usr:www/cgi-bin/sound f 0755 0:0 core
 usr:www/cgi-bin/sound_control f 0755 0:0 core
 usr:www/cgi-bin/sound_list f 0755 0:0 core

@@ -404,7 +404,7 @@ class NetworkTest(unittest.TestCase):
         self.up()
         rc, actions = self.run_network()
         self.assertEqual(rc, 0)
-        self.assertIn("wpa_supplicant -iwlan0 -Dwext -B -c/usr/etc/conf/wpa.conf", actions)
+        self.assertIn("wpa_supplicant -iwlan0 -Dnl80211,wext -B -c/usr/etc/conf/wpa.conf", actions)
         self.assertIn("udhcpc -b -i wlan0 -s /karotz/scripts/udhcpc_script.sh", actions)
 
     def test_static_address(self):
@@ -420,7 +420,7 @@ class NetworkTest(unittest.TestCase):
     def test_runs_again_without_second_daemons(self):
         self.settings()
         self.up()
-        self.running("wpa_supplicant", "-iwlan0", "-Dwext", "-B", "-c/usr/etc/conf/wpa.conf")
+        self.running("wpa_supplicant", "-iwlan0", "-Dnl80211,wext", "-B", "-c/usr/etc/conf/wpa.conf")
         self.running("udhcpc", "-b", "-i", "wlan0", "-s", "/karotz/scripts/udhcpc_script.sh")
         rc, actions = self.run_network()
         self.assertEqual(rc, 0)

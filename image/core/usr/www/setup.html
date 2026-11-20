@@ -1,0 +1,37 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: MIT -->
+<!-- The setup network's page (karotz/scripts/hotspot.sh): the rabbit's Wi-Fi, then a reboot. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Karotz setup</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main style="max-width:28em;margin:2em auto;padding:0 1em">
+<h1>Karotz</h1>
+<p>Its Wi-Fi network / Son réseau Wi-Fi</p>
+<form id="f">
+<p><label>Network name / Nom du réseau<br><input name="ssid" maxlength="32" required autocomplete="off"></label></p>
+<p><label>Password / Mot de passe<br><input name="password" type="password" minlength="8" maxlength="63" required></label></p>
+<p><button>Save and restart / Enregistrer et redémarrer</button></p>
+</form>
+<p id="r" role="status"></p>
+</main>
+<script>
+document.getElementById("f").addEventListener("submit", function (e) {
+  e.preventDefault();
+  var r = document.getElementById("r");
+  fetch("/cgi-bin/wifi_setup", {method: "POST", body: new URLSearchParams(new FormData(e.target))})
+    .then(function (a) { return a.json(); })
+    .then(function (j) {
+      r.textContent = j.return === "0"
+        ? "Saved: the rabbit restarts on that network. / Enregistré : le lapin redémarre sur ce réseau."
+        : (j.msg || "Refused / Refusé");
+    })
+    .catch(function () { r.textContent = "No answer / Pas de réponse"; });
+});
+</script>
+</body>
+</html>

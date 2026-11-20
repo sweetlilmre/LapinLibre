@@ -47,7 +47,7 @@ READ_ONLY = ["status", "get_version", "get_free_space", "tools_log", "lapinlibre
 HARDWARE = ["leds", "ears", "ears_reset", "ears_random", "sleep", "wakeup", "sound", "sound_control", "tts",
             "snapshot", "snapshot_view", "rfid_start_record", "rfid_stop_record", "apps/moods", "apps/clock", "stories"]
 CHANGES = ["reboot", "ears_mode", "clear_cache", "clear_snapshots", "lapinlibre/snapshot_delete", "setclock", "rfid_rename", "rfid_delete",
-           "rfid_unassign", "clear_rfid", "rfid_assign_url", "rfid_test_url", "rfid_assign_karotz"]
+           "rfid_unassign", "clear_rfid", "rfid_assign_url", "rfid_test_url", "rfid_assign_karotz", "wifi_setup"]
 CGIS = READ_ONLY + HARDWARE + CHANGES
 LISTENER = ROOT / "image/core/usr/scripts/tag_listener"
 # The tools the programs use, besides the stubs.

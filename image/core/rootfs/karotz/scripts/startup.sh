@@ -2,8 +2,9 @@
 # SPDX-License-Identifier: MIT
 # The start, run once by init: the time zone, cron, the Wi-Fi (network.sh), then the services
 # (/etc/init.d/S??*), the clock and the ready signal. The nose pulses cyan while it waits for the
-# Wi-Fi and the clock. Without a network the nose turns solid red and the Wi-Fi is retried in the background until
-# it comes up; the services start then. init's other lines (SSH, telnet, power) don't wait for it.
+# Wi-Fi and the clock. Without a network the nose turns solid red and the Wi-Fi is retried in the
+# background until it comes up; the services start then. Meanwhile three presses of the head open
+# the setup network (hotspot.sh). init's other lines (SSH, telnet, power) don't wait for it.
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/karotz/bin:/usr/karotz/bin
 export PATH
 LED=/karotz/bin/led
@@ -93,6 +94,13 @@ mkdir -p /usr/spool/cron/crontabs
 [ -e /usr/spool/cron/crontabs/root ] || : > /usr/spool/cron/crontabs/root
 crond -c /usr/spool/cron/crontabs
 
+# /dev/urandom's seed, kept across boots. The kernel has no entropy source, and OpenSSL (WPA3's SAE,
+# HTTPS) reads /dev/urandom without waiting for /dev/random (system/patches/libopenssl). The old
+# seed and what varies from one boot to the next are mixed in, then the seed is replaced at once.
+SEED=/usr/etc/conf/random-seed
+{ cat $SEED; cat /proc/interrupts /proc/stat /sys/class/net/wlan0/address; } 2> /dev/null > /dev/urandom
+dd if=/dev/urandom of=$SEED.new bs=512 count=1 2> /dev/null && chmod 600 $SEED.new && mv $SEED.new $SEED
+
 nose_waiting
 if /karotz/scripts/network.sh $NETWORK_WAIT; then
     services
@@ -100,12 +108,27 @@ else
     nose_red
     log "no network"
     (
+        # Three presses of the head ask for the setup network (hotspot.sh): it opens between two
+        # tries, and settings given there reboot the rabbit onto them.
+        /karotz/scripts/hotspot.sh press &
+        watcher=$!
         while :; do
-            sleep $RETRY_EVERY
+            i=0
+            while [ $i -lt $RETRY_EVERY ] && [ ! -f /var/run/hotspot/wanted ]; do
+                sleep 1
+                i=$((i + 1))
+            done
+            if [ -f /var/run/hotspot/wanted ]; then
+                kill $watcher 2> /dev/null
+                /karotz/scripts/hotspot.sh 600 && exit 0
+                /karotz/scripts/hotspot.sh press &
+                watcher=$!
+            fi
             nose_waiting
             /karotz/scripts/network.sh $NETWORK_WAIT && break
             nose_red
         done
+        kill $watcher 2> /dev/null
         log "network up"
         services
     ) &
