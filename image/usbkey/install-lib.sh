@@ -79,6 +79,14 @@ start_tools() {
     [ -n "${sum}" ] && [ "${sum}" = "${INSTALL_TOOLS_MD5}" ] || ERROR "MD5 checksum error: install-tools.tar"
     tar -xf /mnt/usbkey/install-tools.tar -C /tmp || ERROR "can't unpack install-tools.tar into /tmp"
     cp /mnt/usbkey/sound/*.mp3 /tmp/ || ERROR "can't copy the install sounds to /tmp"
+    # The spoken prompts in the key's language when the key has them (sound/<la>/, LANGUAGE= in
+    # lapinlibre.txt, as fr-FR): the install speaks before the settings are applied.
+    local la
+    la=$(sed -n 's/^[[:space:]]*LANGUAGE[[:space:]]*=[[:space:]]*["'"'"']*\([a-zA-Z][a-zA-Z]\).*/\1/p' \
+        /mnt/usbkey/lapinlibre.txt 2> /dev/null | head -n 1 | tr 'A-Z' 'a-z')
+    if [ -n "${la}" ] && [ -d "/mnt/usbkey/sound/${la}" ]; then
+        cp /mnt/usbkey/sound/"${la}"/*.mp3 /tmp/ 2> /dev/null
+    fi
     return 0
 }
 

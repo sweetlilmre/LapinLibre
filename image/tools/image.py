@@ -264,6 +264,11 @@ def stick_files(config, names):
         files[f"sound/{name}"] = mp3(tone_wav(notes))
     for name in SPOKEN:
         files[f"sound/{name}"] = (IMAGE / "usbkey" / "sound" / name).read_bytes()
+        # The same prompts in French (install_prompts.py --lang fr), played when lapinlibre.txt
+        # says LANGUAGE=fr-... (install-lib.sh start_tools).
+        fr = IMAGE / "usbkey" / "sound" / "fr" / name
+        if fr.is_file():
+            files[f"sound/fr/{name}"] = fr.read_bytes()
     return files
 
 

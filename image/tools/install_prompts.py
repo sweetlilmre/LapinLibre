@@ -8,6 +8,7 @@ build copies to the key. The kept files are spoken by image/tools/speech_sounds.
 the rabbit's English voice (Qwen3-TTS cloning bf_emma); this script speaks them with Kokoro directly.
 
     uv run image/tools/install_prompts.py [--voice bf_emma] [--models DIR] [NAME.mp3 ...]
+    uv run image/tools/install_prompts.py --lang fr        # image/usbkey/sound/fr, ff_siwis
     uv run image/tools/install_prompts.py --reference OUT.wav TEXT
 
 Kokoro-82M (Apache-2.0 weights) through kokoro-onnx (MIT) speaks each text; the samples are evened to
@@ -35,6 +36,16 @@ PROMPTS = {
     "checks-passed.mp3": "Install checks passed.",
     "checks-failed.mp3": "Warning. The install checks failed. Please recreate the USB stick and try again.",
 }
+# Terrier OS (2026-11-20): the same prompts in French, for a key whose lapinlibre.txt says
+# LANGUAGE=fr-..., in Kokoro's French voice (ff_siwis); written to image/usbkey/sound/fr.
+PROMPTS_FR = {
+    "install-start.mp3": "Bienvenue dans l'installation de Terrier OS. Patiente pendant que le système s'installe.",
+    "install-done.mp3": "L'installation est terminée. Je redémarre pour me connecter à Internet : "
+                      "attends que la lumière soit verte.",
+    "checks-start.mp3": "Je vérifie la clé d'installation, patiente.",
+    "checks-passed.mp3": "Vérifications réussies.",
+    "checks-failed.mp3": "Attention. Les vérifications ont échoué. Refais la clé USB, puis réessaie.",
+}
 RELEASE = "https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0/"
 MODEL_SHA256 = {
     "kokoro-v1.0.onnx": "7d5df8ecf7d4b1878015a32686053fd0eebe2bc377234608764cc0ef3636a6c5",
@@ -59,7 +70,8 @@ def model_file(models, name):
 
 def main(argv):
     p = argparse.ArgumentParser(description="The key's spoken install prompts.")
-    p.add_argument("--voice", default="bf_emma")
+    p.add_argument("--voice", default=None, help="default: bf_emma, or ff_siwis with --lang fr")
+    p.add_argument("--lang", default="en", choices=("en", "fr"))
     p.add_argument("--models", type=Path, default=Path.home() / ".cache" / "lapinlibre" / "kokoro")
     p.add_argument("--reference", type=Path, help="write the first name given, as text, to this WAV instead")
     p.add_argument("names", nargs="*", help="only these prompts (default: all)")
@@ -69,7 +81,10 @@ def main(argv):
     from kokoro_onnx import Kokoro
 
     kokoro = Kokoro(str(model_file(args.models, "kokoro-v1.0.onnx")), str(model_file(args.models, "voices-v1.0.bin")))
-    lang = "en-gb" if args.voice.startswith("b") else "en-us"
+    if args.voice is None:
+        args.voice = "ff_siwis" if args.lang == "fr" else "bf_emma"
+    lang = "fr-fr" if args.lang == "fr" else "en-gb" if args.voice.startswith("b") else "en-us"
+    prompts, out = (PROMPTS_FR, OUT / "fr") if args.lang == "fr" else (PROMPTS, OUT)
     if args.reference:
         import wave
         if len(args.names) != 1:
@@ -84,8 +99,8 @@ def main(argv):
             w.writeframes((samples * 32767).astype("<i2").tobytes())
         print(f"{args.reference}: {len(samples) / rate:.1f} s at {rate} Hz ({args.voice})")
         return 0
-    OUT.mkdir(parents=True, exist_ok=True)
-    for name, text in PROMPTS.items():
+    out.mkdir(parents=True, exist_ok=True)
+    for name, text in prompts.items():
         if args.names and name not in args.names:
             continue
         samples, rate = kokoro.create(text, voice=args.voice, speed=1.0, lang=lang)
@@ -97,7 +112,7 @@ def main(argv):
         encoder.set_channels(1)
         encoder.set_quality(2)
         data = encoder.encode((samples * 32767).astype("<i2").tobytes()) + encoder.flush()
-        (OUT / name).write_bytes(bytes(data))
+        (out / name).write_bytes(bytes(data))
         print(f"{name}: {len(data)} bytes, {len(samples) / rate:.1f} s at {rate} Hz ({args.voice})")
     return 0
 

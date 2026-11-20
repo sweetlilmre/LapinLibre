@@ -21,7 +21,7 @@ s=$?
 if [ $s != 0 ]; then
     # The log gets the host and curl's status only, never curl's words (they may quote the URL).
     web_log "the request to $host failed (curl status $s)"
-    WEB_KIND=read
+    WEB_KIND="read"
     web_fail "the request to $host failed: $UR_ERROR"
 fi
 web_log "ok, $host answered HTTP $UR_CODE"
