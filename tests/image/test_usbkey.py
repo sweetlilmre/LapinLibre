@@ -409,7 +409,7 @@ class UsbKeyTest(unittest.TestCase):
         core = self.rootfs_file("karotz/etc/inetd.conf").decode()
         self.assertNotIn("telnetd", core)
         self.assertNotIn("ftpd", core)
-        self.assertIn("80 stream tcp nowait.60 root /bin/busybox httpd -i -c /var/run/httpd.conf -h /usr/www", core)
+        self.assertIn("80 stream tcp nowait.60 web /bin/busybox httpd -i -c /var/run/httpd.conf -h /usr/www", core)
         self.assertNotIn("/karotz/etc/httpd.conf", core)
         # The fixed part alone refuses everyone; inetd.sh makes the configuration with the password.
         self.assertIn("D:*", self.rootfs_file("karotz/etc/httpd.conf").decode())

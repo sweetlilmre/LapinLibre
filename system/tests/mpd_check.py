@@ -168,7 +168,14 @@ class Local:
         # made larger: mpd's FIFO output empties the pipe itself when a write finds it full, so a
         # reader that falls behind for a moment (qemu catching up in a burst) loses 64 KiB.
         self.fd = os.open(fifo, os.O_RDONLY | os.O_NONBLOCK)
-        fcntl.fcntl(self.fd, fcntl.F_SETPIPE_SZ, 1 << 20)
+        # 1 MiB, or as much as this user may have: past its pipe pages (pipe-user-pages-soft) an
+        # unprivileged user is refused with EPERM, as in a rootless build container (2026-11-20).
+        for size in (1 << 20, 256 << 10, 128 << 10):
+            try:
+                fcntl.fcntl(self.fd, fcntl.F_SETPIPE_SZ, size)
+                break
+            except PermissionError:
+                continue
         fcntl.fcntl(self.fd, fcntl.F_SETFL, fcntl.fcntl(self.fd, fcntl.F_GETFL) & ~os.O_NONBLOCK)
 
         def loop():

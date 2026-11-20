@@ -505,12 +505,27 @@ def normalise_paths(record, workdir, build, sysroot):
     return out
 
 
+# What the controller logs when its fake platform goes before it does at the end of a test. On a
+# quick host the controller is stopped first and logs none of it; on a loaded one (eight tests at
+# once on four cores, 2026-11-20) the platform's namespace and its veth are gone first.
+CONTROLLER_TEARDOWN_WARNINGS = [
+    r"^socket \d+: the other side closed the connection$",
+    r"^socket error on socket \d+$",
+    r"^Platform - Offline$",
+    r"^earsMove returned FALSE$",
+    r"^connectServer Error connecting \d+ - Network is unreachable$",
+    r"^connectServer Error in delayed connection\(\) \d+ - Connection refused$",
+]
+
+
 def unexpected_warnings(scenario, workdir):
     """The run's syslog warnings and worse that the scenario's EXPECTED_WARNINGS doesn't match."""
     path = Path(workdir) / "syslog"
     if not path.exists():
         return []
     allowed = [re.compile(p) for p in getattr(scenario, "EXPECTED_WARNINGS", ())]
+    if getattr(scenario, "DAEMON", None) == "controller":
+        allowed += [re.compile(p) for p in CONTROLLER_TEARDOWN_WARNINGS]
     out = []
     for line in path.read_text(errors="replace").splitlines():
         level, _, message = line.partition(" ")
@@ -578,7 +593,7 @@ def main():
         warnings = unexpected_warnings(module, workdir)
         if warnings:
             failed += 1
-            print(f"FAIL  {label}: warnings in its log that EXPECTED_WARNINGS doesn't list (logs in {workdir})")
+            print(f"FAIL  {label}: warnings in its log that EXPECTED_WARNINGS doesn't list (logs in {workdir}) ({took})")
             for line in warnings[:20]:
                 print(f"    {line}")
             if len(warnings) > 20:
@@ -593,7 +608,7 @@ def main():
                 print(f"      {label}: {module.summary(record)}")
             if problems:
                 failed += 1
-                print(f"FAIL  {label} (logs in {workdir})")
+                print(f"FAIL  {label} (logs in {workdir}) ({took})")
                 for problem in problems:
                     print(f"    {problem}")
                 (workdir / "record.txt").write_text("\n".join(record) + "\n")
@@ -627,7 +642,7 @@ def main():
         else:
             failed += 1
             (workdir / "record.txt").write_text(text)
-            print(f"FAIL  {label}: record differs from {expected_file} (logs and record.txt in {workdir})")
+            print(f"FAIL  {label}: record differs from {expected_file} (logs and record.txt in {workdir}) ({took})")
             diff = list(difflib.unified_diff(expected, record, "expected", "this run", lineterm=""))
             for line in diff[:80]:
                 print("   ", line)

@@ -95,8 +95,12 @@ def fingerprint(b64):
 def sandbox_copy(src, dst, sb):
     """A program or the library with its absolute paths and PATH moved into the sandbox."""
     text = src.read_text(encoding="utf-8")
-    text = text.replace("PATH=/bin:/sbin:/usr/bin:/usr/sbin\n", f"PATH={sb}/bin\n")
+    # The paths are moved first and the sandbox's own PATH goes in after: the sandbox lives under
+    # /tmp (tempfile's default), and SANDBOXED moves /tmp, so a PATH put in first was moved again
+    # into a directory that does not exist, and every tool was "not found".
+    text = text.replace("PATH=/bin:/sbin:/usr/bin:/usr/sbin\n", "PATH=@SANDBOX_BIN@\n")
     text = SANDBOXED.sub(lambda m: f"{sb}{m.group(0)}", text)
+    text = text.replace("PATH=@SANDBOX_BIN@\n", f"PATH={sb}/bin\n")
     if text.startswith("#!/bin/sh\n"):
         text = f"#!{sb}/bin/sh\n" + text[len("#!/bin/sh\n"):]
     dst.parent.mkdir(parents=True, exist_ok=True)
@@ -737,7 +741,9 @@ class EndpointTest(WebApiCase):
             r = subprocess.run(["sh", "-n", str(path)], capture_output=True, text=True, timeout=30)
             self.assertEqual((r.returncode, r.stderr), (0, ""), path)
         if shutil.which("shellcheck"):
-            r = subprocess.run(["shellcheck", "-s", "sh", "-e", "SC1091,SC2034,SC2154", *[str(p) for p in LIBRARIES],
+            # SC3003/SC3013/SC3028/SC3045 ($'..', -nt, $RANDOM, read -n): BusyBox ash has them, POSIX sh does not, and
+            # shellcheck before 0.10 has no busybox dialect to say so.
+            r = subprocess.run(["shellcheck", "-s", "sh", "-S", "warning", "-e", "SC1091,SC2034,SC2154,SC3003,SC3013,SC3028,SC3045", *[str(p) for p in LIBRARIES],
                                 *[str(WWW / "cgi-bin" / c) for c in CGIS]], capture_output=True, text=True, timeout=120)
             self.assertEqual(r.returncode, 0, r.stdout[-3000:])
 

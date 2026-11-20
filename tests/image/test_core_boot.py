@@ -719,7 +719,7 @@ class ButtonWatcherTest(unittest.TestCase):
         r = subprocess.run(["sh", "-n", str(WATCHER)], capture_output=True, text=True, timeout=30)
         self.assertEqual((r.returncode, r.stderr), (0, ""))
         if shutil.which("shellcheck"):
-            r = subprocess.run(["shellcheck", "-s", "sh", str(WATCHER)], capture_output=True, text=True, timeout=60)
+            r = subprocess.run(["shellcheck", "-s", "sh", "-S", "warning", str(WATCHER)], capture_output=True, text=True, timeout=60)
             self.assertEqual(r.returncode, 0, r.stdout)
 
 

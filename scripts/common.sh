@@ -61,6 +61,16 @@ ll_source_epoch() {
     fi
 }
 
+# ll_input_commit PATH...: with LL_REUSE_UNCHANGED=1 (a development build), the last commit that
+# changed one of PATH; empty otherwise. A stage whose version is stamped into what it builds (the
+# kernel's release suffix and banner) then takes that commit's version and time instead of the
+# build's, so a commit elsewhere doesn't rebuild it. Releases leave it unset: every part carries
+# the release's version.
+ll_input_commit() {
+    [ "${LL_REUSE_UNCHANGED:-}" = 1 ] || return 0
+    git -C "$LL_ROOT" log -1 --no-merges --format=%H -- "$@" 2>/dev/null || true
+}
+
 # Stamps: a stage's step is skipped when its stamp holds the same key (a hash
 # of everything the step depends on).
 #   ll_stamp_ok NAME KEY  -> success when up to date

@@ -79,6 +79,10 @@ EXPECTED_WARNINGS = [
     r"^earsMove returned FALSE$",
     # After the platform closes, the controller connects again, refused at times.
     r"^connectServer Error in delayed connection\(\) \d+ - Connection refused$",
+    # The same reconnection when the platform's namespace is already gone: its veth goes with it,
+    # so the route to 10.9.0.1 does too. Seen on a loaded host, where the controller tries again
+    # before the harness stops it (2026-11-20, eight tests at once on four cores).
+    r"^connectServer Error connecting \d+ - Network is unreachable$",
 ]
 
 

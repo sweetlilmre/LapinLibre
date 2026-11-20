@@ -25,8 +25,15 @@ if [ -z "${LL_KERNEL_IN_ROOT:-}" ]; then
     # The release suffix and the banner's date: the build's version and the commit's date. The
     # commit's time also dates what the compile stamps (__DATE__, the built-in initramfs).
     version=$(ll_version)
-    tag=-$version
     epoch=$(ll_source_epoch)
+    # A development build (LL_REUSE_UNCHANGED=1): the version of the last commit that changed the
+    # kernel's inputs, so that a commit elsewhere keeps this stage's stamp (scripts/common.sh).
+    base=$(ll_input_commit system/kernel system/patches system/toolchain system/build.sh system/buildroot.config config.toml)
+    if [ -n "$base" ]; then
+        version=$(git -C "$LL_ROOT" describe --tags --match 'v[0-9]*' --always --abbrev=12 "$base")
+        epoch=$(git -C "$LL_ROOT" log -1 --format=%ct "$base")
+    fi
+    tag=-$version
     [ -n "$epoch" ] || ll_die "kernel: no SOURCE_DATE_EPOCH and no git commit to take the build's time from"
     stamp="$version ($(date -u -d "@$epoch" +%Y-%m-%d))"
 
